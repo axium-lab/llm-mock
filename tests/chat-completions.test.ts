@@ -1,5 +1,5 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
-import { clearFixtures, registerFixture, startTestServer, stopTestServer, type TestContext } from "./setup";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { startTestServer, stopTestServer, type TestContext } from "./setup";
 
 describe("chat completions", () => {
   let ctx: TestContext;
@@ -7,9 +7,8 @@ describe("chat completions", () => {
     ctx = await startTestServer();
   });
   afterAll(() => stopTestServer(ctx));
-  afterEach(() => clearFixtures(ctx));
 
-  it("echoes the last user message when no fixture matches", async () => {
+  it("echoes the last user message by default", async () => {
     const completion = await ctx.client.chat.completions.create({
       model: "gpt-4o",
       messages: [{ role: "user", content: "Hello there" }],
@@ -20,15 +19,14 @@ describe("chat completions", () => {
     expect(completion.choices[0]?.finish_reason).toBe("stop");
   });
 
-  it("returns the fixture content when a fixture matches", async () => {
-    await registerFixture(ctx, {
-      match: { contains: "weather" },
-      response: { content: "It is sunny in Valencia." },
-    });
-    const completion = await ctx.client.chat.completions.create({
-      model: "gpt-4o",
-      messages: [{ role: "user", content: "What's the weather like?" }],
-    });
+  it("returns the canned response carried by the x-llm-mock-response header", async () => {
+    const completion = await ctx.client.chat.completions.create(
+      {
+        model: "gpt-4o",
+        messages: [{ role: "user", content: "What's the weather like?" }],
+      },
+      { headers: { "x-llm-mock-response": "It is sunny in Valencia." } },
+    );
     expect(completion.choices[0]?.message.content).toBe("It is sunny in Valencia.");
   });
 
@@ -43,15 +41,14 @@ describe("chat completions", () => {
     expect(usage.total_tokens).toBe(usage.prompt_tokens + usage.completion_tokens);
   });
 
-  it("is deterministic: same request produces the same id and content", async () => {
+  it("is idempotent: the same request produces the exact same completion", async () => {
     const request = {
       model: "gpt-4o",
       messages: [{ role: "user" as const, content: "Deterministic?" }],
     };
     const first = await ctx.client.chat.completions.create(request);
     const second = await ctx.client.chat.completions.create(request);
-    expect(second.id).toBe(first.id);
-    expect(second.choices[0]?.message.content).toBe(first.choices[0]?.message.content!);
+    expect(second).toEqual(first);
   });
 
   it("honors n by returning multiple choices", async () => {

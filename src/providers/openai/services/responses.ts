@@ -1,11 +1,8 @@
-import { deterministicId } from "../core/ids";
-import { approxTokens } from "../core/usage";
-import { chunkText } from "../core/streaming";
-import { resolveContent } from "./chat-completions";
-import type { OutputMessageItem, ResponseObject, ResponseRequest } from "../types/openai";
-
-// In-memory persistence for GET/DELETE by id. Restarting the server clears it.
-const store = new Map<string, ResponseObject>();
+import { echoFallback } from "../../../core/fallback";
+import { deterministicCreated, deterministicId } from "../../../core/ids";
+import { approxTokens } from "../../../core/usage";
+import { chunkText } from "../../../core/sse";
+import type { OutputMessageItem, ResponseObject, ResponseRequest } from "../types";
 
 // `input` accepts a plain string or an array of message-like items whose
 // content is a string or a list of input_text parts.
@@ -41,25 +38,41 @@ function buildOutputItem(responseId: string, text: string): OutputMessageItem {
   };
 }
 
-export function buildResponse(body: ResponseRequest): ResponseObject {
+export function buildResponse(body: ResponseRequest, override?: string): ResponseObject {
   const inputText = extractInputText(body.input);
-  const outputText = resolveContent(body.model, inputText);
-  const id = deterministicId("resp_", { model: body.model, input: body.input });
+  const outputText = override ?? echoFallback(inputText);
+  const id = deterministicId("resp_", { model: body.model, input: body.input, output: outputText });
+  const instructions = typeof body.instructions === "string" ? body.instructions : null;
+  return assembleResponse(id, body.model, inputText, outputText, instructions);
+}
 
+// Stateless stand-in for GET /responses/:id: there is no store to look the
+// id up in, so any id yields the same deterministic, well-formed response.
+export function buildSyntheticResponse(id: string): ResponseObject {
+  return assembleResponse(id, "gpt-4o", undefined, `Echo response ${id}`, null);
+}
+
+function assembleResponse(
+  id: string,
+  model: string,
+  inputText: string | undefined,
+  outputText: string,
+  instructions: string | null,
+): ResponseObject {
   const inputTokens = approxTokens(inputText ?? "");
   const outputTokens = approxTokens(outputText);
 
   return {
     id,
     object: "response",
-    created_at: Math.floor(Date.now() / 1000),
+    created_at: deterministicCreated(id),
     status: "completed",
     background: false,
     error: null,
     incomplete_details: null,
-    instructions: typeof body.instructions === "string" ? body.instructions : null,
+    instructions,
     max_output_tokens: null,
-    model: body.model,
+    model,
     output: [buildOutputItem(id, outputText)],
     parallel_tool_calls: true,
     previous_response_id: null,
@@ -81,18 +94,6 @@ export function buildResponse(body: ResponseRequest): ResponseObject {
     user: null,
     metadata: {},
   };
-}
-
-export function saveResponse(response: ResponseObject): void {
-  store.set(response.id, response);
-}
-
-export function getResponse(id: string): ResponseObject | undefined {
-  return store.get(id);
-}
-
-export function deleteResponse(id: string): boolean {
-  return store.delete(id);
 }
 
 interface StreamEvent {

@@ -1,4 +1,4 @@
-import type { Model } from "../types/openai";
+import type { Model } from "../types";
 
 // Simulated catalog with the usual model ids. `created` values are fixed so
 // the output is fully deterministic.
