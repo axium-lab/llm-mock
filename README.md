@@ -95,9 +95,23 @@ docker run --rm -p 3000:3000 -v ./my-keys.json:/app/api-keys.json:ro llm-mock
 
 The image ships a `HEALTHCHECK`, so orchestrators (and `docker compose` `depends_on: condition: service_healthy`) know when the mock is ready.
 
+## Provider support
+
+llm-mock is designed to be multi-provider: each provider mounts under its own URL prefix and implements its own API contract. This is where each one stands today:
+
+| Provider | Prefix | Status |
+| --- | --- | --- |
+| OpenAI | `/openai/v1` | ✅ Supported |
+| Anthropic | `/anthropic` | 🔜 Planned |
+| Gemini (AI Studio) | `/gemini` | 🔜 Planned |
+| Gemini Enterprise (Vertex AI) | — | 🔜 Planned |
+| Azure OpenAI | — | 🔜 Planned |
+
+Want a provider prioritized? [Open an issue](https://github.com/axium-lab/llm-mock/issues) — or a PR (see [Contributing](#contributing)).
+
 ## Supported endpoints
 
-Each provider lives under its own prefix — OpenAI under `/openai`, with room for more providers (Anthropic, Gemini, ...) to mount under theirs.
+OpenAI is the provider implemented today; these are its endpoints under the `/openai` prefix.
 
 | Endpoint | Notes |
 | --- | --- |
