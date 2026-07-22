@@ -142,6 +142,8 @@ curl -X DELETE http://localhost:3000/__mock/responses
 
 ## Configuration
 
+Everything is optional — nopenAI works out of the box. To override the defaults, set environment variables or copy [`.env.example`](.env.example) to `.env` (Bun loads it automatically, no dotenv needed).
+
 | Environment variable | Default | Description |
 | --- | --- | --- |
 | `NOPENAI_PORT` (or `PORT`) | `3000` | Port to listen on |
