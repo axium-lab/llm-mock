@@ -124,7 +124,7 @@ Parameters the mock does not simulate (`temperature`, `top_p`, `tools`, `respons
 
 nopenAI validates API keys against a closed set defined in [`api-keys.json`](api-keys.json), so you can test both the happy path and the failure path:
 
-- **Valid keys**: `sk-mock-key-01` through `sk-mock-key-10` ship in the repo. Point the file somewhere else with `NOPENAI_API_KEYS_FILE` to use your own.
+- **Valid keys**: `sk-mock-key-01` through `sk-mock-key-10` ship in the repo. Point the file somewhere else with `LLM_MOCK_API_KEYS_FILE` to use your own.
 - **Invalid keys**: any other key — by convention use the documented `sk-mock-invalid` — returns the real OpenAI `401`:
 
 ```json
@@ -163,8 +163,8 @@ Everything is optional — nopenAI works out of the box. To override the default
 
 | Environment variable | Default | Description |
 | --- | --- | --- |
-| `NOPENAI_PORT` (or `PORT`) | `3000` | Port to listen on |
-| `NOPENAI_API_KEYS_FILE` | `api-keys.json` | Path to the JSON array of valid API keys |
+| `LLM_MOCK_PORT` (or `PORT`) | `3000` | Port to listen on |
+| `LLM_MOCK_API_KEYS_FILE` | `api-keys.json` | Path to the JSON array of valid API keys |
 
 ## Using it in your test suite
 
