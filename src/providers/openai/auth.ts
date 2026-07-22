@@ -1,4 +1,5 @@
-import type { NextFunction, Request, Response } from "express";
+import type { Request } from "express";
+import type { AuthScheme } from "../../core/auth";
 import { ApiError } from "../../core/errors";
 
 // Mirrors how OpenAI masks the key in its 401 message.
@@ -7,24 +8,22 @@ function redactKey(key: string): string {
   return `${key.slice(0, 6)}****${key.slice(-4)}`;
 }
 
-export function createAuthMiddleware(validKeys: Set<string>) {
-  return (req: Request, _res: Response, next: NextFunction): void => {
+export const openaiAuthScheme: AuthScheme = {
+  extractKey(req: Request): string | undefined {
     const header = req.headers.authorization;
-    const key = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
-
-    if (!key) {
-      throw new ApiError(
-        401,
-        "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY).",
-      );
-    }
-    if (!validKeys.has(key)) {
-      throw new ApiError(
-        401,
-        `Incorrect API key provided: ${redactKey(key)}. You can find your API key at https://platform.openai.com/account/api-keys.`,
-        "invalid_api_key",
-      );
-    }
-    next();
-  };
-}
+    return header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
+  },
+  missingKeyError(): ApiError {
+    return new ApiError(
+      401,
+      "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY).",
+    );
+  },
+  invalidKeyError(key: string): ApiError {
+    return new ApiError(
+      401,
+      `Incorrect API key provided: ${redactKey(key)}. You can find your API key at https://platform.openai.com/account/api-keys.`,
+      "invalid_api_key",
+    );
+  },
+};
