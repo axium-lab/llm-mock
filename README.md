@@ -36,8 +36,8 @@ No mocking libraries, no request interception, no changes to your application co
 Requires [Bun](https://bun.sh).
 
 ```bash
-git clone <this-repo>
-cd nopenAI
+git clone https://github.com/axium-lab/nopenai.git
+cd nopenai
 bun install
 bun start
 ```
@@ -170,10 +170,6 @@ bun run typecheck  # tsc --noEmit
 ```
 
 Stack: [Bun](https://bun.sh) + TypeScript + [Express](https://expressjs.com). State lives in memory — restarting the server clears responses and fixtures.
-
-## Scope and limitations
-
-nopenAI simulates the contract, not the intelligence: it never calls a real model. Phase 1 intentionally leaves out Images, Audio, Moderations, Files, Batches, Fine-tuning, Vector Stores, real tool calling, and the Assistants API (deprecated in favor of Responses). The design notes and full endpoint contract live in [old-readme.md](old-readme.md).
 
 ## Contributing
 
