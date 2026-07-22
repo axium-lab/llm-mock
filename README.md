@@ -1,6 +1,8 @@
 # nopenAI
 
 [![CI](https://github.com/axium-lab/nopenai/actions/workflows/ci.yml/badge.svg)](https://github.com/axium-lab/nopenai/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/axium-lab/nopenai)](https://github.com/axium-lab/nopenai/releases)
+[![Docker image](https://img.shields.io/badge/ghcr.io-axium--lab%2Fnopenai-blue?logo=docker)](https://github.com/axium-lab/nopenai/pkgs/container/nopenai)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 **A drop-in mock of the OpenAI API for integration tests and open source projects. Change the `baseURL`, keep your code.**
@@ -70,11 +72,13 @@ curl http://localhost:3000/v1/chat/completions \
 
 ### Run with Docker
 
-No Bun installed? Run the prebuilt image from GHCR:
+No Bun installed? A prebuilt multi-arch image (amd64/arm64) is published on [GHCR](https://github.com/axium-lab/nopenai/pkgs/container/nopenai) with every release:
 
 ```bash
 docker run --rm -p 3000:3000 ghcr.io/axium-lab/nopenai
 ```
+
+Available tags: `latest`, and `X.Y.Z` / `X.Y` per release (pin a version in CI, e.g. `ghcr.io/axium-lab/nopenai:0.1.0`).
 
 Or build it yourself from the repo:
 
