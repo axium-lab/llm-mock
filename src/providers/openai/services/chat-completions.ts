@@ -12,7 +12,7 @@ import type {
 } from "../types";
 
 const PROVIDER = "openai";
-const SYSTEM_FINGERPRINT = "fp_nopenai";
+const SYSTEM_FINGERPRINT = "fp_llm_mock";
 
 function contentToText(content: ChatMessage["content"]): string {
   if (typeof content === "string") return content;

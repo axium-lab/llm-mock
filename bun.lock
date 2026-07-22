@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "nopenai",
+      "name": "llm-mock",
       "dependencies": {
         "express": "^5.2.1",
       },

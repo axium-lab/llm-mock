@@ -1,13 +1,13 @@
-# nopenAI
+# llm-mock
 
-[![CI](https://github.com/axium-lab/nopenai/actions/workflows/ci.yml/badge.svg)](https://github.com/axium-lab/nopenai/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/axium-lab/nopenai)](https://github.com/axium-lab/nopenai/releases)
-[![Docker image](https://img.shields.io/badge/ghcr.io-axium--lab%2Fnopenai-blue?logo=docker)](https://github.com/axium-lab/nopenai/pkgs/container/nopenai)
+[![CI](https://github.com/axium-lab/llm-mock/actions/workflows/ci.yml/badge.svg)](https://github.com/axium-lab/llm-mock/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/axium-lab/llm-mock)](https://github.com/axium-lab/llm-mock/releases)
+[![Docker image](https://img.shields.io/badge/ghcr.io-axium--lab%2Fllm--mock-blue?logo=docker)](https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**A drop-in mock of the OpenAI API for integration tests and open source projects. Change the `baseURL`, keep your code.**
+**A drop-in mock of LLM provider APIs for integration tests and open source projects. Change the `baseURL`, keep your code.**
 
-Testing an app built on the OpenAI SDK usually means one of two things: paying for real API calls in CI, or leaking an API key into a place it should never be (a public repo, a contributor's laptop, a CI log). nopenAI removes that choice. It is a tiny local server that speaks the OpenAI API contract — same endpoints, same response shapes, same error format, same SSE streaming — but with deterministic, configurable responses and no real key required.
+Testing an app built on an LLM SDK usually means one of two things: paying for real API calls in CI, or leaking an API key into a place it should never be (a public repo, a contributor's laptop, a CI log). llm-mock removes that choice. It is a tiny local server that speaks each provider's API contract — same endpoints, same response shapes, same error format, same SSE streaming — but with deterministic, configurable responses and no real key required. OpenAI is supported today; Anthropic, Gemini, and more are planned.
 
 ```ts
 import OpenAI from "openai";
@@ -25,7 +25,7 @@ const completion = await client.chat.completions.create({
 console.log(completion.choices[0].message.content); // "Echo: Hello!"
 ```
 
-No mocking libraries, no request interception, no changes to your application code. The official `openai` SDK talks to nopenAI exactly as it talks to the real API — that compatibility is what the project's own test suite verifies.
+No mocking libraries, no request interception, no changes to your application code. The official `openai` SDK talks to llm-mock exactly as it talks to the real API — that compatibility is what the project's own test suite verifies.
 
 ## Features
 
@@ -41,14 +41,14 @@ No mocking libraries, no request interception, no changes to your application co
 Requires [Bun](https://bun.sh).
 
 ```bash
-git clone https://github.com/axium-lab/nopenai.git
-cd nopenai
+git clone https://github.com/axium-lab/llm-mock.git
+cd llm-mock
 bun install
 bun start
 ```
 
 ```
-nopenAI listening on http://localhost:3000
+llm-mock listening on http://localhost:3000
 - openai: baseURL http://localhost:3000/openai/v1
 10 valid API keys loaded from api-keys.json
 ```
@@ -72,25 +72,25 @@ curl http://localhost:3000/openai/v1/chat/completions \
 
 ### Run with Docker
 
-No Bun installed? A prebuilt multi-arch image (amd64/arm64) is published on [GHCR](https://github.com/axium-lab/nopenai/pkgs/container/nopenai) with every release:
+No Bun installed? A prebuilt multi-arch image (amd64/arm64) is published on [GHCR](https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock) with every release:
 
 ```bash
-docker run --rm -p 3000:3000 ghcr.io/axium-lab/nopenai
+docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock
 ```
 
-Available tags: `latest`, and `X.Y.Z` / `X.Y` per release (pin a version in CI, e.g. `ghcr.io/axium-lab/nopenai:0.1.0`).
+Available tags: `latest`, and `X.Y.Z` / `X.Y` per release (pin a version in CI, e.g. `ghcr.io/axium-lab/llm-mock:0.1.0`).
 
 Or build it yourself from the repo:
 
 ```bash
-docker build -t nopenai .
-docker run --rm -p 3000:3000 nopenai
+docker build -t llm-mock .
+docker run --rm -p 3000:3000 llm-mock
 ```
 
 To use your own API keys file, mount it over the default one:
 
 ```bash
-docker run --rm -p 3000:3000 -v ./my-keys.json:/app/api-keys.json:ro nopenai
+docker run --rm -p 3000:3000 -v ./my-keys.json:/app/api-keys.json:ro llm-mock
 ```
 
 The image ships a `HEALTHCHECK`, so orchestrators (and `docker compose` `depends_on: condition: service_healthy`) know when the mock is ready.
@@ -122,7 +122,7 @@ Parameters the mock does not simulate (`temperature`, `top_p`, `tools`, `respons
 
 ## Authentication
 
-nopenAI validates API keys against a closed set defined in [`api-keys.json`](api-keys.json), so you can test both the happy path and the failure path:
+llm-mock validates API keys against a closed set defined in [`api-keys.json`](api-keys.json), so you can test both the happy path and the failure path:
 
 - **Valid keys**: `sk-mock-key-01` through `sk-mock-key-10` ship in the repo. Point the file somewhere else with `LLM_MOCK_API_KEYS_FILE` to use your own.
 - **Invalid keys**: any other key — by convention use the documented `sk-mock-invalid` — returns the real OpenAI `401`:
@@ -159,7 +159,7 @@ curl -X DELETE http://localhost:3000/__mock/fixtures
 
 ## Configuration
 
-Everything is optional — nopenAI works out of the box. To override the defaults, set environment variables or copy [`.env.example`](.env.example) to `.env` (Bun loads it automatically, no dotenv needed).
+Everything is optional — llm-mock works out of the box. To override the defaults, set environment variables or copy [`.env.example`](.env.example) to `.env` (Bun loads it automatically, no dotenv needed).
 
 | Environment variable | Default | Description |
 | --- | --- | --- |
@@ -168,12 +168,12 @@ Everything is optional — nopenAI works out of the box. To override the default
 
 ## Using it in your test suite
 
-Import the app factory directly and mount it on an ephemeral port — no separate process needed. This is exactly how nopenAI tests itself:
+Import the app factory directly and mount it on an ephemeral port — no separate process needed. This is exactly how llm-mock tests itself:
 
 ```ts
 import OpenAI from "openai";
-import { createApp } from "nopenai/src/app";
-import { loadApiKeys } from "nopenai/src/core/api-keys";
+import { createApp } from "llm-mock/src/app";
+import { loadApiKeys } from "llm-mock/src/core/api-keys";
 
 const server = createApp({ apiKeys: loadApiKeys("api-keys.json") }).listen(0);
 const { port } = server.address();

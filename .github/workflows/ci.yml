@@ -34,11 +34,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build image
-        run: docker build -t nopenai .
+        run: docker build -t llm-mock .
 
       - name: Smoke test
         run: |
-          docker run -d --rm --name nopenai -p 3000:3000 nopenai
+          docker run -d --rm --name llm-mock -p 3000:3000 llm-mock
           timeout 30 bash -c 'until curl -sf http://localhost:3000/health; do sleep 1; done'
           curl -sf http://localhost:3000/openai/v1/models -H "Authorization: Bearer sk-mock-key-01" > /dev/null
-          docker stop nopenai
+          docker stop llm-mock

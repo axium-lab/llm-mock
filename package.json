@@ -1,16 +1,16 @@
 {
-  "name": "nopenai",
+  "name": "llm-mock",
   "version": "0.1.0",
-  "description": "OpenAI API mock server: point your SDK's baseURL at it, no real API key needed",
+  "description": "Mock server for LLM provider APIs: point your SDK baseURL at it, no real API key needed",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/axium-lab/nopenai.git"
+    "url": "git+https://github.com/axium-lab/llm-mock.git"
   },
-  "homepage": "https://github.com/axium-lab/nopenai#readme",
+  "homepage": "https://github.com/axium-lab/llm-mock#readme",
   "bugs": {
-    "url": "https://github.com/axium-lab/nopenai/issues"
+    "url": "https://github.com/axium-lab/llm-mock/issues"
   },
   "scripts": {
     "dev": "bun --watch src/index.ts",
