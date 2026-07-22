@@ -1,5 +1,8 @@
 # nopenAI
 
+[![CI](https://github.com/axium-lab/nopenai/actions/workflows/ci.yml/badge.svg)](https://github.com/axium-lab/nopenai/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **A drop-in mock of the OpenAI API for integration tests and open source projects. Change the `baseURL`, keep your code.**
 
 Testing an app built on the OpenAI SDK usually means one of two things: paying for real API calls in CI, or leaking an API key into a place it should never be (a public repo, a contributor's laptop, a CI log). nopenAI removes that choice. It is a tiny local server that speaks the OpenAI API contract — same endpoints, same response shapes, same error format, same SSE streaming — but with deterministic, configurable responses and no real key required.
@@ -67,7 +70,13 @@ curl http://localhost:3000/v1/chat/completions \
 
 ### Run with Docker
 
-No Bun installed? Run it as a container:
+No Bun installed? Run the prebuilt image from GHCR:
+
+```bash
+docker run --rm -p 3000:3000 ghcr.io/axium-lab/nopenai
+```
+
+Or build it yourself from the repo:
 
 ```bash
 docker build -t nopenai .
