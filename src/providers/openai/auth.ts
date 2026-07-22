@@ -1,14 +1,5 @@
-import { readFileSync } from "node:fs";
 import type { NextFunction, Request, Response } from "express";
-import { ApiError } from "./error-handler";
-
-export function loadApiKeys(file: string): Set<string> {
-  const parsed: unknown = JSON.parse(readFileSync(file, "utf-8"));
-  if (!Array.isArray(parsed) || parsed.some((key) => typeof key !== "string")) {
-    throw new Error(`${file} must contain a JSON array of API key strings`);
-  }
-  return new Set(parsed as string[]);
-}
+import { ApiError } from "../../middleware/error-handler";
 
 // Mirrors how OpenAI masks the key in its 401 message.
 function redactKey(key: string): string {

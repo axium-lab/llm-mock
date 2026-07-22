@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import { ApiError } from "../middleware/error-handler";
-import { approxTokens } from "../core/usage";
-import type { EmbeddingObject, EmbeddingRequest } from "../types/openai";
+import { ApiError } from "../../../middleware/error-handler";
+import { approxTokens } from "../../../core/usage";
+import type { EmbeddingObject, EmbeddingRequest } from "../types";
 
 const MODEL_DIMENSIONS: Record<string, number> = {
   "text-embedding-3-small": 1536,

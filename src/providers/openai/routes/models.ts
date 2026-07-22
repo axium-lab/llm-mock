@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ApiError } from "../middleware/error-handler";
+import { ApiError } from "../../../middleware/error-handler";
 import { getModel, listModels } from "../services/models";
 
 export const modelsRouter = Router();

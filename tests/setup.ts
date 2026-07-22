@@ -2,7 +2,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import OpenAI from "openai";
 import { createApp } from "../src/app";
-import { loadApiKeys } from "../src/middleware/auth";
+import { loadApiKeys } from "../src/core/api-keys";
 import type { FixtureRule } from "../src/core/fixtures";
 
 // First key from the committed api-keys.json.
@@ -26,9 +26,9 @@ export async function startTestServer(): Promise<TestContext> {
   const origin = `http://127.0.0.1:${port}`;
   return {
     server,
-    baseURL: `${origin}/v1`,
+    baseURL: `${origin}/openai/v1`,
     mockURL: `${origin}/__mock`,
-    client: new OpenAI({ apiKey: VALID_API_KEY, baseURL: `${origin}/v1`, maxRetries: 0 }),
+    client: new OpenAI({ apiKey: VALID_API_KEY, baseURL: `${origin}/openai/v1`, maxRetries: 0 }),
   };
 }
 

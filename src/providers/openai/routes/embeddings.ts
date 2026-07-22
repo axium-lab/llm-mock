@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { ApiError } from "../middleware/error-handler";
+import { ApiError } from "../../../middleware/error-handler";
 import { createEmbeddings } from "../services/embeddings";
-import type { EmbeddingRequest } from "../types/openai";
+import type { EmbeddingRequest } from "../types";
 
 export const embeddingsRouter = Router();
 

@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { ApiError } from "../middleware/error-handler";
-import { openSSE, sendDone, sendEvent } from "../core/streaming";
+import { ApiError } from "../../../middleware/error-handler";
+import { openSSE, sendDone, sendEvent } from "../../../core/sse";
 import { buildChatChunks, buildChatCompletion } from "../services/chat-completions";
-import type { ChatCompletionRequest } from "../types/openai";
+import type { ChatCompletionRequest } from "../types";
 
 export const chatCompletionsRouter = Router();
 

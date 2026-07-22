@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { ApiError } from "../middleware/error-handler";
-import { openSSE, sendEvent } from "../core/streaming";
+import { ApiError } from "../../../middleware/error-handler";
+import { openSSE, sendEvent } from "../../../core/sse";
 import {
   buildResponse,
   buildResponseEvents,
@@ -8,7 +8,7 @@ import {
   getResponse,
   saveResponse,
 } from "../services/responses";
-import type { ResponseRequest } from "../types/openai";
+import type { ResponseRequest } from "../types";
 
 export const responsesRouter = Router();
 

@@ -1,15 +1,15 @@
-import { echoFallback } from "../core/fallback";
-import { findFixture } from "../core/fixtures";
-import { deterministicId } from "../core/ids";
-import { approxTokens } from "../core/usage";
-import { chunkText } from "../core/streaming";
+import { echoFallback } from "../../../core/fallback";
+import { findFixture } from "../../../core/fixtures";
+import { deterministicId } from "../../../core/ids";
+import { approxTokens } from "../../../core/usage";
+import { chunkText } from "../../../core/sse";
 import type {
   ChatCompletion,
   ChatCompletionChunk,
   ChatCompletionRequest,
   ChatMessage,
   CompletionUsage,
-} from "../types/openai";
+} from "../types";
 
 const SYSTEM_FINGERPRINT = "fp_nopenai";
 
