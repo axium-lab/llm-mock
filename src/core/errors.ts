@@ -14,7 +14,7 @@ export class ApiError extends Error {
 }
 
 // Fallback handlers for requests outside any provider namespace
-// (/health, /__mock, unknown roots). Providers ship their own pair.
+// (/health, unknown roots). Providers ship their own pair.
 export function notFoundHandler(req: Request, res: Response): void {
   res.status(404).json({ error: { message: `Unknown request URL: ${req.method} ${req.path}` } });
 }

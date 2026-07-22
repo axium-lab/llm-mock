@@ -1,27 +1,8 @@
-import type { FixtureStore } from "../../../core/fixtures";
-import { deterministicId } from "../../../core/ids";
+import { echoFallback } from "../../../core/fallback";
+import { deterministicCreated, deterministicId } from "../../../core/ids";
 import { approxTokens } from "../../../core/usage";
 import { chunkText } from "../../../core/sse";
-import { resolveContent } from "./chat-completions";
 import type { OutputMessageItem, ResponseObject, ResponseRequest } from "../types";
-
-// In-memory persistence for GET/DELETE by id, one instance per router so
-// parallel test servers never share state. Restarting the server clears it.
-export class ResponseStore {
-  private responses = new Map<string, ResponseObject>();
-
-  save(response: ResponseObject): void {
-    this.responses.set(response.id, response);
-  }
-
-  get(id: string): ResponseObject | undefined {
-    return this.responses.get(id);
-  }
-
-  delete(id: string): boolean {
-    return this.responses.delete(id);
-  }
-}
 
 // `input` accepts a plain string or an array of message-like items whose
 // content is a string or a list of input_text parts.
@@ -57,25 +38,41 @@ function buildOutputItem(responseId: string, text: string): OutputMessageItem {
   };
 }
 
-export function buildResponse(fixtures: FixtureStore, body: ResponseRequest): ResponseObject {
+export function buildResponse(body: ResponseRequest, override?: string): ResponseObject {
   const inputText = extractInputText(body.input);
-  const outputText = resolveContent(fixtures, body.model, inputText);
-  const id = deterministicId("resp_", { model: body.model, input: body.input });
+  const outputText = override ?? echoFallback(inputText);
+  const id = deterministicId("resp_", { model: body.model, input: body.input, output: outputText });
+  const instructions = typeof body.instructions === "string" ? body.instructions : null;
+  return assembleResponse(id, body.model, inputText, outputText, instructions);
+}
 
+// Stateless stand-in for GET /responses/:id: there is no store to look the
+// id up in, so any id yields the same deterministic, well-formed response.
+export function buildSyntheticResponse(id: string): ResponseObject {
+  return assembleResponse(id, "gpt-4o", undefined, `Echo response ${id}`, null);
+}
+
+function assembleResponse(
+  id: string,
+  model: string,
+  inputText: string | undefined,
+  outputText: string,
+  instructions: string | null,
+): ResponseObject {
   const inputTokens = approxTokens(inputText ?? "");
   const outputTokens = approxTokens(outputText);
 
   return {
     id,
     object: "response",
-    created_at: Math.floor(Date.now() / 1000),
+    created_at: deterministicCreated(id),
     status: "completed",
     background: false,
     error: null,
     incomplete_details: null,
-    instructions: typeof body.instructions === "string" ? body.instructions : null,
+    instructions,
     max_output_tokens: null,
-    model: body.model,
+    model,
     output: [buildOutputItem(id, outputText)],
     parallel_tool_calls: true,
     previous_response_id: null,

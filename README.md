@@ -31,8 +31,8 @@ No mocking libraries, no request interception, no changes to your application co
 
 - **OpenAI-compatible contract** — responses match the official API shapes, validated in CI with the official `openai` npm SDK as the client.
 - **Streaming (SSE)** — `stream: true` works on chat completions (delta chunks + `data: [DONE]`) and on the Responses API (typed events: `response.created`, `response.output_text.delta`, `response.completed`, ...).
-- **Deterministic by default** — same request, same output: ids are content hashes, embeddings are hash-seeded unit vectors. Snapshot-test friendly.
-- **Configurable fixtures** — register canned responses per test (WireMock-style) matched by model, prompt content, or regex. If nothing matches, the mock falls back to echoing the last user message — it never fails for lack of configuration.
+- **Deterministic and idempotent** — same request, same bytes: ids are content hashes, timestamps derive from them, embeddings are hash-seeded unit vectors. Snapshot-test friendly.
+- **Stateless canned responses** — need a specific reply? Send it in the `x-llm-mock-response` header of the request itself. Nothing to register, nothing to clean up, and no server state: it behaves identically on a laptop, in CI, or behind a load balancer.
 - **Real error flows** — invalid API keys, unknown models, and validation errors return the exact OpenAI error envelope, so you can test your error handling too.
 - **Zero setup** — clone, `bun install`, `bun start`. The valid API keys ship in the repo.
 
@@ -103,20 +103,17 @@ Each provider lives under its own prefix — OpenAI under `/openai`, with room f
 | --- | --- |
 | `POST /openai/v1/chat/completions` | Full `chat.completion` object, `n` choices, SSE streaming, `stream_options.include_usage` |
 | `POST /openai/v1/responses` | Full `response` object, typed SSE event stream |
-| `GET /openai/v1/responses/{id}` | In-memory persistence |
-| `DELETE /openai/v1/responses/{id}` | Returns the OpenAI deletion object |
+| `GET /openai/v1/responses/{id}` | Stateless: synthesizes a deterministic response for any id |
+| `DELETE /openai/v1/responses/{id}` | Idempotent; returns the OpenAI deletion object |
 | `GET /openai/v1/models` | Simulated catalog (`gpt-4.1`, `gpt-4o`, `gpt-4o-mini`, `text-embedding-3-*`, ...) |
 | `GET /openai/v1/models/{model}` | `404` in OpenAI error format for unknown models |
 | `POST /openai/v1/embeddings` | Deterministic unit vectors, correct dimension per model, `dimensions` param, `float` and `base64` encoding |
 
-Plus mock-only utility endpoints outside any provider contract:
+Plus one mock-only utility endpoint outside any provider contract:
 
 | Endpoint | Notes |
 | --- | --- |
 | `GET /health` | Healthcheck |
-| `GET /__mock/fixtures` | List registered fixtures |
-| `POST /__mock/fixtures` | Register response fixtures |
-| `DELETE /__mock/fixtures` | Clear fixtures (`?provider=` clears one provider's rules) |
 
 Parameters the mock does not simulate (`temperature`, `top_p`, `tools`, `response_format`, ...) are accepted without error, because real SDK clients send them.
 
@@ -138,24 +135,33 @@ llm-mock validates API keys against a closed set defined in [`api-keys.json`](ap
 }
 ```
 
-## Controlling responses with fixtures
+## Controlling responses
 
-By default every completion echoes the last user message (`"Echo: <your prompt>"`), which is deterministic and lets tests assert that their exact prompt reached the server. When you need a specific reply, register a fixture:
+By default every completion echoes the last user message (`"Echo: <your prompt>"`), which is deterministic and lets tests assert that their exact prompt reached the server. When a test needs a specific reply, the request itself carries it in a header — nothing to register beforehand, nothing to clean up afterwards:
 
-```bash
-curl -X POST http://localhost:3000/__mock/fixtures \
-  -H "Content-Type: application/json" \
-  -d '{
-    "match": { "contains": "weather" },
-    "response": { "content": "It is sunny in Valencia." }
-  }'
+```ts
+const completion = await client.chat.completions.create(
+  { model: "gpt-4o", messages: [{ role: "user", content: "What's the weather like?" }] },
+  { headers: { "x-llm-mock-response": "It is sunny in Valencia." } },
+);
+// completion.choices[0].message.content === "It is sunny in Valencia."
 ```
 
-Now any chat completion or response whose prompt contains `"weather"` returns that content. Rules can match on `provider`, `model`, `contains`, or `regex` (all optional — a rule with no `match` matches everything; the first registered rule wins). Clear fixtures between tests:
-
-```bash
-curl -X DELETE http://localhost:3000/__mock/fixtures
+```python
+completion = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "What's the weather like?"}],
+    extra_headers={"x-llm-mock-response": "It is sunny in Valencia."},
+)
 ```
+
+HTTP headers cannot carry UTF-8 verbatim; for content beyond ASCII, base64-encode it into `x-llm-mock-response-base64` (which wins when both headers are present):
+
+```ts
+{ headers: { "x-llm-mock-response-base64": Buffer.from("Soleado — 30°C ☀️").toString("base64") } }
+```
+
+Because the canned response travels with the request, the server keeps no state at all: the same request always returns the same response, no matter which instance, replica, or restart serves it.
 
 ## Configuration
 
@@ -188,7 +194,7 @@ bun test           # integration tests (official openai SDK as the client)
 bun run typecheck  # tsc --noEmit
 ```
 
-Stack: [Bun](https://bun.sh) + TypeScript + [Express](https://expressjs.com). State lives in memory — restarting the server clears responses and fixtures.
+Stack: [Bun](https://bun.sh) + TypeScript + [Express](https://expressjs.com). The server holds no state — identical requests produce identical responses across restarts and replicas.
 
 ## Contributing
 

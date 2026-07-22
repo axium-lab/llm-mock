@@ -1,8 +1,6 @@
 import { randomUUID } from "node:crypto";
 import express, { type Express } from "express";
-import { createMockAdminRouter } from "./admin/mock-admin";
 import { errorHandler, notFoundHandler } from "./core/errors";
-import { FixtureStore } from "./core/fixtures";
 import { openaiProvider } from "./providers/openai";
 import type { Provider } from "./providers/types";
 
@@ -24,11 +22,8 @@ export function createApp({ apiKeys }: AppOptions): Express {
   app.get("/health", (_req, res) => {
     res.json({ status: "ok" });
   });
-  const fixtures = new FixtureStore();
-  app.use("/__mock", createMockAdminRouter(fixtures));
-
   for (const provider of providers) {
-    app.use(`/${provider.name}`, provider.createRouter({ apiKeys, fixtures }));
+    app.use(`/${provider.name}`, provider.createRouter({ apiKeys }));
   }
 
   app.use(notFoundHandler);

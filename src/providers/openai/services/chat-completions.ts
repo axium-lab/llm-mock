@@ -1,6 +1,5 @@
 import { echoFallback } from "../../../core/fallback";
-import type { FixtureStore } from "../../../core/fixtures";
-import { deterministicId } from "../../../core/ids";
+import { deterministicCreated, deterministicId } from "../../../core/ids";
 import { approxTokens } from "../../../core/usage";
 import { chunkText } from "../../../core/sse";
 import type {
@@ -11,7 +10,6 @@ import type {
   CompletionUsage,
 } from "../types";
 
-const PROVIDER = "openai";
 const SYSTEM_FINGERPRINT = "fp_llm_mock";
 
 function contentToText(content: ChatMessage["content"]): string {
@@ -30,11 +28,6 @@ export function lastUserText(messages: ChatMessage[]): string | undefined {
   return text || undefined;
 }
 
-export function resolveContent(fixtures: FixtureStore, model: string, promptText: string | undefined): string {
-  const fixture = fixtures.find(PROVIDER, model, promptText ?? "");
-  return fixture ? fixture.response.content : echoFallback(promptText);
-}
-
 function usageFor(messages: ChatMessage[], completionText: string): CompletionUsage {
   const promptTokens = messages.reduce((sum, message) => sum + approxTokens(contentToText(message.content)), 0);
   const completionTokens = approxTokens(completionText);
@@ -45,13 +38,14 @@ function usageFor(messages: ChatMessage[], completionText: string): CompletionUs
   };
 }
 
-export function buildChatCompletion(fixtures: FixtureStore, body: ChatCompletionRequest): ChatCompletion {
-  const content = resolveContent(fixtures, body.model, lastUserText(body.messages));
+export function buildChatCompletion(body: ChatCompletionRequest, override?: string): ChatCompletion {
+  const content = override ?? echoFallback(lastUserText(body.messages));
   const n = body.n ?? 1;
+  const id = deterministicId("chatcmpl-", { model: body.model, messages: body.messages, content });
   return {
-    id: deterministicId("chatcmpl-", { model: body.model, messages: body.messages }),
+    id,
     object: "chat.completion",
-    created: Math.floor(Date.now() / 1000),
+    created: deterministicCreated(id),
     model: body.model,
     choices: Array.from({ length: n }, (_, index) => ({
       index,
@@ -66,8 +60,8 @@ export function buildChatCompletion(fixtures: FixtureStore, body: ChatCompletion
 
 // Chunk sequence: role delta, content deltas, finish_reason, and an optional
 // trailing usage chunk when stream_options.include_usage is set.
-export function buildChatChunks(fixtures: FixtureStore, body: ChatCompletionRequest): ChatCompletionChunk[] {
-  const completion = buildChatCompletion(fixtures, body);
+export function buildChatChunks(body: ChatCompletionRequest, override?: string): ChatCompletionChunk[] {
+  const completion = buildChatCompletion(body, override);
   const content = completion.choices[0]!.message.content;
   const base = {
     id: completion.id,

@@ -1,6 +1,5 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
-import { NotFoundError } from "openai";
-import { clearFixtures, registerFixture, startTestServer, stopTestServer, type TestContext } from "./setup";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { startTestServer, stopTestServer, VALID_API_KEY, type TestContext } from "./setup";
 
 describe("responses API", () => {
   let ctx: TestContext;
@@ -8,7 +7,6 @@ describe("responses API", () => {
     ctx = await startTestServer();
   });
   afterAll(() => stopTestServer(ctx));
-  afterEach(() => clearFixtures(ctx));
 
   it("creates a response echoing the input", async () => {
     const response = await ctx.client.responses.create({ model: "gpt-4.1", input: "Ping" });
@@ -19,31 +17,36 @@ describe("responses API", () => {
     expect(response.usage?.total_tokens).toBeGreaterThan(0);
   });
 
-  it("uses fixtures", async () => {
-    await registerFixture(ctx, {
-      match: { model: "gpt-4.1" },
-      response: { content: "Fixture reply" },
-    });
-    const response = await ctx.client.responses.create({ model: "gpt-4.1", input: "anything" });
-    expect(response.output_text).toBe("Fixture reply");
+  it("returns the canned response carried by the x-llm-mock-response header", async () => {
+    const response = await ctx.client.responses.create(
+      { model: "gpt-4.1", input: "anything" },
+      { headers: { "x-llm-mock-response": "Canned reply" } },
+    );
+    expect(response.output_text).toBe("Canned reply");
   });
 
-  it("retrieves a previously created response by id", async () => {
-    const created = await ctx.client.responses.create({ model: "gpt-4.1", input: "Remember me" });
-    const fetched = await ctx.client.responses.retrieve(created.id);
-    expect(fetched.id).toBe(created.id);
-    expect(fetched.output_text).toBe("Echo: Remember me");
+  it("retrieval is stateless: any id yields a deterministic synthetic response", async () => {
+    const fetched = await ctx.client.responses.retrieve("resp_abc123");
+    expect(fetched.id).toBe("resp_abc123");
+    expect(fetched.object).toBe("response");
+    expect(fetched.status).toBe("completed");
+    expect(fetched.output_text).toBe("Echo response resp_abc123");
+
+    const again = await ctx.client.responses.retrieve("resp_abc123");
+    expect(again).toEqual(fetched);
   });
 
-  it("deletes a response and then returns 404", async () => {
-    const created = await ctx.client.responses.create({ model: "gpt-4.1", input: "Delete me" });
-    await ctx.client.responses.delete(created.id);
-    try {
-      await ctx.client.responses.retrieve(created.id);
-      throw new Error("expected the request to fail");
-    } catch (error) {
-      expect(error).toBeInstanceOf(NotFoundError);
-    }
+  it("deletion is idempotent and never 404s", async () => {
+    const remove = () =>
+      fetch(`${ctx.baseURL}/responses/resp_abc123`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${VALID_API_KEY}` },
+      });
+    const first = await remove();
+    expect(first.status).toBe(200);
+    expect(((await first.json()) as { deleted: boolean }).deleted).toBe(true);
+    const second = await remove();
+    expect(((await second.json()) as { deleted: boolean }).deleted).toBe(true);
   });
 
   it("streams typed events ending with response.completed", async () => {

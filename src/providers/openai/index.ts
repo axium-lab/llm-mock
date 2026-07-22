@@ -3,19 +3,19 @@ import { createAuthMiddleware } from "../../core/auth";
 import type { Provider, ProviderDeps } from "../types";
 import { openaiAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
-import { createChatCompletionsRouter } from "./routes/chat-completions";
+import { chatCompletionsRouter } from "./routes/chat-completions";
 import { embeddingsRouter } from "./routes/embeddings";
 import { modelsRouter } from "./routes/models";
-import { createResponsesRouter } from "./routes/responses";
+import { responsesRouter } from "./routes/responses";
 
 export const openaiProvider: Provider = {
   name: "openai",
   baseURLPath: "/openai/v1",
-  createRouter({ apiKeys, fixtures }: ProviderDeps): Router {
+  createRouter({ apiKeys }: ProviderDeps): Router {
     const v1 = Router();
     v1.use(createAuthMiddleware(apiKeys, openaiAuthScheme));
-    v1.use("/chat/completions", createChatCompletionsRouter(fixtures));
-    v1.use("/responses", createResponsesRouter(fixtures));
+    v1.use("/chat/completions", chatCompletionsRouter);
+    v1.use("/responses", responsesRouter);
     v1.use("/models", modelsRouter);
     v1.use("/embeddings", embeddingsRouter);
 
