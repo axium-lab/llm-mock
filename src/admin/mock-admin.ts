@@ -1,23 +1,31 @@
 import express, { Router } from "express";
 import { ApiError } from "../core/errors";
-import { clearFixtures, registerFixture, type FixtureRule } from "../core/fixtures";
+import type { FixtureRule, FixtureStore } from "../core/fixtures";
 
-// Mock-only administration endpoints, outside the OpenAI contract.
-export const mockAdminRouter = Router();
-mockAdminRouter.use(express.json({ limit: "10mb" }));
+// Mock-only administration endpoints, outside any provider contract.
+export function createMockAdminRouter(fixtures: FixtureStore): Router {
+  const router = Router();
+  router.use(express.json({ limit: "10mb" }));
 
-mockAdminRouter.post("/responses", (req, res) => {
-  const rules = (Array.isArray(req.body) ? req.body : [req.body]) as FixtureRule[];
-  for (const rule of rules) {
-    if (typeof rule?.response?.content !== "string") {
-      throw new ApiError(400, "Each fixture must have a 'response.content' string.", null, "response.content");
+  router.get("/fixtures", (_req, res) => {
+    res.json({ fixtures: fixtures.list() });
+  });
+
+  router.post("/fixtures", (req, res) => {
+    const rules = (Array.isArray(req.body) ? req.body : [req.body]) as FixtureRule[];
+    for (const rule of rules) {
+      if (typeof rule?.response?.content !== "string") {
+        throw new ApiError(400, "Each fixture must have a 'response.content' string.", null, "response.content");
+      }
     }
-  }
-  rules.forEach(registerFixture);
-  res.status(201).json({ registered: rules.length });
-});
+    for (const rule of rules) fixtures.register(rule);
+    res.status(201).json({ registered: rules.length });
+  });
 
-mockAdminRouter.delete("/responses", (_req, res) => {
-  clearFixtures();
-  res.json({ cleared: true });
-});
+  router.delete("/fixtures", (req, res) => {
+    const provider = typeof req.query.provider === "string" ? req.query.provider : undefined;
+    res.json({ cleared: fixtures.clear(provider) });
+  });
+
+  return router;
+}

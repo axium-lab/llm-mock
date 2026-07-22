@@ -1,11 +1,27 @@
+import type { FixtureStore } from "../../../core/fixtures";
 import { deterministicId } from "../../../core/ids";
 import { approxTokens } from "../../../core/usage";
 import { chunkText } from "../../../core/sse";
 import { resolveContent } from "./chat-completions";
 import type { OutputMessageItem, ResponseObject, ResponseRequest } from "../types";
 
-// In-memory persistence for GET/DELETE by id. Restarting the server clears it.
-const store = new Map<string, ResponseObject>();
+// In-memory persistence for GET/DELETE by id, one instance per router so
+// parallel test servers never share state. Restarting the server clears it.
+export class ResponseStore {
+  private responses = new Map<string, ResponseObject>();
+
+  save(response: ResponseObject): void {
+    this.responses.set(response.id, response);
+  }
+
+  get(id: string): ResponseObject | undefined {
+    return this.responses.get(id);
+  }
+
+  delete(id: string): boolean {
+    return this.responses.delete(id);
+  }
+}
 
 // `input` accepts a plain string or an array of message-like items whose
 // content is a string or a list of input_text parts.
@@ -41,9 +57,9 @@ function buildOutputItem(responseId: string, text: string): OutputMessageItem {
   };
 }
 
-export function buildResponse(body: ResponseRequest): ResponseObject {
+export function buildResponse(fixtures: FixtureStore, body: ResponseRequest): ResponseObject {
   const inputText = extractInputText(body.input);
-  const outputText = resolveContent(body.model, inputText);
+  const outputText = resolveContent(fixtures, body.model, inputText);
   const id = deterministicId("resp_", { model: body.model, input: body.input });
 
   const inputTokens = approxTokens(inputText ?? "");
@@ -81,18 +97,6 @@ export function buildResponse(body: ResponseRequest): ResponseObject {
     user: null,
     metadata: {},
   };
-}
-
-export function saveResponse(response: ResponseObject): void {
-  store.set(response.id, response);
-}
-
-export function getResponse(id: string): ResponseObject | undefined {
-  return store.get(id);
-}
-
-export function deleteResponse(id: string): boolean {
-  return store.delete(id);
 }
 
 interface StreamEvent {

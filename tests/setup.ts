@@ -39,7 +39,7 @@ export function stopTestServer(ctx: TestContext): Promise<void> {
 }
 
 export async function registerFixture(ctx: TestContext, rule: FixtureRule): Promise<void> {
-  const res = await fetch(`${ctx.mockURL}/responses`, {
+  const res = await fetch(`${ctx.mockURL}/fixtures`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(rule),
@@ -48,6 +48,6 @@ export async function registerFixture(ctx: TestContext, rule: FixtureRule): Prom
 }
 
 export async function clearFixtures(ctx: TestContext): Promise<void> {
-  const res = await fetch(`${ctx.mockURL}/responses`, { method: "DELETE" });
+  const res = await fetch(`${ctx.mockURL}/fixtures`, { method: "DELETE" });
   if (!res.ok) throw new Error(`Failed to clear fixtures: ${res.status}`);
 }

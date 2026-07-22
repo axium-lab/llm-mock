@@ -1,7 +1,9 @@
 import type { Router } from "express";
+import type { FixtureStore } from "../core/fixtures";
 
 export interface ProviderDeps {
   apiKeys: Set<string>;
+  fixtures: FixtureStore;
 }
 
 // A provider is a self-contained router mounted at /{name}. It owns its

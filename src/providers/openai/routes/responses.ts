@@ -1,51 +1,51 @@
 import { Router } from "express";
 import { ApiError } from "../../../core/errors";
+import type { FixtureStore } from "../../../core/fixtures";
 import { openSSE, sendEvent } from "../../../core/sse";
-import {
-  buildResponse,
-  buildResponseEvents,
-  deleteResponse,
-  getResponse,
-  saveResponse,
-} from "../services/responses";
+import { buildResponse, buildResponseEvents, ResponseStore } from "../services/responses";
 import type { ResponseRequest } from "../types";
 
-export const responsesRouter = Router();
+export function createResponsesRouter(fixtures: FixtureStore): Router {
+  const store = new ResponseStore();
+  const router = Router();
 
-responsesRouter.post("/", (req, res) => {
-  const body = req.body as ResponseRequest;
-  if (typeof body.model !== "string" || !body.model) {
-    throw new ApiError(400, "you must provide a model parameter", null, "model");
-  }
-  if (body.input === undefined) {
-    throw new ApiError(400, "Missing required parameter: 'input'.", "missing_required_parameter", "input");
-  }
-
-  const response = buildResponse(body);
-  saveResponse(response);
-
-  if (body.stream) {
-    openSSE(res);
-    for (const event of buildResponseEvents(response)) {
-      sendEvent(res, event, event.type);
+  router.post("/", (req, res) => {
+    const body = req.body as ResponseRequest;
+    if (typeof body.model !== "string" || !body.model) {
+      throw new ApiError(400, "you must provide a model parameter", null, "model");
     }
-    res.end();
-    return;
-  }
-  res.json(response);
-});
+    if (body.input === undefined) {
+      throw new ApiError(400, "Missing required parameter: 'input'.", "missing_required_parameter", "input");
+    }
 
-responsesRouter.get("/:id", (req, res) => {
-  const response = getResponse(req.params.id);
-  if (!response) {
-    throw new ApiError(404, `Response with id '${req.params.id}' not found.`, null, "id");
-  }
-  res.json(response);
-});
+    const response = buildResponse(fixtures, body);
+    store.save(response);
 
-responsesRouter.delete("/:id", (req, res) => {
-  if (!deleteResponse(req.params.id)) {
-    throw new ApiError(404, `Response with id '${req.params.id}' not found.`, null, "id");
-  }
-  res.json({ id: req.params.id, object: "response", deleted: true });
-});
+    if (body.stream) {
+      openSSE(res);
+      for (const event of buildResponseEvents(response)) {
+        sendEvent(res, event, event.type);
+      }
+      res.end();
+      return;
+    }
+    res.json(response);
+  });
+
+  router.get("/:id", (req, res) => {
+    const response = store.get(req.params.id);
+    if (!response) {
+      throw new ApiError(404, `Response with id '${req.params.id}' not found.`, null, "id");
+    }
+    res.json(response);
+  });
+
+  router.delete("/:id", (req, res) => {
+    if (!store.delete(req.params.id)) {
+      throw new ApiError(404, `Response with id '${req.params.id}' not found.`, null, "id");
+    }
+    res.json({ id: req.params.id, object: "response", deleted: true });
+  });
+
+  return router;
+}
