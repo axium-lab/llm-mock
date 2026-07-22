@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>llm-mock — Test LLM integrations without exposing your API key</title>
+<meta name="description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Test LLM integrations in CI without a real API key. Open source, by Axium." />
+
+<!-- Open Graph / social -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="llm-mock — Test LLM integrations without exposing your API key" />
+<meta property="og:description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Open source, by Axium." />
+<meta property="og:url" content="https://llm-mock.com" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<style>
+  :root {
+    --bg: #0b0e14;
+    --bg-soft: #11151f;
+    --panel: #151a26;
+    --border: #232a3a;
+    --text: #e6e9f0;
+    --muted: #9aa4b8;
+    --accent: #7c9cff;
+    --accent-strong: #5b7cfa;
+    --green: #4ade80;
+    --code-bg: #0d1119;
+    --radius: 14px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 0;
+  }
+  .brand { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
+  .brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 22px; align-items: center; font-size: 15px; }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+  /* Hero */
+  header { padding: 60px 0 40px; text-align: center; }
+  .eyebrow {
+    display: inline-block; font-family: var(--mono); font-size: 13px;
+    color: var(--accent); background: rgba(124,156,255,0.1);
+    border: 1px solid rgba(124,156,255,0.25);
+    padding: 5px 12px; border-radius: 999px; margin-bottom: 22px;
+  }
+  h1 {
+    font-size: clamp(32px, 6vw, 52px); line-height: 1.1; margin: 0 0 20px;
+    letter-spacing: -0.03em; font-weight: 800;
+  }
+  h1 .hl { color: var(--accent); }
+  .sub {
+    font-size: clamp(17px, 2.2vw, 20px); color: var(--muted);
+    max-width: 640px; margin: 0 auto 34px;
+  }
+  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 12px 22px; border-radius: 10px; font-weight: 600; font-size: 15px;
+    border: 1px solid var(--border); cursor: pointer; transition: all .15s ease;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn-primary { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+  .btn-primary:hover { background: #6d8bff; }
+  .btn-ghost { background: var(--panel); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--accent); }
+
+  /* Command block */
+  .cmd {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px; max-width: 640px; margin: 0 auto;
+    font-family: var(--mono); font-size: 14.5px; text-align: left;
+  }
+  .cmd code { color: var(--text); overflow-x: auto; white-space: nowrap; }
+  .cmd .prompt { color: var(--green); user-select: none; margin-right: 8px; }
+  .copy-btn {
+    flex-shrink: 0; background: var(--panel); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 7px; padding: 6px 12px; cursor: pointer;
+    font-size: 13px; font-family: var(--sans); transition: all .15s ease;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+  /* Sections */
+  section { padding: 46px 0; border-top: 1px solid var(--border); }
+  h2 { font-size: 26px; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .section-sub { color: var(--muted); margin: 0 0 28px; }
+
+  /* Code panel */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 22px; overflow-x: auto;
+    font-family: var(--mono); font-size: 14px; line-height: 1.7; margin: 0;
+  }
+  pre code { color: var(--text); }
+  .tok-key { color: #c792ea; }
+  .tok-str { color: #7fd88f; }
+  .tok-com { color: #5c6675; }
+  .tok-fn { color: var(--accent); }
+
+  /* Features grid */
+  .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .feature {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 22px;
+  }
+  .feature h3 { margin: 0 0 6px; font-size: 16px; }
+  .feature p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+  /* Provider table */
+  .prov-table {
+    width: 100%; border-collapse: collapse;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; font-size: 15px;
+  }
+  .prov-table th, .prov-table td {
+    text-align: left; padding: 13px 18px; border-bottom: 1px solid var(--border);
+  }
+  .prov-table thead th { color: var(--muted); font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .prov-table tbody tr:last-child td { border-bottom: none; }
+  .prov-table td code { font-family: var(--mono); font-size: 13.5px; color: var(--accent); }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; }
+  .badge.ok { color: var(--green); }
+  .badge.soon { color: var(--muted); }
+  .dash { color: var(--muted); opacity: 0.5; }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border); padding: 36px 0 60px;
+    text-align: center; color: var(--muted); font-size: 14.5px;
+  }
+  .footer-brand { font-weight: 600; color: var(--text); }
+  .footer-links { margin-top: 12px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+  .footer-links a { color: var(--muted); }
+
+  @media (max-width: 620px) {
+    .features { grid-template-columns: 1fr; }
+    .cmd code { font-size: 13px; }
+    .nav-links a:not(.gh) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand">llm<span>-</span>mock</div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
+    </div>
+  </nav>
+</div>
+
+<header>
+  <div class="wrap">
+    <span class="eyebrow">open source · MIT</span>
+    <h1>Test your LLM integrations<br /><span class="hl">without exposing your API key</span></h1>
+    <p class="sub">
+      A self-hosted, OpenAI-compatible mock server. Same endpoints, same response shapes,
+      same streaming — with deterministic replies and no real key required. Change the
+      <code>baseURL</code>, keep your code.
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/axium-lab/llm-mock">★ Star on GitHub</a>
+      <a class="btn btn-ghost" href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker image</a>
+    </div>
+    <div class="cmd">
+      <code><span class="prompt">$</span>docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock</code>
+      <button class="copy-btn" id="copyCmd" data-cmd="docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock">Copy</button>
+    </div>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <h2>Change one line, keep your code</h2>
+    <p class="section-sub">The official <code>openai</code> SDK talks to llm-mock exactly as it talks to the real API. No mocking libraries, no request interception.</p>
+<pre><code><span class="tok-key">import</span> OpenAI <span class="tok-key">from</span> <span class="tok-str">"openai"</span>;
+
+<span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">OpenAI</span>({
+  baseURL: <span class="tok-str">"http://localhost:3000/openai/v1"</span>, <span class="tok-com">// the only change in your app</span>
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,                   <span class="tok-com">// any mock key, no real secret</span>
+});
+
+<span class="tok-key">const</span> completion = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"gpt-4o"</span>,
+  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
+});
+
+console.<span class="tok-fn">log</span>(completion.choices[<span class="tok-str">0</span>].message.content); <span class="tok-com">// "Echo: Hello!"</span></code></pre>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Built for real integration tests</h2>
+    <p class="section-sub">Not a stub — a faithful contract, verified in CI against the official SDK.</p>
+    <div class="features">
+      <div class="feature">
+        <h3>OpenAI-compatible contract</h3>
+        <p>Responses match the official API shapes, validated in CI with the official <code>openai</code> SDK as the client.</p>
+      </div>
+      <div class="feature">
+        <h3>Streaming (SSE)</h3>
+        <p><code>stream: true</code> works on chat completions and the Responses API, with the real typed event stream.</p>
+      </div>
+      <div class="feature">
+        <h3>Deterministic &amp; stateless</h3>
+        <p>Same request, same bytes. Snapshot-friendly, and identical on a laptop, in CI, or behind a load balancer.</p>
+      </div>
+      <div class="feature">
+        <h3>Real error flows</h3>
+        <p>Invalid keys, unknown models and validation errors return the exact OpenAI error envelope — test your error handling too.</p>
+      </div>
+      <div class="feature">
+        <h3>Controllable replies</h3>
+        <p>Need a specific answer? Send it in a request header. Nothing to register, nothing to clean up.</p>
+      </div>
+      <div class="feature">
+        <h3>Zero setup</h3>
+        <p>One Docker command, or <code>bun install &amp;&amp; bun start</code>. Mock keys ship in the repo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="providers">
+  <div class="wrap">
+    <h2>Provider support</h2>
+    <p class="section-sub">Multi-provider by design: each provider mounts under its own URL prefix and implements its own API contract. Here's where each one stands today.</p>
+    <table class="prov-table">
+      <thead>
+        <tr><th>Provider</th><th>Prefix</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+        <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+        <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+        <tr><td>Gemini Enterprise (Vertex AI)</td><td><span class="dash">—</span></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+        <tr><td>Azure OpenAI</td><td><span class="dash">—</span></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <h2>Get started</h2>
+    <p class="section-sub">Prebuilt multi-arch image on GHCR, or run from source with <a href="https://bun.sh">Bun</a>.</p>
+<pre><code><span class="tok-com"># Docker</span>
+docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock
+
+<span class="tok-com"># From source</span>
+git clone https://github.com/axium-lab/llm-mock.git
+cd llm-mock
+bun install
+bun start</code></pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
+    <div class="footer-links">
+      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
+      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
+      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
+      <a href="https://axium-lab.com">Axium</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  const btn = document.getElementById('copyCmd');
+  btn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(btn.dataset.cmd);
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+    } catch (e) {
+      btn.textContent = 'Copy failed';
+      setTimeout(() => { btn.textContent = 'Copy'; }, 1800);
+    }
+  });
+</script>
+</body>
+</html>
