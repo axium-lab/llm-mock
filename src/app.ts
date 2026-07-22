@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express, { type Express } from "express";
 import { mockAdminRouter } from "./admin/mock-admin";
-import { errorHandler, notFoundHandler } from "./middleware/error-handler";
+import { errorHandler, notFoundHandler } from "./core/errors";
 import { openaiProvider } from "./providers/openai";
 import type { Provider } from "./providers/types";
 
@@ -15,7 +15,6 @@ export interface AppOptions {
 // an ephemeral port and point the official SDKs at it via baseURL.
 export function createApp({ apiKeys }: AppOptions): Express {
   const app = express();
-  app.use(express.json({ limit: "10mb" }));
   app.use((_req, res, next) => {
     res.setHeader("x-request-id", `req_${randomUUID().replace(/-/g, "")}`);
     next();

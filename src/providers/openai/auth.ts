@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { ApiError } from "../../middleware/error-handler";
+import { ApiError } from "../../core/errors";
 
 // Mirrors how OpenAI masks the key in its 401 message.
 function redactKey(key: string): string {
@@ -16,15 +16,12 @@ export function createAuthMiddleware(validKeys: Set<string>) {
       throw new ApiError(
         401,
         "You didn't provide an API key. You need to provide your API key in an Authorization header using Bearer auth (i.e. Authorization: Bearer YOUR_KEY).",
-        "invalid_request_error",
-        null,
       );
     }
     if (!validKeys.has(key)) {
       throw new ApiError(
         401,
         `Incorrect API key provided: ${redactKey(key)}. You can find your API key at https://platform.openai.com/account/api-keys.`,
-        "invalid_request_error",
         "invalid_api_key",
       );
     }

@@ -1,6 +1,7 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import type { Provider, ProviderDeps } from "../types";
 import { createAuthMiddleware } from "./auth";
+import { errorHandler, notFoundHandler } from "./errors";
 import { chatCompletionsRouter } from "./routes/chat-completions";
 import { embeddingsRouter } from "./routes/embeddings";
 import { modelsRouter } from "./routes/models";
@@ -17,7 +18,10 @@ export const openaiProvider: Provider = {
     v1.use("/embeddings", embeddingsRouter);
 
     const router = Router();
+    router.use(express.json({ limit: "10mb" }));
     router.use("/v1", v1);
+    router.use(notFoundHandler);
+    router.use(errorHandler);
     return router;
   },
 };

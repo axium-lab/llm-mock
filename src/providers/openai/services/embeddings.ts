@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { ApiError } from "../../../middleware/error-handler";
+import { ApiError } from "../../../core/errors";
 import { approxTokens } from "../../../core/usage";
 import type { EmbeddingObject, EmbeddingRequest } from "../types";
 
@@ -35,26 +35,20 @@ function normalizeInputs(input: EmbeddingRequest["input"]): string[] {
   if (typeof input === "string") return [input];
   if (Array.isArray(input)) {
     if (input.length === 0) {
-      throw new ApiError(400, "'input' must not be empty.", "invalid_request_error", null, "input");
+      throw new ApiError(400, "'input' must not be empty.", null, "input");
     }
     // A flat array of numbers is a single tokenized input.
     if (input.every((item) => typeof item === "number")) return [input.join(" ")];
     return input.map((item) => (typeof item === "string" ? item : JSON.stringify(item)));
   }
-  throw new ApiError(
-    400,
-    "'input' must be a string, an array of strings, or an array of tokens.",
-    "invalid_request_error",
-    null,
-    "input",
-  );
+  throw new ApiError(400, "'input' must be a string, an array of strings, or an array of tokens.", null, "input");
 }
 
 export function createEmbeddings(body: EmbeddingRequest) {
   const inputs = normalizeInputs(body.input);
   const dimensions = body.dimensions ?? MODEL_DIMENSIONS[body.model] ?? DEFAULT_DIMENSIONS;
   if (!Number.isInteger(dimensions) || dimensions < 1) {
-    throw new ApiError(400, "'dimensions' must be a positive integer.", "invalid_request_error", null, "dimensions");
+    throw new ApiError(400, "'dimensions' must be a positive integer.", null, "dimensions");
   }
 
   const data: EmbeddingObject[] = inputs.map((text, index) => {
