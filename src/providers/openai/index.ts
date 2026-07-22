@@ -10,6 +10,7 @@ import { createResponsesRouter } from "./routes/responses";
 
 export const openaiProvider: Provider = {
   name: "openai",
+  baseURLPath: "/openai/v1",
   createRouter({ apiKeys, fixtures }: ProviderDeps): Router {
     const v1 = Router();
     v1.use(createAuthMiddleware(apiKeys, openaiAuthScheme));

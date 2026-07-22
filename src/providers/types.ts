@@ -11,5 +11,7 @@ export interface ProviderDeps {
 // envelope, so adding a provider never touches another one.
 export interface Provider {
   name: string;
+  // Where SDK clients should point their baseURL, e.g. "/openai/v1".
+  baseURLPath: string;
   createRouter(deps: ProviderDeps): Router;
 }

@@ -13,8 +13,8 @@ Testing an app built on the OpenAI SDK usually means one of two things: paying f
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "http://localhost:3000/v1", // the only change in your app
-  apiKey: "sk-mock-key-01",            // any key from api-keys.json
+  baseURL: "http://localhost:3000/openai/v1", // the only change in your app
+  apiKey: "sk-mock-key-01",                   // any key from api-keys.json
 });
 
 const completion = await client.chat.completions.create({
@@ -49,22 +49,22 @@ bun start
 
 ```
 nopenAI listening on http://localhost:3000
-Point your OpenAI SDK at baseURL: http://localhost:3000/v1
+- openai: baseURL http://localhost:3000/openai/v1
 10 valid API keys loaded from api-keys.json
 ```
 
 Then point any OpenAI SDK at it:
 
 ```ts
-const client = new OpenAI({ baseURL: "http://localhost:3000/v1", apiKey: "sk-mock-key-01" });
+const client = new OpenAI({ baseURL: "http://localhost:3000/openai/v1", apiKey: "sk-mock-key-01" });
 ```
 
 ```python
-client = OpenAI(base_url="http://localhost:3000/v1", api_key="sk-mock-key-01")
+client = OpenAI(base_url="http://localhost:3000/openai/v1", api_key="sk-mock-key-01")
 ```
 
 ```bash
-curl http://localhost:3000/v1/chat/completions \
+curl http://localhost:3000/openai/v1/chat/completions \
   -H "Authorization: Bearer sk-mock-key-01" \
   -H "Content-Type: application/json" \
   -d '{"model": "gpt-4o", "messages": [{"role": "user", "content": "ping"}]}'
@@ -97,22 +97,26 @@ The image ships a `HEALTHCHECK`, so orchestrators (and `docker compose` `depends
 
 ## Supported endpoints
 
+Each provider lives under its own prefix — OpenAI under `/openai`, with room for more providers (Anthropic, Gemini, ...) to mount under theirs.
+
 | Endpoint | Notes |
 | --- | --- |
-| `POST /v1/chat/completions` | Full `chat.completion` object, `n` choices, SSE streaming, `stream_options.include_usage` |
-| `POST /v1/responses` | Full `response` object, typed SSE event stream |
-| `GET /v1/responses/{id}` | In-memory persistence |
-| `DELETE /v1/responses/{id}` | Returns the OpenAI deletion object |
-| `GET /v1/models` | Simulated catalog (`gpt-4.1`, `gpt-4o`, `gpt-4o-mini`, `text-embedding-3-*`, ...) |
-| `GET /v1/models/{model}` | `404` in OpenAI error format for unknown models |
-| `POST /v1/embeddings` | Deterministic unit vectors, correct dimension per model, `dimensions` param, `float` and `base64` encoding |
+| `POST /openai/v1/chat/completions` | Full `chat.completion` object, `n` choices, SSE streaming, `stream_options.include_usage` |
+| `POST /openai/v1/responses` | Full `response` object, typed SSE event stream |
+| `GET /openai/v1/responses/{id}` | In-memory persistence |
+| `DELETE /openai/v1/responses/{id}` | Returns the OpenAI deletion object |
+| `GET /openai/v1/models` | Simulated catalog (`gpt-4.1`, `gpt-4o`, `gpt-4o-mini`, `text-embedding-3-*`, ...) |
+| `GET /openai/v1/models/{model}` | `404` in OpenAI error format for unknown models |
+| `POST /openai/v1/embeddings` | Deterministic unit vectors, correct dimension per model, `dimensions` param, `float` and `base64` encoding |
 
-Plus two mock-only utility endpoints outside the OpenAI contract:
+Plus mock-only utility endpoints outside any provider contract:
 
 | Endpoint | Notes |
 | --- | --- |
 | `GET /health` | Healthcheck |
-| `POST /__mock/responses` / `DELETE /__mock/responses` | Register / clear response fixtures |
+| `GET /__mock/fixtures` | List registered fixtures |
+| `POST /__mock/fixtures` | Register response fixtures |
+| `DELETE /__mock/fixtures` | Clear fixtures (`?provider=` clears one provider's rules) |
 
 Parameters the mock does not simulate (`temperature`, `top_p`, `tools`, `response_format`, ...) are accepted without error, because real SDK clients send them.
 
@@ -139,7 +143,7 @@ nopenAI validates API keys against a closed set defined in [`api-keys.json`](api
 By default every completion echoes the last user message (`"Echo: <your prompt>"`), which is deterministic and lets tests assert that their exact prompt reached the server. When you need a specific reply, register a fixture:
 
 ```bash
-curl -X POST http://localhost:3000/__mock/responses \
+curl -X POST http://localhost:3000/__mock/fixtures \
   -H "Content-Type: application/json" \
   -d '{
     "match": { "contains": "weather" },
@@ -147,10 +151,10 @@ curl -X POST http://localhost:3000/__mock/responses \
   }'
 ```
 
-Now any chat completion or response whose prompt contains `"weather"` returns that content. Rules can match on `model`, `contains`, or `regex` (all optional — a rule with no `match` matches everything; the first registered rule wins). Clear fixtures between tests:
+Now any chat completion or response whose prompt contains `"weather"` returns that content. Rules can match on `provider`, `model`, `contains`, or `regex` (all optional — a rule with no `match` matches everything; the first registered rule wins). Clear fixtures between tests:
 
 ```bash
-curl -X DELETE http://localhost:3000/__mock/responses
+curl -X DELETE http://localhost:3000/__mock/fixtures
 ```
 
 ## Configuration
@@ -169,11 +173,11 @@ Import the app factory directly and mount it on an ephemeral port — no separat
 ```ts
 import OpenAI from "openai";
 import { createApp } from "nopenai/src/app";
-import { loadApiKeys } from "nopenai/src/middleware/auth";
+import { loadApiKeys } from "nopenai/src/core/api-keys";
 
 const server = createApp({ apiKeys: loadApiKeys("api-keys.json") }).listen(0);
 const { port } = server.address();
-const client = new OpenAI({ apiKey: "sk-mock-key-01", baseURL: `http://127.0.0.1:${port}/v1` });
+const client = new OpenAI({ apiKey: "sk-mock-key-01", baseURL: `http://127.0.0.1:${port}/openai/v1` });
 ```
 
 ## Development
