@@ -1,0 +1,12 @@
+node_modules/
+tests/
+.git/
+.gitignore
+*.md
+LICENSE
+Dockerfile
+.dockerignore
+tsconfig.json
+bunfig.toml
+.env
+*.log
