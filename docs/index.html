@@ -10,7 +10,7 @@
 <meta property="og:type" content="website" />
 <meta property="og:title" content="llm-mock — Test LLM integrations without exposing your API key" />
 <meta property="og:description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Open source, by Axium." />
-<meta property="og:url" content="https://llm-mock.com" />
+<meta property="og:url" content="https://llm-mock.dev" />
 <meta name="twitter:card" content="summary_large_image" />
 
 <style>
@@ -53,6 +53,7 @@
   .nav-links { display: flex; gap: 22px; align-items: center; font-size: 15px; }
   .nav-links a { color: var(--muted); }
   .nav-links a:hover { color: var(--text); text-decoration: none; }
+  .nav-links a.active { color: var(--text); }
 
   /* Hero */
   header { padding: 60px 0 40px; text-align: center; }
@@ -99,6 +100,13 @@
   }
   .copy-btn:hover { color: var(--text); border-color: var(--accent); }
   .copy-btn.copied { color: var(--green); border-color: var(--green); }
+  .hosted-note {
+    margin: 18px auto 0; max-width: 640px; font-size: 14.5px; color: var(--muted);
+  }
+  .hosted-note code {
+    font-family: var(--mono); font-size: 13px; color: var(--accent);
+    background: rgba(124,156,255,0.08); padding: 1px 6px; border-radius: 5px;
+  }
 
   /* Sections */
   section { padding: 46px 0; border-top: 1px solid var(--border); }
@@ -164,8 +172,8 @@
   <nav>
     <div class="brand">llm<span>-</span>mock</div>
     <div class="nav-links">
-      <a href="#how">How it works</a>
-      <a href="#features">Features</a>
+      <a class="active" href="index.html">Home</a>
+      <a href="api.html">API docs</a>
       <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
     </div>
   </nav>
@@ -188,6 +196,11 @@
       <code><span class="prompt">$</span>docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock</code>
       <button class="copy-btn" id="copyCmd" data-cmd="docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock">Copy</button>
     </div>
+    <p class="hosted-note">
+      Nothing to install? Use the free hosted instance at
+      <a href="https://api.llm-mock.dev/openai/v1"><code>api.llm-mock.dev</code></a>
+      — just point your <code>baseURL</code> at it.
+    </p>
   </div>
 </header>
 
@@ -266,8 +279,11 @@ console.<span class="tok-fn">log</span>(completion.choices[<span class="tok-str"
 <section id="start">
   <div class="wrap">
     <h2>Get started</h2>
-    <p class="section-sub">Prebuilt multi-arch image on GHCR, or run from source with <a href="https://bun.sh">Bun</a>.</p>
-<pre><code><span class="tok-com"># Docker</span>
+    <p class="section-sub">Use the free hosted instance, a prebuilt multi-arch image on GHCR, or run from source with <a href="https://bun.sh">Bun</a>.</p>
+<pre><code><span class="tok-com"># Hosted — zero install, free to use. Point your SDK's baseURL at:</span>
+https://api.llm-mock.dev/openai/v1
+
+<span class="tok-com"># Docker</span>
 docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock
 
 <span class="tok-com"># From source</span>
@@ -275,6 +291,7 @@ git clone https://github.com/axium-lab/llm-mock.git
 cd llm-mock
 bun install
 bun start</code></pre>
+    <p class="section-sub" style="margin-top: 22px;">See the <a href="api.html">API reference</a> for every endpoint, header and error shape.</p>
   </div>
 </section>
 
@@ -282,6 +299,7 @@ bun start</code></pre>
   <div class="wrap">
     <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
     <div class="footer-links">
+      <a href="api.html">API docs</a>
       <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
       <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
       <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>

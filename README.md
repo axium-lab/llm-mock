@@ -36,6 +36,19 @@ No mocking libraries, no request interception, no changes to your application co
 - **Real error flows** — invalid API keys, unknown models, and validation errors return the exact OpenAI error envelope, so you can test your error handling too.
 - **Zero setup** — clone, `bun install`, `bun start`. The valid API keys ship in the repo.
 
+## Hosted instance
+
+Nothing to install: a free, shared instance runs at **`https://api.llm-mock.dev`**. Point any OpenAI SDK's `baseURL` at it and go:
+
+```ts
+const client = new OpenAI({
+  baseURL: "https://api.llm-mock.dev/openai/v1",
+  apiKey: "sk-mock-key-01",
+});
+```
+
+It's a stateless mock meant for demos and CI — it holds no data and requires no signup, and it ships the same `sk-mock-key-01` … `sk-mock-key-10` keys. For custom keys, isolation, or offline use, run your own (below). See the full [API reference](https://llm-mock.dev/api.html).
+
 ## Quick start
 
 Requires [Bun](https://bun.sh).

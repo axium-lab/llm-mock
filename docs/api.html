@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>llm-mock — API reference</title>
+<meta name="description" content="API reference for llm-mock: base URLs, authentication, endpoints, response control headers, error envelopes and SSE streaming. OpenAI-compatible mock server." />
+
+<!-- Open Graph / social -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="llm-mock — API reference" />
+<meta property="og:description" content="Endpoints, headers, errors and streaming for the OpenAI-compatible llm-mock server." />
+<meta property="og:url" content="https://llm-mock.dev/api.html" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<style>
+  :root {
+    --bg: #0b0e14;
+    --bg-soft: #11151f;
+    --panel: #151a26;
+    --border: #232a3a;
+    --text: #e6e9f0;
+    --muted: #9aa4b8;
+    --accent: #7c9cff;
+    --accent-strong: #5b7cfa;
+    --green: #4ade80;
+    --code-bg: #0d1119;
+    --radius: 14px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 0;
+  }
+  .brand { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
+  .brand a { color: var(--text); }
+  .brand a:hover { text-decoration: none; }
+  .brand span { color: var(--accent); }
+  .nav-links { display: flex; gap: 22px; align-items: center; font-size: 15px; }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--text); text-decoration: none; }
+  .nav-links a.active { color: var(--text); }
+
+  /* Header */
+  header { padding: 40px 0 10px; }
+  .eyebrow {
+    display: inline-block; font-family: var(--mono); font-size: 13px;
+    color: var(--accent); background: rgba(124,156,255,0.1);
+    border: 1px solid rgba(124,156,255,0.25);
+    padding: 5px 12px; border-radius: 999px; margin-bottom: 20px;
+  }
+  h1 {
+    font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 0 0 16px;
+    letter-spacing: -0.03em; font-weight: 800;
+  }
+  header .sub { font-size: 18px; color: var(--muted); max-width: 680px; margin: 0; }
+
+  /* Layout with sidebar TOC */
+  .layout { display: grid; grid-template-columns: 200px 1fr; gap: 40px; padding: 30px 0 20px; }
+  .toc { position: sticky; top: 22px; align-self: start; font-size: 14px; }
+  .toc-title { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 12px; }
+  .toc ul { list-style: none; margin: 0; padding: 0; }
+  .toc li { margin: 0 0 9px; }
+  .toc a { color: var(--muted); }
+  .toc a:hover { color: var(--text); text-decoration: none; }
+
+  /* Sections */
+  section { padding: 0 0 44px; scroll-margin-top: 22px; }
+  h2 { font-size: 24px; letter-spacing: -0.02em; margin: 0 0 8px; padding-top: 8px; }
+  h3 { font-size: 17px; margin: 26px 0 8px; }
+  .section-sub { color: var(--muted); margin: 0 0 20px; }
+  p { margin: 0 0 14px; }
+
+  /* Inline code */
+  code {
+    font-family: var(--mono); font-size: 0.9em; color: var(--accent);
+    background: rgba(124,156,255,0.08); padding: 1px 6px; border-radius: 5px;
+  }
+
+  /* Code panel */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; overflow-x: auto;
+    font-family: var(--mono); font-size: 13.5px; line-height: 1.7; margin: 0 0 16px;
+  }
+  pre code { color: var(--text); background: none; padding: 0; font-size: inherit; }
+  .tok-key { color: #c792ea; }
+  .tok-str { color: #7fd88f; }
+  .tok-com { color: #5c6675; }
+  .tok-fn { color: var(--accent); }
+
+  /* Tables */
+  table {
+    width: 100%; border-collapse: collapse;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; font-size: 14.5px; margin: 0 0 16px;
+  }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  thead th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  tbody tr:last-child td { border-bottom: none; }
+  td code, th code { font-size: 13px; }
+
+  .method { font-family: var(--mono); font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 5px; }
+  .method.get { color: var(--green); background: rgba(74,222,128,0.1); }
+  .method.post { color: var(--accent); background: rgba(124,156,255,0.1); }
+  .method.delete { color: #ff8a8a; background: rgba(255,138,138,0.1); }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; }
+  .badge.ok { color: var(--green); }
+  .badge.soon { color: var(--muted); }
+  .dash { color: var(--muted); opacity: 0.5; }
+
+  .callout {
+    background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: 10px; padding: 14px 18px; margin: 0 0 16px; color: var(--muted); font-size: 14.5px;
+  }
+  .callout strong { color: var(--text); }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border); padding: 36px 0 60px;
+    text-align: center; color: var(--muted); font-size: 14.5px;
+  }
+  .footer-brand { font-weight: 600; color: var(--text); }
+  .footer-links { margin-top: 12px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+  .footer-links a { color: var(--muted); }
+
+  @media (max-width: 760px) {
+    .layout { grid-template-columns: 1fr; gap: 0; }
+    .toc { display: none; }
+    .nav-links a:not(.gh):not(.active) { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a class="active" href="api.html">API docs</a>
+      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
+    </div>
+  </nav>
+</div>
+
+<header>
+  <div class="wrap">
+    <span class="eyebrow">API reference</span>
+    <h1>API reference</h1>
+    <p class="sub">
+      llm-mock speaks each provider's API contract — same endpoints, same response shapes,
+      same error format, same SSE streaming — with deterministic, configurable replies and no real key.
+      OpenAI is implemented today; everything below lives under the <code>/openai</code> prefix.
+    </p>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="layout">
+  <aside class="toc">
+    <p class="toc-title">On this page</p>
+    <ul>
+      <li><a href="#base-url">Base URL</a></li>
+      <li><a href="#auth">Authentication</a></li>
+      <li><a href="#endpoints">Endpoints</a></li>
+      <li><a href="#chat">Chat completions</a></li>
+      <li><a href="#responses">Responses API</a></li>
+      <li><a href="#models">Models</a></li>
+      <li><a href="#embeddings">Embeddings</a></li>
+      <li><a href="#control">Controlling replies</a></li>
+      <li><a href="#streaming">Streaming</a></li>
+      <li><a href="#errors">Errors</a></li>
+      <li><a href="#providers">Provider support</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <section id="base-url">
+      <h2>Base URL</h2>
+      <p class="section-sub">Point any OpenAI SDK's <code>baseURL</code> at one of these. The path prefix (<code>/openai/v1</code>) is part of the base URL.</p>
+      <table>
+        <thead><tr><th>Environment</th><th>Base URL</th></tr></thead>
+        <tbody>
+          <tr><td>Hosted (free, zero install)</td><td><code>https://api.llm-mock.dev/openai/v1</code></td></tr>
+          <tr><td>Local (source or Docker)</td><td><code>http://localhost:3000/openai/v1</code></td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        The hosted instance at <strong>api.llm-mock.dev</strong> is a shared, stateless mock meant for demos and CI —
+        it holds no data and requires no signup. For full control (custom keys, isolation) run your own with Docker
+        or from source; see <a href="index.html#start">Get started</a>.
+      </div>
+<pre><code><span class="tok-key">import</span> OpenAI <span class="tok-key">from</span> <span class="tok-str">"openai"</span>;
+
+<span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">OpenAI</span>({
+  baseURL: <span class="tok-str">"https://api.llm-mock.dev/openai/v1"</span>, <span class="tok-com">// or http://localhost:3000/openai/v1</span>
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+});</code></pre>
+    </section>
+
+    <section id="auth">
+      <h2>Authentication</h2>
+      <p class="section-sub">Requests authenticate with a bearer token in the <code>Authorization</code> header, exactly like the real API. Keys are validated against a closed set, so you can test both the happy path and the failure path.</p>
+      <table>
+        <thead><tr><th>Key</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>sk-mock-key-01</code> … <code>sk-mock-key-10</code></td><td><span class="badge ok">✅ Valid</span> — ship in the repo (and on the hosted instance)</td></tr>
+          <tr><td>any other key (e.g. <code>sk-mock-invalid</code>)</td><td><span class="badge soon">401</span> — real OpenAI <code>invalid_api_key</code> envelope</td></tr>
+        </tbody>
+      </table>
+      <p>Run your own instance to use a custom key set — point <code>LLM_MOCK_API_KEYS_FILE</code> at your own JSON array of keys.</p>
+    </section>
+
+    <section id="endpoints">
+      <h2>Endpoints</h2>
+      <p class="section-sub">OpenAI is the provider implemented today; these are its endpoints under the <code>/openai</code> prefix.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/chat/completions</code></td><td>Full <code>chat.completion</code> object, <code>n</code> choices, SSE streaming, <code>stream_options.include_usage</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Full <code>response</code> object, typed SSE event stream</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Stateless: synthesizes a deterministic response for any id</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the OpenAI deletion object</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models</code></td><td>Simulated catalog (<code>gpt-4.1</code>, <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>text-embedding-3-*</code>, …)</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models/{model}</code></td><td><code>404</code> in OpenAI error format for unknown models</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/embeddings</code></td><td>Deterministic unit vectors, correct dimension per model, <code>dimensions</code> param, <code>float</code> and <code>base64</code> encoding</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Healthcheck (mock-only, outside any provider contract)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        Parameters the mock does not simulate (<code>temperature</code>, <code>top_p</code>, <code>tools</code>, <code>response_format</code>, …)
+        are <strong>accepted without error</strong>, because real SDK clients send them.
+      </div>
+    </section>
+
+    <section id="chat">
+      <h2>Chat completions</h2>
+      <p class="section-sub"><code>POST /openai/v1/chat/completions</code> — returns a full <code>chat.completion</code> object. By default the assistant echoes the last user message (<code>"Echo: &lt;your prompt&gt;"</code>).</p>
+<pre><code>curl https://api.llm-mock.dev/openai/v1/chat/completions \
+  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"model": "gpt-4o", "messages": [{"role": "user", "content": "ping"}]}'</span></code></pre>
+      <p>Supports multiple choices via <code>n</code>, streaming via <code>stream: true</code>, and usage on the final stream chunk via <code>stream_options.include_usage</code>.</p>
+    </section>
+
+    <section id="responses">
+      <h2>Responses API</h2>
+      <p class="section-sub">The newer <code>/responses</code> surface is fully modelled, including the typed SSE event stream.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Returns a full <code>response</code> object; with <code>stream: true</code> emits typed events (<code>response.created</code>, <code>response.output_text.delta</code>, <code>response.completed</code>, …)</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Stateless — synthesizes a deterministic response for any id, no store required</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the standard OpenAI deletion object</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="models">
+      <h2>Models</h2>
+      <p class="section-sub">A simulated catalog so model-discovery code paths work end to end.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models</code></td><td>Lists <code>gpt-4.1</code>, <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>text-embedding-3-small</code>, <code>text-embedding-3-large</code>, …</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models/{model}</code></td><td>Returns the model object, or <code>404</code> in OpenAI error format for unknown models</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="embeddings">
+      <h2>Embeddings</h2>
+      <p class="section-sub"><code>POST /openai/v1/embeddings</code> — returns deterministic, hash-seeded unit vectors with the correct dimension per model. Honours the <code>dimensions</code> param and both <code>float</code> and <code>base64</code> encodings.</p>
+<pre><code>curl https://api.llm-mock.dev/openai/v1/embeddings \
+  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"model": "text-embedding-3-small", "input": "hello"}'</span></code></pre>
+    </section>
+
+    <section id="control">
+      <h2>Controlling replies</h2>
+      <p class="section-sub">By default every completion echoes the last user message. When a test needs a specific reply, the request itself carries it in a header — nothing to register beforehand, nothing to clean up.</p>
+      <table>
+        <thead><tr><th>Header</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>x-llm-mock-response</code></td><td>ASCII reply to return verbatim as the assistant message</td></tr>
+          <tr><td><code>x-llm-mock-response-base64</code></td><td>Base64-encoded reply for content beyond ASCII (UTF-8). Wins when both headers are present.</td></tr>
+        </tbody>
+      </table>
+<pre><code><span class="tok-key">const</span> completion = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>(
+  { model: <span class="tok-str">"gpt-4o"</span>, messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"What's the weather like?"</span> }] },
+  { headers: { <span class="tok-str">"x-llm-mock-response"</span>: <span class="tok-str">"It is sunny in Valencia."</span> } },
+);
+<span class="tok-com">// completion.choices[0].message.content === "It is sunny in Valencia."</span></code></pre>
+      <div class="callout">
+        Because the canned response travels <strong>with the request</strong>, the server keeps no state at all:
+        the same request always returns the same response, no matter which instance, replica or restart serves it.
+      </div>
+    </section>
+
+    <section id="streaming">
+      <h2>Streaming (SSE)</h2>
+      <p class="section-sub"><code>stream: true</code> works on both chat completions and the Responses API, emitting the real Server-Sent Events stream your SDK already knows how to consume.</p>
+      <ul>
+        <li><strong>Chat completions</strong> — delta chunks terminated by <code>data: [DONE]</code>. Add <code>stream_options.include_usage</code> for a final usage chunk.</li>
+        <li><strong>Responses API</strong> — typed events: <code>response.created</code>, <code>response.output_text.delta</code>, <code>response.completed</code>, …</li>
+      </ul>
+<pre><code><span class="tok-key">const</span> stream = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"gpt-4o"</span>,
+  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
+  stream: <span class="tok-key">true</span>,
+});
+<span class="tok-key">for await</span> (<span class="tok-key">const</span> chunk <span class="tok-key">of</span> stream) {
+  process.stdout.<span class="tok-fn">write</span>(chunk.choices[<span class="tok-str">0</span>]?.delta?.content ?? <span class="tok-str">""</span>);
+}</code></pre>
+    </section>
+
+    <section id="errors">
+      <h2>Errors</h2>
+      <p class="section-sub">Failures return the exact OpenAI error envelope, so you can test your error handling too. Invalid keys, unknown models and validation errors all follow this shape:</p>
+<pre><code>{
+  <span class="tok-key">"error"</span>: {
+    <span class="tok-key">"message"</span>: <span class="tok-str">"Incorrect API key provided: sk-moc****alid. ..."</span>,
+    <span class="tok-key">"type"</span>: <span class="tok-str">"invalid_request_error"</span>,
+    <span class="tok-key">"param"</span>: <span class="tok-key">null</span>,
+    <span class="tok-key">"code"</span>: <span class="tok-str">"invalid_api_key"</span>
+  }
+}</code></pre>
+    </section>
+
+    <section id="providers">
+      <h2>Provider support</h2>
+      <p class="section-sub">Multi-provider by design: each provider mounts under its own URL prefix and implements its own API contract. Here's where each one stands today.</p>
+      <table>
+        <thead><tr><th>Provider</th><th>Prefix</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+          <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+          <tr><td>Gemini Enterprise (Vertex AI)</td><td><span class="dash">—</span></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+          <tr><td>Azure OpenAI</td><td><span class="dash">—</span></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+        </tbody>
+      </table>
+      <p>Want a provider prioritized? <a href="https://github.com/axium-lab/llm-mock/issues">Open an issue</a> — or a PR.</p>
+    </section>
+  </main>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
+      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
+      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
