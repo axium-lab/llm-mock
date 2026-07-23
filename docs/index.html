@@ -4,14 +4,43 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>llm-mock — Test LLM integrations without exposing your API key</title>
-<meta name="description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Test LLM integrations in CI without a real API key. Open source, by Axium." />
+<meta name="description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Test LLM integrations in CI without a real API key. Free hosted instance, open source, by Axium." />
+<link rel="canonical" href="https://llm-mock.dev/" />
+<meta name="theme-color" content="#0b0e14" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
 
 <!-- Open Graph / social -->
 <meta property="og:type" content="website" />
+<meta property="og:site_name" content="llm-mock" />
+<meta property="og:locale" content="en_US" />
 <meta property="og:title" content="llm-mock — Test LLM integrations without exposing your API key" />
-<meta property="og:description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Open source, by Axium." />
-<meta property="og:url" content="https://llm-mock.dev" />
+<meta property="og:description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Free hosted instance, open source, by Axium." />
+<meta property="og:url" content="https://llm-mock.dev/" />
+<meta property="og:image" content="https://llm-mock.dev/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted, OpenAI-compatible mock server. baseURL: https://api.llm-mock.dev/openai/v1" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="llm-mock — Test LLM integrations without exposing your API key" />
+<meta name="twitter:description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Free hosted instance, open source." />
+<meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "llm-mock",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Cross-platform",
+  "description": "Self-hosted, OpenAI-compatible mock server for testing LLM integrations without a real API key.",
+  "url": "https://llm-mock.dev/",
+  "downloadUrl": "https://github.com/axium-lab/llm-mock",
+  "license": "https://opensource.org/licenses/MIT",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Organization", "name": "Axium", "url": "https://axium-lab.com" }
+}
+</script>
 
 <style>
   :root {
@@ -100,13 +129,20 @@
   }
   .copy-btn:hover { color: var(--text); border-color: var(--accent); }
   .copy-btn.copied { color: var(--green); border-color: var(--green); }
-  .hosted-note {
-    margin: 18px auto 0; max-width: 640px; font-size: 14.5px; color: var(--muted);
+  .hosted-card {
+    background: linear-gradient(180deg, rgba(124,156,255,0.09), rgba(124,156,255,0.02));
+    border: 1px solid rgba(124,156,255,0.35); border-radius: 14px;
+    padding: 26px 26px 28px; margin-bottom: 34px;
   }
-  .hosted-note code {
+  .hosted-card h3 { margin: 0 0 10px; font-size: 20px; letter-spacing: -0.01em; }
+  .hosted-card p { margin: 0 0 18px; color: var(--muted); font-size: 15px; }
+  .hosted-card p code {
     font-family: var(--mono); font-size: 13px; color: var(--accent);
     background: rgba(124,156,255,0.08); padding: 1px 6px; border-radius: 5px;
   }
+  .hosted-card .eyebrow { margin-bottom: 16px; }
+  .hosted-card .cmd { margin: 0; max-width: 100%; }
+  h3.selfhost { font-size: 17px; margin: 0 0 6px; }
 
   /* Sections */
   section { padding: 46px 0; border-top: 1px solid var(--border); }
@@ -196,13 +232,37 @@
       <code><span class="prompt">$</span>docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock</code>
       <button class="copy-btn" id="copyCmd" data-cmd="docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock">Copy</button>
     </div>
-    <p class="hosted-note">
-      Nothing to install? Use the free hosted instance at
-      <a href="https://api.llm-mock.dev/openai/v1"><code>api.llm-mock.dev</code></a>
-      — just point your <code>baseURL</code> at it.
-    </p>
   </div>
 </header>
+
+<section id="start">
+  <div class="wrap">
+    <h2>Get started</h2>
+    <p class="section-sub">Fastest path: zero install. Or self-host in one command.</p>
+
+    <div class="hosted-card">
+      <span class="eyebrow">⚡ Zero install</span>
+      <h3>Use the free hosted instance</h3>
+      <p>No download, no signup, no key of your own to manage. Point any OpenAI SDK's <code>baseURL</code> at the hosted mock and start testing right now:</p>
+      <div class="cmd">
+        <code><span class="prompt">baseURL</span>https://api.llm-mock.dev/openai/v1</code>
+        <button class="copy-btn" data-cmd="https://api.llm-mock.dev/openai/v1">Copy</button>
+      </div>
+    </div>
+
+    <h3 class="selfhost">Prefer to self-host?</h3>
+    <p class="section-sub">Prebuilt multi-arch image on GHCR, or run from source with <a href="https://bun.sh">Bun</a>.</p>
+<pre><code><span class="tok-com"># Docker</span>
+docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock
+
+<span class="tok-com"># From source</span>
+git clone https://github.com/axium-lab/llm-mock.git
+cd llm-mock
+bun install
+bun start</code></pre>
+    <p class="section-sub" style="margin-top: 22px;">See the <a href="api.html">API reference</a> for every endpoint, header and error shape.</p>
+  </div>
+</section>
 
 <section id="how">
   <div class="wrap">
@@ -276,25 +336,6 @@ console.<span class="tok-fn">log</span>(completion.choices[<span class="tok-str"
   </div>
 </section>
 
-<section id="start">
-  <div class="wrap">
-    <h2>Get started</h2>
-    <p class="section-sub">Use the free hosted instance, a prebuilt multi-arch image on GHCR, or run from source with <a href="https://bun.sh">Bun</a>.</p>
-<pre><code><span class="tok-com"># Hosted — zero install, free to use. Point your SDK's baseURL at:</span>
-https://api.llm-mock.dev/openai/v1
-
-<span class="tok-com"># Docker</span>
-docker run --rm -p 3000:3000 ghcr.io/axium-lab/llm-mock
-
-<span class="tok-com"># From source</span>
-git clone https://github.com/axium-lab/llm-mock.git
-cd llm-mock
-bun install
-bun start</code></pre>
-    <p class="section-sub" style="margin-top: 22px;">See the <a href="api.html">API reference</a> for every endpoint, header and error shape.</p>
-  </div>
-</section>
-
 <footer>
   <div class="wrap">
     <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
@@ -309,17 +350,18 @@ bun start</code></pre>
 </footer>
 
 <script>
-  const btn = document.getElementById('copyCmd');
-  btn.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(btn.dataset.cmd);
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
-    } catch (e) {
-      btn.textContent = 'Copy failed';
-      setTimeout(() => { btn.textContent = 'Copy'; }, 1800);
-    }
+  document.querySelectorAll('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.cmd);
+        btn.textContent = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+      } catch (e) {
+        btn.textContent = 'Copy failed';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1800);
+      }
+    });
   });
 </script>
 </body>

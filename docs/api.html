@@ -3,15 +3,50 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>llm-mock — API reference</title>
-<meta name="description" content="API reference for llm-mock: base URLs, authentication, endpoints, response control headers, error envelopes and SSE streaming. OpenAI-compatible mock server." />
+<title>API reference — llm-mock (OpenAI-compatible mock server)</title>
+<meta name="description" content="API reference for llm-mock: base URLs, authentication, endpoints, response-control headers, error envelopes and SSE streaming for the OpenAI-compatible mock server." />
+<link rel="canonical" href="https://llm-mock.dev/api.html" />
+<meta name="theme-color" content="#0b0e14" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
 
 <!-- Open Graph / social -->
-<meta property="og:type" content="website" />
-<meta property="og:title" content="llm-mock — API reference" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="llm-mock" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:title" content="llm-mock API reference" />
 <meta property="og:description" content="Endpoints, headers, errors and streaming for the OpenAI-compatible llm-mock server." />
 <meta property="og:url" content="https://llm-mock.dev/api.html" />
+<meta property="og:image" content="https://llm-mock.dev/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted, OpenAI-compatible mock server. baseURL: https://api.llm-mock.dev/openai/v1" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="llm-mock API reference" />
+<meta name="twitter:description" content="Endpoints, headers, errors and streaming for the OpenAI-compatible llm-mock server." />
+<meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "llm-mock API reference",
+  "description": "Base URLs, authentication, endpoints, response-control headers, error envelopes and SSE streaming for the OpenAI-compatible llm-mock server.",
+  "url": "https://llm-mock.dev/api.html",
+  "author": { "@type": "Organization", "name": "Axium", "url": "https://axium-lab.com" },
+  "about": { "@type": "SoftwareApplication", "name": "llm-mock", "url": "https://llm-mock.dev/" }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://llm-mock.dev/" },
+    { "@type": "ListItem", "position": 2, "name": "API reference", "item": "https://llm-mock.dev/api.html" }
+  ]
+}
+</script>
 
 <style>
   :root {
