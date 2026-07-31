@@ -302,6 +302,10 @@ console.<span class="tok-fn">log</span>(completion.choices[<span class="tok-str"
         <p>Same request, same bytes. Snapshot-friendly, and identical on a laptop, in CI, or behind a load balancer.</p>
       </div>
       <div class="feature">
+        <h3>Files &amp; uploads</h3>
+        <p>Multipart uploads and the chunked Uploads API work, yet nothing is persisted: the id itself carries the file's metadata.</p>
+      </div>
+      <div class="feature">
         <h3>Real error flows</h3>
         <p>Invalid keys, unknown models and validation errors return the exact OpenAI error envelope — test your error handling too.</p>
       </div>

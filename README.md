@@ -54,6 +54,7 @@ It's a stateless mock meant for demos and CI — it holds no data and requires n
 - **Streaming (SSE)** — `stream: true` works on chat completions (delta chunks + `data: [DONE]`) and on the Responses API (typed events: `response.created`, `response.output_text.delta`, `response.completed`, ...).
 - **Deterministic and idempotent** — same request, same bytes: ids are content hashes, timestamps derive from them, embeddings are hash-seeded unit vectors. Snapshot-test friendly.
 - **Stateless canned responses** — need a specific reply? Send it in the `x-llm-mock-response` header of the request itself. Nothing to register, nothing to clean up, and no server state: it behaves identically on a laptop, in CI, or behind a load balancer.
+- **Files without a store** — `multipart/form-data` uploads and the chunked Uploads API work, yet nothing is persisted: the returned id carries the file's metadata, so `create` → `retrieve` round-trips on any instance. [Details ↓](#files-and-uploads)
 - **Real error flows** — invalid API keys, unknown models, and validation errors return the exact OpenAI error envelope, so you can test your error handling too.
 - **Zero setup** — clone, `bun install`, `bun start`. The valid API keys ship in the repo.
 
@@ -143,6 +144,15 @@ OpenAI is the provider implemented today; these are its endpoints under the `/op
 | `GET /openai/v1/models` | Simulated catalog (`gpt-4.1`, `gpt-4o`, `gpt-4o-mini`, `text-embedding-3-*`, ...) |
 | `GET /openai/v1/models/{model}` | `404` in OpenAI error format for unknown models |
 | `POST /openai/v1/embeddings` | Deterministic unit vectors, correct dimension per model, `dimensions` param, `float` and `base64` encoding |
+| `POST /openai/v1/files` | `multipart/form-data` upload; validates `purpose`, honors `expires_after` |
+| `GET /openai/v1/files` | Simulated catalog with `purpose` filter, `limit`, `order` and `after` pagination |
+| `GET /openai/v1/files/{id}` | Stateless: the id carries the file's metadata, so an upload round-trips exactly |
+| `DELETE /openai/v1/files/{id}` | Idempotent; returns the OpenAI deletion object |
+| `GET /openai/v1/files/{id}/content` | Deterministic placeholder bytes (valid JSONL for `fine-tune`/`batch` files) |
+| `POST /openai/v1/uploads` | Creates a `pending` upload for the chunked flow |
+| `POST /openai/v1/uploads/{id}/parts` | Accepts a part of up to 64 MB, named or nameless |
+| `POST /openai/v1/uploads/{id}/complete` | Returns the upload as `completed` with the nested `file` object |
+| `POST /openai/v1/uploads/{id}/cancel` | Returns the upload as `cancelled` |
 
 Plus one mock-only utility endpoint outside any provider contract:
 
@@ -197,6 +207,41 @@ HTTP headers cannot carry UTF-8 verbatim; for content beyond ASCII, base64-encod
 ```
 
 Because the canned response travels with the request, the server keeps no state at all: the same request always returns the same response, no matter which instance, replica, or restart serves it.
+
+## Files and uploads
+
+Files are the one part of the OpenAI contract that is inherently stateful, and llm-mock stores nothing. Instead of a server-side store, **the id carries the metadata**: `POST /files` encodes the filename, size and purpose into the id it returns, so a later `retrieve` answers accurately without anything having been kept — on any instance, after any restart.
+
+```ts
+const file = await client.files.create({
+  file: await toFile(Buffer.from('{"prompt":"hi"}\n'), "training.jsonl"),
+  purpose: "fine-tune",
+});
+// file.filename === "training.jsonl", file.bytes === 16
+
+const same = await client.files.retrieve(file.id); // identical object, no state involved
+```
+
+The chunked [Uploads API](https://platform.openai.com/docs/api-reference/uploads) works the same way, so `complete` echoes back what `create` was told:
+
+```ts
+const upload = await client.uploads.create({
+  filename: "training-examples.jsonl",
+  bytes: 2048,
+  mime_type: "text/jsonl",
+  purpose: "fine-tune",
+});
+const part = await client.uploads.parts.create(upload.id, { data: new Blob([chunk]) });
+const done = await client.uploads.complete(upload.id, { part_ids: [part.id] });
+// done.status === "completed", done.file.filename === "training-examples.jsonl"
+```
+
+What this costs, and how to work with it:
+
+- **Uploads do not appear in `GET /files`.** That endpoint returns a fixed simulated catalog — `file-mock-training-jsonl`, `file-mock-validation-jsonl`, `file-mock-manual-pdf`, `file-mock-batch-input`, `file-mock-diagram-png` — the same way `GET /models` returns a fixed model catalog. Use it to exercise listing, the `purpose` filter and `limit`/`after` pagination.
+- **`GET /files/{id}/content` returns placeholder bytes**, not what you uploaded: valid JSONL for `fine-tune`/`batch` files, a text marker otherwise. To pin exact bytes, send them in `x-llm-mock-response` on the content request.
+- **Any well-formed id resolves.** Since the mock cannot know what exists, ids it did not mint get plausible synthetic metadata. To test a 404, use a reserved id: anything starting with `file-missing` or `upload_missing` is always reported as not found, just like the known-invalid `sk-mock-invalid` API key.
+- **Deletion is idempotent** and always reports `deleted: true`; there is nothing to remove.
 
 ## Configuration
 

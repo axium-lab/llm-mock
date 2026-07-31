@@ -218,6 +218,8 @@
       <li><a href="#responses">Responses API</a></li>
       <li><a href="#models">Models</a></li>
       <li><a href="#embeddings">Embeddings</a></li>
+      <li><a href="#files">Files</a></li>
+      <li><a href="#uploads">Uploads</a></li>
       <li><a href="#control">Controlling replies</a></li>
       <li><a href="#streaming">Streaming</a></li>
       <li><a href="#errors">Errors</a></li>
@@ -275,6 +277,15 @@
           <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models</code></td><td>Simulated catalog (<code>gpt-4.1</code>, <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>text-embedding-3-*</code>, …)</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models/{model}</code></td><td><code>404</code> in OpenAI error format for unknown models</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/embeddings</code></td><td>Deterministic unit vectors, correct dimension per model, <code>dimensions</code> param, <code>float</code> and <code>base64</code> encoding</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/files</code></td><td><code>multipart/form-data</code> upload; validates <code>purpose</code>, honours <code>expires_after</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/files</code></td><td>Simulated catalog with <code>purpose</code> filter and <code>limit</code>/<code>order</code>/<code>after</code> pagination</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/files/{id}</code></td><td>Stateless: the id carries the metadata, so an upload round-trips exactly</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/files/{id}</code></td><td>Idempotent; returns the OpenAI deletion object</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/files/{id}/content</code></td><td>Deterministic placeholder bytes (valid JSONL for <code>fine-tune</code>/<code>batch</code> files)</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads</code></td><td>Creates a <code>pending</code> upload for the chunked flow</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/parts</code></td><td>Accepts a part of up to 64 MB, named or nameless</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/complete</code></td><td>Returns the upload as <code>completed</code>, with the nested <code>file</code> object</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/cancel</code></td><td>Returns the upload as <code>cancelled</code></td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Healthcheck (mock-only, outside any provider contract)</td></tr>
         </tbody>
       </table>
@@ -326,6 +337,48 @@
   -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
   -H <span class="tok-str">"Content-Type: application/json"</span> \
   -d <span class="tok-str">'{"model": "text-embedding-3-small", "input": "hello"}'</span></code></pre>
+    </section>
+
+    <section id="files">
+      <h2>Files</h2>
+      <p class="section-sub">Files are the one part of the contract that is inherently stateful, and llm-mock stores nothing. Instead of a server-side store, <strong>the id carries the metadata</strong>: the id returned by an upload encodes its filename, size and purpose, so a later retrieve answers accurately on any instance, after any restart.</p>
+<pre><code>curl https://api.llm-mock.dev/openai/v1/files \
+  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
+  -F <span class="tok-str">"purpose=fine-tune"</span> \
+  -F <span class="tok-str">"file=@training.jsonl"</span></code></pre>
+<pre><code><span class="tok-key">const</span> file = <span class="tok-key">await</span> client.files.<span class="tok-fn">create</span>({
+  file: <span class="tok-key">await</span> <span class="tok-fn">toFile</span>(Buffer.<span class="tok-fn">from</span>(<span class="tok-str">'{"prompt":"hi"}\n'</span>), <span class="tok-str">"training.jsonl"</span>),
+  purpose: <span class="tok-str">"fine-tune"</span>,
+});
+<span class="tok-key">const</span> same = <span class="tok-key">await</span> client.files.<span class="tok-fn">retrieve</span>(file.id);
+<span class="tok-com">// identical object — no state involved</span></code></pre>
+      <table>
+        <thead><tr><th>Behaviour</th><th>What to expect</th></tr></thead>
+        <tbody>
+          <tr><td>Listing</td><td>A fixed simulated catalog (<code>file-mock-training-jsonl</code>, <code>file-mock-manual-pdf</code>, …), like the model catalog. Uploads never join it. Supports the <code>purpose</code> filter and <code>limit</code>/<code>order</code>/<code>after</code> pagination.</td></tr>
+          <tr><td>Content</td><td>Deterministic placeholder bytes, not what you uploaded: valid JSONL for <code>fine-tune</code>/<code>batch</code> files, a text marker otherwise. Pin exact bytes with <code>x-llm-mock-response</code>.</td></tr>
+          <tr><td>Unknown ids</td><td>Any well-formed id resolves with plausible synthetic metadata. For a <code>404</code>, use a reserved id: anything starting with <code>file-missing</code>.</td></tr>
+          <tr><td>Deletion</td><td>Idempotent; always reports <code>deleted: true</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="uploads">
+      <h2>Uploads</h2>
+      <p class="section-sub">The chunked <code>/uploads</code> flow works the same way, so <code>complete</code> echoes back what <code>create</code> was told. Parts may be named or nameless — a sliced <code>Blob</code> works exactly as it does against the real API.</p>
+<pre><code><span class="tok-key">const</span> upload = <span class="tok-key">await</span> client.uploads.<span class="tok-fn">create</span>({
+  filename: <span class="tok-str">"training-examples.jsonl"</span>,
+  bytes: <span class="tok-str">2048</span>,
+  mime_type: <span class="tok-str">"text/jsonl"</span>,
+  purpose: <span class="tok-str">"fine-tune"</span>,
+});
+<span class="tok-key">const</span> part = <span class="tok-key">await</span> client.uploads.parts.<span class="tok-fn">create</span>(upload.id, { data: <span class="tok-key">new</span> <span class="tok-fn">Blob</span>([chunk]) });
+<span class="tok-key">const</span> done = <span class="tok-key">await</span> client.uploads.<span class="tok-fn">complete</span>(upload.id, { part_ids: [part.id] });
+<span class="tok-com">// done.status === "completed", done.file.filename === "training-examples.jsonl"</span></code></pre>
+      <div class="callout">
+        The reserved <code>upload_missing</code> prefix always returns <code>404</code>, the same way <code>file-missing</code> does for files
+        and <code>sk-mock-invalid</code> does for API keys.
+      </div>
     </section>
 
     <section id="control">
