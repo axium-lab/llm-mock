@@ -78,6 +78,78 @@ export interface EmbeddingObject {
   embedding: number[] | string;
 }
 
+// Purposes a client is allowed to upload with. The read-only ones the real API
+// also exposes (assistants_output, batch_output, fine-tune-results) are
+// server-generated and therefore rejected on upload.
+export type FilePurpose = "assistants" | "batch" | "fine-tune" | "vision" | "user_data" | "evals";
+
+export interface FileObject {
+  id: string;
+  object: "file";
+  bytes: number;
+  created_at: number;
+  expires_at?: number;
+  filename: string;
+  purpose: string;
+  // Deprecated upstream but still present on the wire, and the SDK types it as
+  // required, so the mock keeps emitting it.
+  status: "uploaded" | "processed" | "error";
+}
+
+export interface FileList {
+  object: "list";
+  data: FileObject[];
+  has_more: boolean;
+  first_id: string | null;
+  last_id: string | null;
+}
+
+export interface FileDeleted {
+  id: string;
+  object: "file";
+  deleted: true;
+}
+
+export interface FileListQuery {
+  purpose?: string;
+  limit?: string;
+  order?: string;
+  after?: string;
+}
+
+export interface Upload {
+  id: string;
+  object: "upload";
+  bytes: number;
+  created_at: number;
+  expires_at: number;
+  filename: string;
+  purpose: string;
+  status: "pending" | "completed" | "cancelled" | "expired";
+  file: FileObject | null;
+}
+
+export interface UploadPart {
+  id: string;
+  object: "upload.part";
+  created_at: number;
+  upload_id: string;
+}
+
+export interface CreateUploadRequest {
+  filename?: unknown;
+  bytes?: unknown;
+  mime_type?: unknown;
+  purpose?: unknown;
+  [key: string]: unknown;
+}
+
+export interface CompleteUploadRequest {
+  part_ids?: unknown;
+  md5?: unknown;
+  [key: string]: unknown;
+}
+
 export interface ResponseUsage {
   input_tokens: number;
   input_tokens_details: { cached_tokens: number };

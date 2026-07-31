@@ -5,8 +5,10 @@ import { openaiAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
 import { chatCompletionsRouter } from "./routes/chat-completions";
 import { embeddingsRouter } from "./routes/embeddings";
+import { filesRouter } from "./routes/files";
 import { modelsRouter } from "./routes/models";
 import { responsesRouter } from "./routes/responses";
+import { uploadsRouter } from "./routes/uploads";
 
 export const openaiProvider: Provider = {
   name: "openai",
@@ -18,6 +20,8 @@ export const openaiProvider: Provider = {
     v1.use("/responses", responsesRouter);
     v1.use("/models", modelsRouter);
     v1.use("/embeddings", embeddingsRouter);
+    v1.use("/files", filesRouter);
+    v1.use("/uploads", uploadsRouter);
 
     const router = Router();
     router.use(express.json({ limit: "10mb" }));

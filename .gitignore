@@ -2,3 +2,7 @@ node_modules/
 dist/
 .env
 *.log
+.DS_Store
+
+# Local REST Client scratch files
+test/*.http
