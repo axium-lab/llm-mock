@@ -1,11 +1,18 @@
-name: Release
+name: Publish image
 
-# Publishes the Docker image to GHCR when a GitHub release is published.
+# Publishes the Docker image to GHCR. Normally called by the Release workflow
+# right after it creates the release; also runs on manually published releases.
 # Tag releases as vX.Y.Z (e.g. v0.1.0). Authentication uses the automatic
 # GITHUB_TOKEN — no manual secrets involved.
 on:
   release:
     types: [published]
+  workflow_call:
+    inputs:
+      version:
+        description: Version to tag the image with, without the leading v.
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -16,7 +23,11 @@ jobs:
     name: Publish image to GHCR
     runs-on: ubuntu-latest
     steps:
+      # Build from the release tag itself, not from whatever the branch that
+      # invoked this workflow points at by the time it runs.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version != '' && format('v{0}', inputs.version) || github.ref }}
 
       # QEMU + Buildx enable the multi-arch (amd64 + arm64) build.
       - uses: docker/setup-qemu-action@v3
@@ -29,14 +40,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # When called by the Release workflow the ref is a branch, not a tag, so
+      # the version is passed in explicitly rather than parsed from the ref.
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${INPUT_VERSION:-${GITHUB_REF_NAME#v}}"
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Extract image tags
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.value }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.value }}
             type=raw,value=latest
 
       - name: Build and push

@@ -1,0 +1,100 @@
+name: Release
+
+# Tags and publishes a GitHub release automatically whenever the version in
+# package.json changes on main. It runs after CI so a release never points at
+# code that failed its tests, and it is idempotent: pushes that don't bump the
+# version find the tag already there and do nothing.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Tag & publish release
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      created: ${{ steps.check.outputs.created }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The commit CI validated, not whatever main points at right now.
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Read version and check for an existing tag
+        id: check
+        run: |
+          VERSION=$(jq -r .version package.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists — nothing to release."
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version $VERSION is not tagged yet — releasing."
+            echo "created=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Release notes come from the matching CHANGELOG section when there is
+      # one; otherwise GitHub generates them from the commits since the last tag.
+      - name: Extract release notes from CHANGELOG
+        if: steps.check.outputs.created == 'true'
+        id: notes
+        env:
+          VERSION: ${{ steps.check.outputs.version }}
+        run: |
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md || true
+          if grep -q '[^[:space:]]' release-notes.md 2>/dev/null; then
+            echo "from_changelog=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No CHANGELOG section for $VERSION — generating notes from commits."
+            echo "from_changelog=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub release
+        if: steps.check.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.check.outputs.version }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ "${{ steps.notes.outputs.from_changelog }}" = "true" ]; then
+            gh release create "v$VERSION" \
+              --target "$SHA" \
+              --title "v$VERSION" \
+              --notes-file release-notes.md
+          else
+            gh release create "v$VERSION" \
+              --target "$SHA" \
+              --title "v$VERSION" \
+              --generate-notes
+          fi
+
+  # A release created with GITHUB_TOKEN does not trigger other workflows, so the
+  # image build is invoked directly instead of waiting for `release: published`.
+  image:
+    name: Publish image
+    needs: release
+    if: needs.release.outputs.created == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
