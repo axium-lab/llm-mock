@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ApiError } from "../../../core/errors";
-import { responseOverride } from "../../../core/override";
+import { requestOverrides } from "../../../core/override";
 import { openSSE, sendDone, sendEvent } from "../../../core/sse";
 import { buildChatChunks, buildChatCompletion } from "../services/chat-completions";
 import type { ChatCompletionRequest } from "../types";
@@ -16,14 +16,14 @@ chatCompletionsRouter.post("/", (req, res) => {
     throw new ApiError(400, "'messages' must be a non-empty array.", null, "messages");
   }
 
-  const override = responseOverride(req);
+  const overrides = requestOverrides(req);
   if (body.stream) {
     openSSE(res);
-    for (const chunk of buildChatChunks(body, override)) {
+    for (const chunk of buildChatChunks(body, overrides)) {
       sendEvent(res, chunk);
     }
     sendDone(res);
     return;
   }
-  res.json(buildChatCompletion(body, override));
+  res.json(buildChatCompletion(body, overrides));
 });

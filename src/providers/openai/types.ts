@@ -16,7 +16,25 @@ export interface ChatCompletionRequest {
   n?: number;
   stream?: boolean;
   stream_options?: { include_usage?: boolean };
+  tools?: unknown;
+  tool_choice?: unknown;
   [key: string]: unknown;
+}
+
+export interface ToolCall {
+  id: string;
+  type: "function";
+  // `arguments` is a JSON-encoded string on the wire, not an object.
+  function: { name: string; arguments: string };
+}
+
+// Streaming counterpart: the pieces are keyed by `index` so the client can
+// reassemble one call from many chunks.
+export interface ToolCallDelta {
+  index: number;
+  id?: string;
+  type?: "function";
+  function?: { name?: string; arguments?: string };
 }
 
 export interface CompletionUsage {
@@ -27,9 +45,16 @@ export interface CompletionUsage {
 
 export interface ChatCompletionChoice {
   index: number;
-  message: { role: "assistant"; content: string; refusal: null; annotations: [] };
+  message: {
+    role: "assistant";
+    // null whenever the model answers with tool calls instead of prose.
+    content: string | null;
+    refusal: null;
+    annotations: [];
+    tool_calls?: ToolCall[];
+  };
   logprobs: null;
-  finish_reason: "stop";
+  finish_reason: "stop" | "tool_calls";
 }
 
 export interface ChatCompletion {
@@ -50,9 +75,9 @@ export interface ChatCompletionChunk {
   system_fingerprint: string;
   choices: Array<{
     index: number;
-    delta: { role?: "assistant"; content?: string };
+    delta: { role?: "assistant"; content?: string | null; tool_calls?: ToolCallDelta[] };
     logprobs: null;
-    finish_reason: "stop" | null;
+    finish_reason: "stop" | "tool_calls" | null;
   }>;
   usage?: CompletionUsage;
 }
@@ -172,11 +197,27 @@ export interface OutputMessageItem {
   content: OutputTextPart[];
 }
 
+// The Responses API models a tool call as a top-level output item rather than
+// a field on the assistant message. `call_id` is what the client echoes back
+// in the matching function_call_output item.
+export interface FunctionCallItem {
+  id: string;
+  type: "function_call";
+  status: "completed";
+  call_id: string;
+  name: string;
+  arguments: string;
+}
+
+export type OutputItem = OutputMessageItem | FunctionCallItem;
+
 export interface ResponseRequest {
   model: string;
   input: unknown;
   instructions?: string | null;
   stream?: boolean;
+  tools?: unknown;
+  tool_choice?: unknown;
   [key: string]: unknown;
 }
 
@@ -191,15 +232,16 @@ export interface ResponseObject {
   instructions: string | null;
   max_output_tokens: null;
   model: string;
-  output: OutputMessageItem[];
+  output: OutputItem[];
   parallel_tool_calls: boolean;
   previous_response_id: null;
   reasoning: { effort: null; summary: null };
   store: boolean;
   temperature: number;
   text: { format: { type: "text" } };
-  tool_choice: "auto";
-  tools: [];
+  // Echoed back from the request, as the real API does.
+  tool_choice: unknown;
+  tools: unknown[];
   top_p: number;
   truncation: "disabled";
   usage: ResponseUsage;

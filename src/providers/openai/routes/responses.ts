@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ApiError } from "../../../core/errors";
-import { responseOverride } from "../../../core/override";
+import { requestOverrides } from "../../../core/override";
 import { openSSE, sendEvent } from "../../../core/sse";
 import { buildResponse, buildResponseEvents, buildSyntheticResponse } from "../services/responses";
 import type { ResponseRequest } from "../types";
@@ -16,7 +16,7 @@ responsesRouter.post("/", (req, res) => {
     throw new ApiError(400, "Missing required parameter: 'input'.", "missing_required_parameter", "input");
   }
 
-  const response = buildResponse(body, responseOverride(req));
+  const response = buildResponse(body, requestOverrides(req));
 
   if (body.stream) {
     openSSE(res);
