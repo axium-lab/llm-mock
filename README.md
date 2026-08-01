@@ -54,6 +54,7 @@ It's a stateless mock meant for demos and CI — it holds no data and requires n
 - **Streaming (SSE)** — `stream: true` works on chat completions (delta chunks + `data: [DONE]`) and on the Responses API (typed events: `response.created`, `response.output_text.delta`, `response.completed`, ...).
 - **Deterministic and idempotent** — same request, same bytes: ids are content hashes, timestamps derive from them, embeddings are hash-seeded unit vectors. Snapshot-test friendly.
 - **Stateless canned responses** — need a specific reply? Send it in the `x-llm-mock-response` header of the request itself. Nothing to register, nothing to clean up, and no server state: it behaves identically on a laptop, in CI, or behind a load balancer.
+- **Tool calls** — `tool_choice: "required"` (or a named function) returns real `tool_calls` with arguments synthesized from your JSON Schema, streaming included; pin exact ones with the `x-llm-mock-tool-calls` header. The loop terminates once a tool result is in the conversation. [Details ↓](#tool-calls)
 - **Files without a store** — `multipart/form-data` uploads and the chunked Uploads API work, yet nothing is persisted: the returned id carries the file's metadata, so `create` → `retrieve` round-trips on any instance. [Details ↓](#files-and-uploads)
 - **Real error flows** — invalid API keys, unknown models, and validation errors return the exact OpenAI error envelope, so you can test your error handling too.
 - **Zero setup** — clone, `bun install`, `bun start`. The valid API keys ship in the repo.
@@ -160,7 +161,7 @@ Plus one mock-only utility endpoint outside any provider contract:
 | --- | --- |
 | `GET /health` | Healthcheck |
 
-Parameters the mock does not simulate (`temperature`, `top_p`, `tools`, `response_format`, ...) are accepted without error, because real SDK clients send them.
+Parameters the mock does not simulate (`temperature`, `top_p`, `response_format`, ...) are accepted without error, because real SDK clients send them. `tools` and `tool_choice` **are** simulated — see [Tool calls](#tool-calls).
 
 ## Authentication
 
@@ -207,6 +208,44 @@ HTTP headers cannot carry UTF-8 verbatim; for content beyond ASCII, base64-encod
 ```
 
 Because the canned response travels with the request, the server keeps no state at all: the same request always returns the same response, no matter which instance, replica, or restart serves it.
+
+## Tool calls
+
+The mock answers with tool calls in two situations, so an agent loop can be exercised end to end without a real model.
+
+**1. `tool_choice` demands one.** With `"required"` the first declared tool is called; with `{ type: "function", function: { name } }` (Chat Completions) or `{ type: "function", name }` (Responses) that tool is called. `"auto"` and `"none"` answer with text, because deciding to call a tool is the one thing a mock cannot do. Arguments are synthesized from the tool's JSON Schema — `default` first, then the first `enum` value, then a placeholder per type — filling the `required` properties, or all of them when the schema declares no `required`.
+
+```ts
+const completion = await client.chat.completions.create({
+  model: "gpt-4o",
+  messages: [{ role: "user", content: "Weather in Valencia?" }],
+  tools: [{ type: "function", function: { name: "get_weather", parameters: schema } }],
+  tool_choice: "required",
+});
+// finish_reason === "tool_calls", message.content === null
+// tool_calls[0].function === { name: "get_weather", arguments: '{"city":"mock","unit":"celsius"}' }
+```
+
+**2. The request pins them** in `x-llm-mock-tool-calls`, a JSON array (a bare object is taken as a single call) that overrides `tool_choice`. Omit `arguments` to have them synthesized from the schema; pass an object to encode it, or a string to send it verbatim — which is how you pin malformed arguments to test your own error handling:
+
+```ts
+const completion = await client.chat.completions.create(
+  { model: "gpt-4o", messages: [{ role: "user", content: "Weather?" }] },
+  {
+    headers: {
+      "x-llm-mock-tool-calls": JSON.stringify([
+        { name: "get_weather", arguments: { city: "Valencia", unit: "celsius" } },
+      ]),
+    },
+  },
+);
+```
+
+Listing several entries produces parallel tool calls, each with its own id.
+
+**The loop terminates.** Once the conversation carries a tool result — a `role: "tool"` message in Chat Completions, a `function_call_output` item in the Responses API — `tool_choice` stops forcing calls and the mock answers with text, so the second turn of an agent loop ends instead of calling the same tool forever. The explicit header still wins if you want a call anyway.
+
+Both APIs stream tool calls too: Chat Completions emits `delta.tool_calls` pieces keyed by `index` and closes with `finish_reason: "tool_calls"`; the Responses API emits a `function_call` output item with `response.function_call_arguments.delta` / `.done` events. The Responses API also echoes the `tools` and `tool_choice` it received.
 
 ## Files and uploads
 

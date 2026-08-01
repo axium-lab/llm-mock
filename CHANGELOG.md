@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Tool calling on both Chat Completions and the Responses API: `tool_choice: "required"` or a named function returns real tool calls, with arguments synthesized from the tool's JSON Schema (`default`, then the first `enum` value, then a per-type placeholder).
+- `x-llm-mock-tool-calls` header to pin the exact tool calls a response must contain, including parallel calls and verbatim (even malformed) argument strings.
+- Tool calls in streaming: `delta.tool_calls` chunks keyed by `index` with `finish_reason: "tool_calls"` on Chat Completions, and `response.function_call_arguments.delta`/`.done` events on the Responses API.
+- Agent loops terminate: a `role: "tool"` message or a `function_call_output` item stops `tool_choice` from forcing further calls.
+
+### Changed
+
+- The Responses API now echoes the `tools` and `tool_choice` it received instead of always reporting `[]` and `"auto"`.
+
 ## [0.3.0] - 2026-08-01
 
 ### Added

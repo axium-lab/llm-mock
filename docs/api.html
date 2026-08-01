@@ -216,6 +216,7 @@
       <li><a href="#endpoints">Endpoints</a></li>
       <li><a href="#chat">Chat completions</a></li>
       <li><a href="#responses">Responses API</a></li>
+      <li><a href="#tools">Tool calls</a></li>
       <li><a href="#models">Models</a></li>
       <li><a href="#embeddings">Embeddings</a></li>
       <li><a href="#files">Files</a></li>
@@ -290,8 +291,9 @@
         </tbody>
       </table>
       <div class="callout">
-        Parameters the mock does not simulate (<code>temperature</code>, <code>top_p</code>, <code>tools</code>, <code>response_format</code>, …)
+        Parameters the mock does not simulate (<code>temperature</code>, <code>top_p</code>, <code>response_format</code>, …)
         are <strong>accepted without error</strong>, because real SDK clients send them.
+        <code>tools</code> and <code>tool_choice</code> <strong>are</strong> simulated — see <a href="#tools">Tool calls</a>.
       </div>
     </section>
 
@@ -316,6 +318,28 @@
           <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the standard OpenAI deletion object</td></tr>
         </tbody>
       </table>
+    </section>
+
+    <section id="tools">
+      <h2>Tool calls</h2>
+      <p class="section-sub">Both surfaces return real tool calls, so an agent loop runs end to end without a model. Chat completions answer with <code>message.tool_calls</code> and <code>finish_reason: "tool_calls"</code>; the Responses API emits a <code>function_call</code> output item and echoes the <code>tools</code> / <code>tool_choice</code> it received.</p>
+      <table>
+        <thead><tr><th>Trigger</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><code>tool_choice: "required"</code></td><td>Calls the first declared tool</td></tr>
+          <tr><td><code>tool_choice: {type:"function", …name}</code></td><td>Calls that tool (name nested under <code>function</code> on chat completions, top level on responses)</td></tr>
+          <tr><td><code>tool_choice: "auto"</code> / <code>"none"</code></td><td>Answers with text — deciding to call a tool is the one thing a mock cannot do</td></tr>
+          <tr><td><code>x-llm-mock-tool-calls</code></td><td>Pins the exact calls, overriding <code>tool_choice</code></td></tr>
+          <tr><td>A tool result in the conversation</td><td>Stops forcing calls, so the loop terminates: <code>role: "tool"</code> message, or <code>function_call_output</code> item</td></tr>
+        </tbody>
+      </table>
+      <p>Arguments are synthesized from the tool's JSON Schema — <code>default</code> first, then the first <code>enum</code> value, then a placeholder per type — covering the <code>required</code> properties, or all of them when the schema declares none.</p>
+<pre><code>curl https://api.llm-mock.dev/openai/v1/chat/completions \
+  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -H <span class="tok-str">'x-llm-mock-tool-calls: [{"name":"get_weather","arguments":{"city":"Valencia"}}]'</span> \
+  -d <span class="tok-str">'{"model": "gpt-4o", "messages": [{"role": "user", "content": "weather?"}]}'</span></code></pre>
+      <p>The header takes a JSON array (a bare object counts as a single call); several entries produce parallel calls, each with its own id. Omit <code>arguments</code> to have them synthesized, pass an object to encode it, or a string to send it verbatim — handy for pinning malformed arguments. Streaming works too: <code>delta.tool_calls</code> pieces keyed by <code>index</code> on chat completions, <code>response.function_call_arguments.delta</code> / <code>.done</code> events on the Responses API.</p>
     </section>
 
     <section id="models">
@@ -389,6 +413,7 @@
         <tbody>
           <tr><td><code>x-llm-mock-response</code></td><td>ASCII reply to return verbatim as the assistant message</td></tr>
           <tr><td><code>x-llm-mock-response-base64</code></td><td>Base64-encoded reply for content beyond ASCII (UTF-8). Wins when both headers are present.</td></tr>
+          <tr><td><code>x-llm-mock-tool-calls</code></td><td>JSON array of tool calls the reply must contain. See <a href="#tools">Tool calls</a>.</td></tr>
         </tbody>
       </table>
 <pre><code><span class="tok-key">const</span> completion = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>(
