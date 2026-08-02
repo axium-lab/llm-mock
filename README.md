@@ -15,7 +15,7 @@
 
 > **⚡ Zero install** — a free hosted instance runs at **[`api.llm-mock.dev`](https://api.llm-mock.dev)**. Point your SDK's `baseURL` there and start testing in seconds; no download, no signup. [Details ↓](#hosted-instance)
 
-Testing an app built on an LLM SDK usually means one of two things: paying for real API calls in CI, or leaking an API key into a place it should never be (a public repo, a contributor's laptop, a CI log). llm-mock removes that choice. It is a tiny local server that speaks each provider's API contract — same endpoints, same response shapes, same error format, same SSE streaming — but with deterministic, configurable responses and no real key required. OpenAI is supported today; Anthropic, Gemini, and more are planned.
+Testing an app built on an LLM SDK usually means one of two things: paying for real API calls in CI, or leaking an API key into a place it should never be (a public repo, a contributor's laptop, a CI log). llm-mock removes that choice. It is a tiny local server that speaks each provider's API contract — same endpoints, same response shapes, same error format, same SSE streaming — but with deterministic, configurable responses and no real key required. OpenAI is supported today, Gemini (AI Studio) is landing now, and Anthropic and more are planned.
 
 ```ts
 import OpenAI from "openai";
@@ -73,6 +73,7 @@ bun start
 ```
 llm-mock listening on http://localhost:3000
 - openai: baseURL http://localhost:3000/openai/v1
+- gemini: baseURL http://localhost:3000/gemini
 10 valid API keys loaded from api-keys.json
 ```
 
@@ -125,16 +126,23 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | Provider | Prefix | Status |
 | --- | --- | --- |
 | OpenAI | `/openai/v1` | ✅ Supported |
+| Gemini (AI Studio) | `/gemini` | 🚧 In progress — `generateContent`, Interactions API, streaming, tool calls, models |
 | Anthropic | `/anthropic` | 🔜 Planned |
-| Gemini (AI Studio) | `/gemini` | 🔜 Planned |
 | Gemini Enterprise (Vertex AI) | — | 🔜 Planned |
 | Azure OpenAI | — | 🔜 Planned |
+
+Note that where the version segment lives depends on the SDK, not on us. The OpenAI client appends only the request path, so its `baseURL` carries the version; `@google/genai` appends the version itself, so its `baseUrl` stops at the provider prefix:
+
+```ts
+new OpenAI({ baseURL: "http://localhost:3000/openai/v1", apiKey: "sk-mock-key-01" });
+new GoogleGenAI({ apiKey: "sk-mock-key-01", httpOptions: { baseUrl: "http://localhost:3000/gemini" } });
+```
 
 Want a provider prioritized? [Open an issue](https://github.com/axium-lab/llm-mock/issues) — or a PR (see [Contributing](#contributing)).
 
 ## Supported endpoints
 
-OpenAI is the provider implemented today; these are its endpoints under the `/openai` prefix.
+### OpenAI
 
 | Endpoint | Notes |
 | --- | --- |
@@ -155,20 +163,69 @@ OpenAI is the provider implemented today; these are its endpoints under the `/op
 | `POST /openai/v1/uploads/{id}/complete` | Returns the upload as `completed` with the nested `file` object |
 | `POST /openai/v1/uploads/{id}/cancel` | Returns the upload as `cancelled` |
 
-Plus one mock-only utility endpoint outside any provider contract:
+Parameters the mock does not simulate (`temperature`, `top_p`, `response_format`, ...) are accepted without error, because real SDK clients send them. `tools` and `tool_choice` **are** simulated — see [Tool calls](#tool-calls).
+
+### Gemini (AI Studio)
+
+Work in progress. Both `v1beta` and `v1` serve the same mock, so either `apiVersion` works.
 
 | Endpoint | Notes |
 | --- | --- |
-| `GET /health` | Healthcheck |
+| `POST /gemini/v1beta/models/{model}:generateContent` | Full response: `candidates`, `finishReason`, `usageMetadata` split by modality, `modelVersion`, `responseId`. `candidateCount`, `systemInstruction`, `tools` and `toolConfig` are simulated |
+| `POST /gemini/v1beta/models/{model}:streamGenerateContent` | SSE with `?alt=sse`, streamed JSON array without it |
+| `GET /gemini/v1beta/models` | Simulated catalog (`gemini-3.1-pro`, `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-embedding-001`, ...) |
+| `GET /gemini/v1beta/models/{model}` | `404` in Google's `google.rpc.Status` format for unknown models |
+| `GET /gemini/v1beta/tunedModels` | Always empty; this mock mints no tuned models |
+| `POST /gemini/v1beta/interactions` | Interactions API: `steps`, `usage`, `status`, tool calls and SSE with `stream: true` |
+| `GET /gemini/v1beta/interactions/{id}` | Stateless: synthesizes a deterministic interaction for any id. `?stream=true` replays it as events |
+| `POST /gemini/v1beta/interactions/{id}/cancel` | Returns the interaction as `cancelled` |
+| `DELETE /gemini/v1beta/interactions/{id}` | Idempotent; `200` with an empty body, which is what the SDK expects |
 
-Parameters the mock does not simulate (`temperature`, `top_p`, `response_format`, ...) are accepted without error, because real SDK clients send them. `tools` and `tool_choice` **are** simulated — see [Tool calls](#tool-calls).
+Custom methods are addressed the Google way, as `{resource}:{method}` — `models/gemini-3.6-flash:generateContent`. Those that are not implemented yet answer with the same `404` the real API returns for a method a model does not support.
+
+```ts
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: "sk-mock-key-01",
+  httpOptions: { baseUrl: "http://localhost:3000/gemini" },
+});
+
+const response = await ai.models.generateContent({ model: "gemini-3.6-flash", contents: "Hello!" });
+console.log(response.text); // "Echo: Hello!"
+```
+
+The `x-llm-mock-response` and `x-llm-mock-tool-calls` headers work here exactly as they do on OpenAI. Two differences are Gemini's, not ours: `toolConfig.functionCallingConfig.mode` replaces `tool_choice` (`ANY` forces a call, `NONE` forbids one, `AUTO` leaves it to a model this mock does not have), and a call's arguments arrive as a decoded `args` object instead of a JSON string. A streamed call is never split across chunks.
+
+#### Interactions API
+
+Google's next-generation surface, GA since June 2026 and the one its own quickstart now uses. It is a different contract from `generateContent`, not a wrapper: fields are `snake_case`, a turn is a `Step` rather than a `Content`, and errors use the flatter envelope shown under [Authentication](#authentication).
+
+```ts
+const interaction = await ai.interactions.create({ model: "gemini-3.6-flash", input: "Hello!" });
+console.log(interaction.output_text); // "Echo: Hello!"
+```
+
+The mock stays stateless here, exactly as it does on OpenAI's Responses API: `create` never stores anything, and `GET /interactions/{id}` synthesizes a deterministic interaction for whatever id you ask for instead of returning a `404`. So `store`, `background` and `previous_interaction_id` are accepted and ignored — a test that depends on real server-side continuation is the one thing this endpoint cannot fake.
+
+Note that `tool_choice` lives inside `generation_config` on this surface, not beside `tools`. Streaming emits `interaction.created` → `step.start` / `step.delta` / `step.stop` → `interaction.completed`, and a function call's arguments arrive as `arguments_delta` pieces of a JSON string — the one place this API re-encodes what it otherwise sends decoded.
+
+### Mock-only
+
+| Endpoint | Notes |
+| --- | --- |
+| `GET /health` | Healthcheck, outside any provider contract |
 
 ## Authentication
 
 llm-mock validates API keys against a closed set defined in [`api-keys.json`](api-keys.json), so you can test both the happy path and the failure path:
 
 - **Valid keys**: `sk-mock-key-01` through `sk-mock-key-10` ship in the repo. Point the file somewhere else with `LLM_MOCK_API_KEYS_FILE` to use your own.
-- **Invalid keys**: any other key — by convention use the documented `sk-mock-invalid` — returns the real OpenAI `401`:
+- **Invalid keys**: any other key — by convention use the documented `sk-mock-invalid`.
+
+The key set is shared by every provider, so the same `sk-mock-key-01` works everywhere; what changes is **where the key travels** and **what a rejection looks like**, and both mirror the real provider.
+
+OpenAI reads `Authorization: Bearer` and rejects with a `401`:
 
 ```json
 {
@@ -180,6 +237,28 @@ llm-mock validates API keys against a closed set defined in [`api-keys.json`](ap
   }
 }
 ```
+
+Gemini reads `x-goog-api-key` (with `?key=` and `Authorization: Bearer` also accepted, as the real API does) and reports a bad key as a `400`, not a `401`:
+
+```json
+{
+  "error": {
+    "code": 400,
+    "message": "API key not valid. Please pass a valid API key.",
+    "status": "INVALID_ARGUMENT",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        "reason": "API_KEY_INVALID",
+        "domain": "generativelanguage.googleapis.com",
+        "metadata": { "service": "generativelanguage.googleapis.com" }
+      }
+    ]
+  }
+}
+```
+
+A Gemini request with no credential at all gets a `403 PERMISSION_DENIED` instead, which is what Google's API frontend answers to an unidentified caller.
 
 ## Controlling responses
 
