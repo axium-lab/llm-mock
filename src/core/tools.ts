@@ -21,9 +21,10 @@ interface ToolSpec {
 type ToolChoice = { mode: "auto" | "none" | "required" } | { mode: "named"; name: string };
 
 // Three layouts reach this function: Chat Completions nests the definition
-// under `function`, the Responses API keeps `name`/`parameters` at the top
-// level, and Gemini groups several declarations inside one `functionDeclarations`
-// entry. All are accepted.
+// under `function`, the Responses API and Anthropic keep the declaration at the
+// top level (differing only in whether the schema is `parameters` or
+// `input_schema`), and Gemini groups several declarations inside one
+// `functionDeclarations` entry. All are accepted.
 export function normalizeTools(tools: unknown): ToolSpec[] {
   if (!Array.isArray(tools)) return [];
   return tools.flatMap((tool) => {
@@ -42,9 +43,15 @@ function toSpec(source: unknown): ToolSpec[] {
   if (!source || typeof source !== "object") return [];
   const record = source as Record<string, unknown>;
   if (typeof record.name !== "string") return [];
-  // Gemini accepts a plain JSON Schema under its own key as an alternative to
-  // the Schema-typed `parameters`.
-  return [{ name: record.name, parameters: record.parameters ?? record.parametersJsonSchema }];
+  // Three names for the same JSON Schema: `parameters` (OpenAI), Gemini's
+  // `parametersJsonSchema` alternative to its Schema-typed one, and
+  // Anthropic's `input_schema`.
+  return [
+    {
+      name: record.name,
+      parameters: record.parameters ?? record.parametersJsonSchema ?? record.input_schema,
+    },
+  ];
 }
 
 // tool_choice is either a keyword or an object naming one function, again with

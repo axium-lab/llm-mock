@@ -129,7 +129,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
 | Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, Interactions API, streaming, tool calls, embeddings |
 | Azure OpenAI | `/azure/openai` | ✅ Supported — chat completions, streaming, tool calls, embeddings, content filtering |
-| Anthropic | `/anthropic` | 🚧 In progress — auth, versioning, models |
+| Anthropic | `/anthropic` | 🚧 In progress — messages, tool use, thinking, models |
 
 Note that where the version segment lives depends on the SDK, not on us. The OpenAI client appends only the request path, so its `baseURL` carries the version; `@google/genai` appends the version itself, so its `baseUrl` stops at the provider prefix:
 
@@ -424,6 +424,7 @@ Work in progress. This is the one provider here that shares nothing structural w
 
 | Endpoint | Notes |
 | --- | --- |
+| `POST /anthropic/v1/messages` | The whole generative surface: content blocks, `system`, tool use, thinking, `stop_reason`, `usage` |
 | `GET /anthropic/v1/models` | Simulated catalog, cursor-paginated by `after_id`/`before_id` |
 | `GET /anthropic/v1/models/{id}` | `max_input_tokens` is the context window; `capabilities` is a nested tree of supported flags |
 
@@ -451,6 +452,28 @@ Three things differ from every other provider on this server, and all three are 
 ```
 
 The `request_id` matches the `x-request-id` response header, as it does on the real API. Error types are `invalid_request_error`, `authentication_error`, `permission_error`, `not_found_error`, `request_too_large`, `rate_limit_error`, `api_error` and `overloaded_error` (`529`).
+
+#### Messages
+
+```ts
+const message = await client.messages.create({
+  model: "claude-opus-5",
+  max_tokens: 1024,
+  system: "You are terse.",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+
+message.content; // [{ type: "text", text: "Echo: Hello!", citations: null }]
+```
+
+Four shapes here differ from the other providers, and they are the API's, not the mock's:
+
+- **`max_tokens` is required.** Omitting it is a `400`, where every other provider defaults it.
+- **`system` is a top-level field**, not a message with `role: "system"`. It counts towards `input_tokens`.
+- **Tool calls are content blocks.** A `tool_use` block carries a decoded `input` object (not OpenAI's JSON string) and an id prefixed `toolu_`; the result comes back as a `tool_result` block inside a **user** message. `tool_choice` is an object — `{type:"any"}` forces a call, `{type:"tool",name}` names one, `{type:"none"}` forbids them, and the default `auto` leaves it to a model this mock does not have.
+- **Thinking blocks are emitted whenever thinking is on**, but `display` decides whether they carry text: the default `"omitted"` leaves `thinking` an empty string, and `"summarized"` fills in a summary. That empty-but-present block is what a streaming UI sees as a long pause, so it is worth being able to test.
+
+Consecutive same-role messages are accepted — the real API combines them into one turn — but the conversation must open with `user`. The `x-llm-mock-response` and `x-llm-mock-tool-calls` headers work exactly as on the other providers.
 
 **Managed Agents is out of scope** — the `/v1/agents`, `/v1/sessions`, `/v1/environments`, `/v1/vaults` and `/v1/memory_stores` surface is not mocked. That is a deliberate decision, not an oversight: it is larger than everything else on this provider combined.
 

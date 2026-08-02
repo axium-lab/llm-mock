@@ -3,6 +3,7 @@ import { createAuthMiddleware } from "../../core/auth";
 import type { Provider, ProviderDeps } from "../types";
 import { anthropicAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
+import { messagesRouter } from "./routes/messages";
 import { modelsRouter } from "./routes/models";
 import { requireVersion } from "./version";
 
@@ -15,6 +16,7 @@ export const anthropicProvider: Provider = {
     const v1 = Router();
     v1.use(createAuthMiddleware(apiKeys, anthropicAuthScheme));
     v1.use(requireVersion);
+    v1.use("/messages", messagesRouter);
     v1.use("/models", modelsRouter);
 
     const router = Router();
