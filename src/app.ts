@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express, { type Express } from "express";
 import { errorHandler, notFoundHandler } from "./core/errors";
+import { anthropicProvider } from "./providers/anthropic";
 import { azureProvider } from "./providers/azure";
 import { geminiProvider } from "./providers/gemini";
 import { geminiEnterpriseProvider } from "./providers/gemini-enterprise";
@@ -12,6 +13,7 @@ export const providers: Provider[] = [
   geminiProvider,
   geminiEnterpriseProvider,
   azureProvider,
+  anthropicProvider,
 ];
 
 export interface AppOptions {

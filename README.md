@@ -129,7 +129,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
 | Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, Interactions API, streaming, tool calls, embeddings |
 | Azure OpenAI | `/azure/openai` | ✅ Supported — chat completions, streaming, tool calls, embeddings, content filtering |
-| Anthropic | `/anthropic` | 🔜 Planned |
+| Anthropic | `/anthropic` | 🚧 In progress — auth, versioning, models |
 
 Note that where the version segment lives depends on the SDK, not on us. The OpenAI client appends only the request path, so its `baseURL` carries the version; `@google/genai` appends the version itself, so its `baseUrl` stops at the provider prefix:
 
@@ -417,6 +417,42 @@ Categories are `hate`, `self_harm`, `sexual`, `violence` and `jailbreak`; severi
 Two quirks are reproduced deliberately, because code written against OpenAI trips on both. A **streamed response opens with a chunk carrying no choices at all**, just the prompt's verdict — a client reaching straight for `chunk.choices[0]` breaks there. And the blocked-prompt error nests its verdict under `content_filter_result`, **singular**, against the plural used everywhere else.
 
 None of this provider's shapes could be checked against a live Azure resource. Its routes come from observing what `AzureOpenAI` puts on the wire, and its payloads from Microsoft's documentation and published examples — but they are not observed responses. The empty first streaming chunk in particular is reconstructed from reported behaviour rather than seen.
+
+### Anthropic
+
+Work in progress. This is the one provider here that shares nothing structural with OpenAI: everything goes through a single `POST /v1/messages`, responses are lists of typed content blocks, and the system prompt is a top-level field rather than a message.
+
+| Endpoint | Notes |
+| --- | --- |
+| `GET /anthropic/v1/models` | Simulated catalog, cursor-paginated by `after_id`/`before_id` |
+| `GET /anthropic/v1/models/{id}` | `max_input_tokens` is the context window; `capabilities` is a nested tree of supported flags |
+
+```ts
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: "sk-mock-key-01",
+  baseURL: "http://localhost:3000/anthropic",
+});
+```
+
+Three things differ from every other provider on this server, and all three are the API's own doing:
+
+- **The credential travels in `x-api-key`, not a bearer token.** `Authorization: Bearer` is accepted too, as OAuth callers use it.
+- **`anthropic-version` is required on every request.** Any value is accepted — validating against a list of known versions would mean maintaining that list and guessing at versions that do not exist yet. A missing header is a `400`, which is the classic failure when calling this API by hand.
+- **The error envelope wraps twice and echoes the request id**, and it is the only one here that uses HTTP `529`:
+
+```json
+{
+  "type": "error",
+  "error": { "type": "authentication_error", "message": "invalid x-api-key" },
+  "request_id": "req_011CSHoEeqs5C35K2UUqR7Fy"
+}
+```
+
+The `request_id` matches the `x-request-id` response header, as it does on the real API. Error types are `invalid_request_error`, `authentication_error`, `permission_error`, `not_found_error`, `request_too_large`, `rate_limit_error`, `api_error` and `overloaded_error` (`529`).
+
+**Managed Agents is out of scope** — the `/v1/agents`, `/v1/sessions`, `/v1/environments`, `/v1/vaults` and `/v1/memory_stores` surface is not mocked. That is a deliberate decision, not an oversight: it is larger than everything else on this provider combined.
 
 ### Mock-only
 
