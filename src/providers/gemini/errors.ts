@@ -45,8 +45,32 @@ const SERVICE = "generativelanguage.googleapis.com";
 // classic one. Paths here are relative to the provider mount point (/gemini).
 const NEXT_GEN_PATH = /^\/v1(beta|alpha)?\/interactions(\/|$)/;
 
+// Credentials are checked by Google's API frontend, which sits ahead of every
+// service and answers in the classic envelope on all of them — including
+// /interactions, whose own errors use the next-gen one. Verified against the
+// live API: a bad key on /interactions comes back as google.rpc.Status.
+const FRONTEND_REASONS = new Set(["API_KEY_INVALID", "API_KEY_MISSING", "REQUESTED_ENTITY_NOT_FOUND"]);
+
 export function isNextGenSurface(req: Request): boolean {
   return NEXT_GEN_PATH.test(req.path);
+}
+
+// Only an invalid API key carries details; every other error observed on the
+// live API — missing credential, unknown model, unknown file, a malformed
+// request body — reports code/message/status and nothing else.
+function detailsFor(reason: string | null, message: string) {
+  if (reason !== "API_KEY_INVALID") return {};
+  return {
+    details: [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        reason,
+        domain: "googleapis.com",
+        metadata: { service: SERVICE },
+      },
+      { "@type": "type.googleapis.com/google.rpc.LocalizedMessage", locale: "en-US", message },
+    ],
+  };
 }
 
 function classicEnvelope(status: number, message: string, reason: string | null) {
@@ -55,18 +79,7 @@ function classicEnvelope(status: number, message: string, reason: string | null)
       code: status,
       message,
       status: RPC_STATUS[status] ?? "UNKNOWN",
-      ...(reason
-        ? {
-            details: [
-              {
-                "@type": "type.googleapis.com/google.rpc.ErrorInfo",
-                reason,
-                domain: SERVICE,
-                metadata: { service: SERVICE },
-              },
-            ],
-          }
-        : {}),
+      ...detailsFor(reason, message),
     },
   };
 }
@@ -76,7 +89,10 @@ function nextGenEnvelope(status: number, message: string) {
 }
 
 function serialize(req: Request, status: number, message: string, reason: string | null) {
-  return isNextGenSurface(req) ? nextGenEnvelope(status, message) : classicEnvelope(status, message, reason);
+  const fromFrontend = reason !== null && FRONTEND_REASONS.has(reason);
+  return isNextGenSurface(req) && !fromFrontend
+    ? nextGenEnvelope(status, message)
+    : classicEnvelope(status, message, reason);
 }
 
 export function notFoundHandler(req: Request, res: Response): void {

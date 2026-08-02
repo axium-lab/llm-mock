@@ -36,14 +36,31 @@ describe("gemini interactions", () => {
     expect(interaction.id).toBeTruthy();
   });
 
-  it("records the turn as user_input and model_output steps", async () => {
+  it("reports only what the model produced, with no user_input step", async () => {
     const interaction = await ctx.client.interactions.create({ model: MODEL, input: "hello" });
 
-    expect(interaction.steps.map((step) => step.type)).toEqual(["user_input", "model_output"]);
-    expect(interaction.steps[1]).toMatchObject({
+    // The live API does not echo the prompt back on a create; that is what the
+    // `include_input` flag on a retrieval is for.
+    expect(interaction.steps.map((step) => step.type)).toEqual(["model_output"]);
+    expect(interaction.steps[0]).toMatchObject({
       type: "model_output",
       content: [{ type: "text", text: "Echo: hello" }],
     });
+  });
+
+  it("identifies itself as an interaction object", async () => {
+    const res = await post({ model: MODEL, input: "hello" });
+    const body = (await res.json()) as { object: string; service_tier: string };
+
+    expect(body.object).toBe("interaction");
+    expect(body.service_tier).toBe("standard");
+  });
+
+  it("stamps timestamps to the second, without a fractional part", async () => {
+    const interaction = await ctx.client.interactions.create({ model: MODEL, input: "hello" });
+
+    expect(interaction.created).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+    expect(interaction.updated).toBe(interaction.created);
   });
 
   it("reports usage in the snake_case shape this surface uses", async () => {
@@ -51,7 +68,11 @@ describe("gemini interactions", () => {
     const usage = interaction.usage;
 
     expect(usage?.total_tokens).toBe((usage?.total_input_tokens ?? 0) + (usage?.total_output_tokens ?? 0));
-    expect(usage?.input_tokens_by_modality?.[0]?.modality).toBe("TEXT");
+    // Lowercase here, where generateContent's usageMetadata spells it "TEXT",
+    // and no output breakdown at all — both as the live API reports them.
+    expect(usage?.input_tokens_by_modality?.[0]?.modality).toBe("text");
+    expect(usage).not.toHaveProperty("output_tokens_by_modality");
+    expect(usage?.total_thought_tokens).toBe(0);
   });
 
   it("counts the system instruction towards the input tokens", async () => {
@@ -137,7 +158,7 @@ describe("gemini interactions", () => {
         generation_config: { tool_choice: "auto" },
       });
 
-      expect(interaction.steps.map((step) => step.type)).toEqual(["user_input", "model_output"]);
+      expect(interaction.steps.map((step) => step.type)).toEqual(["model_output"]);
     });
 
     it("forces a function_call step when tool_choice is any", async () => {

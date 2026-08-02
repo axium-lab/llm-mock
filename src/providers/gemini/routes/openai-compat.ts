@@ -2,68 +2,90 @@ import { Router } from "express";
 import { ApiError } from "../../../core/errors";
 import { requestOverrides } from "../../../core/override";
 import { openSSE, sendDone, sendEvent } from "../../../core/sse";
-import { errorHandler, notFoundHandler } from "../../openai/errors";
 import { buildChatChunks, buildChatCompletion } from "../../openai/services/chat-completions";
 import { createEmbeddings } from "../../openai/services/embeddings";
-import type { ChatCompletionRequest, EmbeddingRequest, Model } from "../../openai/types";
-import { deterministicCreated } from "../../../core/ids";
+import type { ChatCompletion, ChatCompletionRequest, EmbeddingRequest } from "../../openai/types";
 import { nativeDimensions } from "../services/embeddings";
 import { listModels } from "../services/models";
 
 // Google runs an OpenAI-compatible surface at /v1beta/openai, so an app built
 // on the `openai` SDK can talk to Gemini by changing only its baseURL. It is a
-// genuine translation layer, not a second API: the request and response shapes
-// are OpenAI's, which is why this router reuses OpenAI's own services rather
-// than reimplementing them.
+// translation layer over the same backend, not a second API, which is why this
+// router reuses OpenAI's own services rather than reimplementing them.
 //
-// Only what Google actually exposes is mounted here. The Responses API and the
-// Files/Uploads endpoints are absent from the real compatibility layer, so a
-// call to them 404s exactly as it would against Google.
+// Only what Google actually exposes is mounted. The Responses API and the
+// Files endpoints are absent from the real compatibility layer, so a call to
+// them 404s exactly as it would against Google — confirmed against the live
+// service, along with everything else noted below.
 export const openaiCompatRouter = Router();
+
+// Errors here keep Google's envelope rather than OpenAI's. That is surprising
+// but real: the layer translates requests, not failures, so a client sees
+// google.rpc.Status even while reading an otherwise OpenAI-shaped API.
+function contentsNotSpecified(): ApiError {
+  return new ApiError(400, "* GenerateContentRequest.contents: contents is not specified\n", "INVALID_ARGUMENT");
+}
+
+// The backend that answers is Gemini's, and it does not mint OpenAI's
+// `chatcmpl-` ids or report a system fingerprint.
+function stripPrefix(id: string): string {
+  return id.replace(/^chatcmpl-/, "");
+}
+
+function toCompatCompletion(completion: ChatCompletion): Omit<ChatCompletion, "system_fingerprint"> {
+  const { system_fingerprint: _fingerprint, ...rest } = completion;
+  return { ...rest, id: stripPrefix(completion.id) };
+}
 
 openaiCompatRouter.post("/chat/completions", (req, res) => {
   const body = req.body as ChatCompletionRequest;
-  if (typeof body.model !== "string" || !body.model) {
-    throw new ApiError(400, "you must provide a model parameter", null, "model");
-  }
-  if (!Array.isArray(body.messages) || body.messages.length === 0) {
-    throw new ApiError(400, "'messages' must be a non-empty array.", null, "messages");
+  if (!Array.isArray(body?.messages) || body.messages.length === 0) {
+    // Translated into a generateContent call before it is validated, so the
+    // complaint that comes back names that request, not the OpenAI one.
+    throw contentsNotSpecified();
   }
 
   const overrides = requestOverrides(req);
   if (body.stream) {
     openSSE(res);
     for (const chunk of buildChatChunks(body, overrides)) {
-      sendEvent(res, chunk);
+      const { system_fingerprint: _fingerprint, ...rest } = chunk;
+      sendEvent(res, { ...rest, id: stripPrefix(chunk.id) });
     }
     // The [DONE] sentinel belongs here, unlike on Gemini's native stream: the
     // client is an OpenAI SDK and it waits for one.
     sendDone(res);
     return;
   }
-  res.json(buildChatCompletion(body, overrides));
+  res.json(toCompatCompletion(buildChatCompletion(body, overrides)));
 });
 
 openaiCompatRouter.post("/embeddings", (req, res) => {
   const body = req.body as EmbeddingRequest;
-  if (typeof body.model !== "string" || !body.model) {
-    throw new ApiError(400, "you must provide a model parameter", null, "model");
-  }
-  if (body.input === undefined) {
-    throw new ApiError(400, "Missing required parameter: 'input'.", "missing_required_parameter", "input");
-  }
+  if (body?.input === undefined) throw contentsNotSpecified();
   // Gemini's own dimensions, not OpenAI's: the models being served are Gemini's.
   res.json(createEmbeddings(body, nativeDimensions));
 });
 
 // The catalog is Gemini's, dressed in OpenAI's list envelope. Ids keep the
-// `models/` resource prefix the way Google reports them.
-function toOpenAIModel(name: string): Model {
-  return { id: name, object: "model", created: deterministicCreated(name), owned_by: "google" };
+// `models/` resource prefix, there is no `created` timestamp, and the display
+// name rides along in snake_case.
+interface CompatModel {
+  id: string;
+  object: "model";
+  owned_by: "google";
+  display_name: string;
+}
+
+function toCompatModel(name: string, displayName: string): CompatModel {
+  return { id: name, object: "model", owned_by: "google", display_name: displayName };
 }
 
 openaiCompatRouter.get("/models", (_req, res) => {
-  res.json({ object: "list", data: listModels().models.map((model) => toOpenAIModel(model.name)) });
+  res.json({
+    object: "list",
+    data: listModels().models.map((model) => toCompatModel(model.name, model.displayName)),
+  });
 });
 
 openaiCompatRouter.get("/models/{*id}", (req, res) => {
@@ -73,13 +95,8 @@ openaiCompatRouter.get("/models/{*id}", (req, res) => {
     (candidate) => candidate.name === requested || candidate.name === `models/${requested}`,
   );
   if (!model) {
-    throw new ApiError(404, `The model '${requested}' does not exist`, "model_not_found", "model");
+    const name = requested.startsWith("models/") ? requested : `models/${requested}`;
+    throw new ApiError(404, `Model is not found: ${name} for api version v1main`, "NOT_FOUND");
   }
-  res.json(toOpenAIModel(model.name));
+  res.json(toCompatModel(model.name, model.displayName));
 });
-
-// OpenAI's envelope for everything raised inside this router, because the
-// client reading it is an OpenAI SDK. Authentication is the exception: it is
-// checked upstream by Google's frontend, and fails with Google's envelope.
-openaiCompatRouter.use(notFoundHandler);
-openaiCompatRouter.use(errorHandler);

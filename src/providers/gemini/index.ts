@@ -1,7 +1,7 @@
 import express, { Router } from "express";
 import { createAuthMiddleware } from "../../core/auth";
 import type { Provider, ProviderDeps } from "../types";
-import { geminiAuthScheme } from "./auth";
+import { geminiAuthScheme, geminiCompatAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
 import { filesRouter, uploadRouter } from "./routes/files";
 import { interactionsRouter } from "./routes/interactions";
@@ -22,13 +22,15 @@ export const geminiProvider: Provider = {
     const auth = createAuthMiddleware(apiKeys, geminiAuthScheme);
 
     const api = Router();
+    // Registered ahead of the native auth: the compatibility layer answers a
+    // bad or missing credential with its own codes and messages.
+    api.use("/openai", createAuthMiddleware(apiKeys, geminiCompatAuthScheme), openaiCompatRouter);
+
     api.use(auth);
     api.use("/models", modelsRouter);
     api.use("/tunedModels", tunedModelsRouter);
     api.use("/interactions", interactionsRouter);
     api.use("/files", filesRouter);
-    // Registered last so the native surface always wins a path collision.
-    api.use("/openai", openaiCompatRouter);
 
     const router = Router();
 

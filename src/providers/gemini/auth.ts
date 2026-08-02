@@ -32,3 +32,18 @@ export const geminiAuthScheme: AuthScheme = {
     return new ApiError(400, "API key not valid. Please pass a valid API key.", "API_KEY_INVALID");
   },
 };
+
+// The OpenAI-compatibility layer answers credential failures differently from
+// the rest of the API, and both were confirmed against the live service: a
+// missing credential is a 404 rather than a 403, and a bad key gets a shorter
+// message with no details attached.
+export const geminiCompatAuthScheme: AuthScheme = {
+  extractKey: geminiAuthScheme.extractKey,
+  missingKeyError(): ApiError {
+    return new ApiError(404, "Requested entity was not found.", "REQUESTED_ENTITY_NOT_FOUND");
+  },
+  // No reason: unlike the classic surface, this one attaches no details.
+  invalidKeyError(_key: string): ApiError {
+    return new ApiError(400, "Please pass a valid API key", null);
+  },
+};

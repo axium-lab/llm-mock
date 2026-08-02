@@ -145,12 +145,17 @@ export interface ModalityTokens {
   tokens: number;
 }
 
+// Note the lowercase modality and the absence of an output breakdown: this
+// surface reports usage differently from generateContent's usageMetadata, which
+// spells modalities in uppercase and details both directions.
 export interface InteractionUsage {
-  total_input_tokens: number;
-  total_output_tokens: number;
   total_tokens: number;
+  total_input_tokens: number;
   input_tokens_by_modality: ModalityTokens[];
-  output_tokens_by_modality: ModalityTokens[];
+  total_cached_tokens: number;
+  total_output_tokens: number;
+  total_tool_use_tokens: number;
+  total_thought_tokens: number;
 }
 
 export interface CreateInteractionRequest {
@@ -173,12 +178,14 @@ export type InteractionStatus = "completed" | "cancelled" | "in_progress";
 
 export interface Interaction {
   id: string;
-  model: string;
   status: InteractionStatus;
+  usage: InteractionUsage;
   created: string;
   updated: string;
+  service_tier: string;
   steps: Step[];
-  usage: InteractionUsage;
+  object: "interaction";
+  model: string;
 }
 
 // Streamed events are discriminated by an `event_type` field inside the data

@@ -52,7 +52,19 @@ describe("gemini authentication", () => {
     expect(body.error.code).toBe(400);
     expect(body.error.status).toBe("INVALID_ARGUMENT");
     expect(body.error.message).toBe("API key not valid. Please pass a valid API key.");
-    expect(body.error.details?.[0]?.reason).toBe("API_KEY_INVALID");
+
+    // An invalid key is the one error that carries details, and the domain is
+    // googleapis.com rather than the service's own host.
+    expect(body.error.details?.[0]).toMatchObject({
+      "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+      reason: "API_KEY_INVALID",
+      domain: "googleapis.com",
+      metadata: { service: "generativelanguage.googleapis.com" },
+    });
+    expect(body.error.details?.[1]).toMatchObject({
+      "@type": "type.googleapis.com/google.rpc.LocalizedMessage",
+      locale: "en-US",
+    });
   });
 
   it("rejects a request with no credential at all with 403 PERMISSION_DENIED", async () => {
@@ -62,6 +74,24 @@ describe("gemini authentication", () => {
     const body = (await res.json()) as ErrorBody;
     expect(body.error.status).toBe("PERMISSION_DENIED");
     expect(body.error.message).toContain("unregistered callers");
+    // Unlike an invalid key, this one carries no details.
+    expect(body.error.details).toBeUndefined();
+  });
+
+  it("answers a credential failure on /interactions in the classic envelope", async () => {
+    const res = await fetch(`${ctx.baseUrl}/v1beta/interactions`, {
+      method: "POST",
+      headers: { "x-goog-api-key": INVALID_API_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ model: "gemini-3.6-flash", input: "hi" }),
+    });
+    expect(res.status).toBe(400);
+
+    // Google's frontend rejects the credential before the Interactions service
+    // runs, so this is google.rpc.Status even though that surface's own errors
+    // use the flatter next-gen envelope.
+    const body = (await res.json()) as ErrorBody;
+    expect(body.error.code).toBe(400);
+    expect(body.error.status).toBe("INVALID_ARGUMENT");
   });
 
   it("surfaces the rejection through the SDK", async () => {

@@ -176,7 +176,7 @@ Both `v1beta` and `v1` serve the same mock, so either `apiVersion` works.
 | `POST /gemini/v1beta/models/{model}:batchEmbedContents` | Deterministic unit vectors; what the SDK calls even for one input |
 | `POST /gemini/v1beta/models/{model}:embedContent` | The singular form, for curl and non-SDK callers |
 | `POST /gemini/v1beta/models/{model}:countTokens` | Accepts bare `contents` or a whole `generateContentRequest` |
-| `GET /gemini/v1beta/models` | Simulated catalog (`gemini-3.1-pro`, `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-embedding-001`, ...) |
+| `GET /gemini/v1beta/models` | Simulated catalog (`gemini-3.6-flash`, `gemini-3.1-pro-preview`, `gemini-3.5-flash-lite`, `gemini-embedding-001`, ...), ids checked against the live listing |
 | `GET /gemini/v1beta/models/{model}` | `404` in Google's `google.rpc.Status` format for unknown models |
 | `GET /gemini/v1beta/tunedModels` | Always empty; this mock mints no tuned models |
 | `POST /gemini/v1beta/interactions` | Interactions API: `steps`, `usage`, `status`, tool calls and SSE with `stream: true` |
@@ -253,11 +253,20 @@ const completion = await client.chat.completions.create({
 });
 ```
 
-It is a genuine translation layer, not a second API, so responses come back in OpenAI's shapes — `chat.completion` objects, `[DONE]`-terminated streams, tool call arguments as a JSON string rather than the decoded object the native surface sends. What it serves underneath is still Gemini: `/models` lists Gemini models with `owned_by: "google"`, and embeddings come out at Gemini's dimensions rather than OpenAI's 1536.
+It is a translation layer over the same backend, not a second API, so successful responses come back in OpenAI's shapes — `chat.completion` objects, `[DONE]`-terminated streams, tool call arguments as a JSON string rather than the decoded object the native surface sends. What it serves underneath is still Gemini, and that shows: `/models` lists Gemini models with `owned_by: "google"` and a `display_name` but no `created`, completions carry no `system_fingerprint` and no `chatcmpl-` id prefix, and embeddings come out at Gemini's dimensions rather than OpenAI's 1536.
+
+**Errors are Google's, not OpenAI's.** The layer translates requests, not failures, so a client reading an otherwise OpenAI-shaped API gets `google.rpc.Status` back — and because the request has already become a `generateContent` call by the time it is validated, that is what the complaint names:
+
+```jsonc
+// POST /gemini/v1beta/openai/chat/completions  with no `messages`
+{ "error": { "code": 400,
+             "message": "* GenerateContentRequest.contents: contents is not specified\n",
+             "status": "INVALID_ARGUMENT" } }
+```
 
 Only what Google actually exposes is mounted. **The Responses API and the Files endpoints are absent from the real compatibility layer**, so calling them here `404`s exactly as it would against Google — use `/openai/v1` for the former and Gemini's native `/gemini/v1beta/files` for the latter.
 
-One split worth knowing: a validation error comes back in OpenAI's envelope, because an OpenAI SDK is reading it, but an authentication failure comes back in Google's. That mirrors where each check happens — Google's API frontend rejects an unknown key before the compatibility layer ever runs.
+One known divergence: against the live API some errors on this layer and on `/interactions` come back wrapped in a JSON array (`[{"error":…}]`). The rule behind it was not determinable from the responses observed, so the mock always returns the bare object rather than guess.
 
 ### Mock-only
 
@@ -299,15 +308,30 @@ Gemini reads `x-goog-api-key` (with `?key=` and `Authorization: Bearer` also acc
       {
         "@type": "type.googleapis.com/google.rpc.ErrorInfo",
         "reason": "API_KEY_INVALID",
-        "domain": "generativelanguage.googleapis.com",
+        "domain": "googleapis.com",
         "metadata": { "service": "generativelanguage.googleapis.com" }
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.LocalizedMessage",
+        "locale": "en-US",
+        "message": "API key not valid. Please pass a valid API key."
       }
     ]
   }
 }
 ```
 
-A Gemini request with no credential at all gets a `403 PERMISSION_DENIED` instead, which is what Google's API frontend answers to an unidentified caller.
+An invalid key is the **only** error that carries `details`; every other one — missing credential, unknown model, unknown file, a malformed body — reports `code`/`message`/`status` and nothing more.
+
+Credential handling varies by surface, and all three were checked against the live API:
+
+| | Invalid key | No credential |
+| --- | --- | --- |
+| Native (`/v1beta/…`) | `400 INVALID_ARGUMENT` | `403 PERMISSION_DENIED` |
+| `/v1beta/interactions` | `400 INVALID_ARGUMENT`, **classic** envelope | `403 PERMISSION_DENIED`, classic |
+| `/v1beta/openai/…` | `400`, message `Please pass a valid API key`, no details | `404 NOT_FOUND` |
+
+The Interactions row is the surprising one: that surface uses the flatter next-gen envelope for its own errors, but a credential is rejected by Google's frontend before the service ever runs, so an auth failure there comes back as `google.rpc.Status` like everywhere else.
 
 ## Controlling responses
 

@@ -4,13 +4,14 @@ import type { GeminiModel, ListModelsResponse } from "../types";
 const GENERATIVE_METHODS = ["generateContent", "countTokens", "createCachedContent", "batchGenerateContent"];
 const EMBEDDING_METHODS = ["embedContent", "batchEmbedContents", "countTokens"];
 
-// Simulated catalog mirroring the ids AI Studio serves today. Values are fixed
-// so the listing is byte-identical on every call.
+// Simulated catalog mirroring the ids AI Studio serves today, checked against
+// the live /v1beta/models listing. Values are fixed so the listing is
+// byte-identical on every call.
 const CATALOG: GeminiModel[] = [
   {
-    name: "models/gemini-3.1-pro",
+    name: "models/gemini-3.1-pro-preview",
     version: "3.1",
-    displayName: "Gemini 3.1 Pro",
+    displayName: "Gemini 3.1 Pro Preview",
     description: "Most intelligent Gemini model.",
     inputTokenLimit: 1_048_576,
     outputTokenLimit: 65_536,
@@ -36,9 +37,9 @@ const CATALOG: GeminiModel[] = [
     thinking: true,
   },
   {
-    name: "models/gemini-3-flash",
+    name: "models/gemini-3-flash-preview",
     version: "3.0",
-    displayName: "Gemini 3 Flash",
+    displayName: "Gemini 3 Flash Preview",
     description: "Fast general-purpose model.",
     inputTokenLimit: 1_048_576,
     outputTokenLimit: 65_536,

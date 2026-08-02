@@ -37,6 +37,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+The Gemini provider was verified end to end against the live `generativelanguage.googleapis.com`, which corrected several shapes that had been built from documentation alone:
+
+- Error `details` are emitted only for an invalid API key, and with `domain: "googleapis.com"` plus a `google.rpc.LocalizedMessage` entry. Every other error — missing credential, unknown model, unknown file, malformed body — carries no `details` at all.
+- A credential failure under `/interactions` now answers in the classic `google.rpc.Status` envelope rather than that surface's next-gen one, because Google's frontend rejects the key before the service runs. The service's own errors keep the next-gen envelope.
+- The OpenAI-compatibility layer answers credential failures with its own codes: `404 NOT_FOUND` for a missing credential (not `403`) and a shorter `Please pass a valid API key` with no details for a bad one.
+- The compatibility layer now returns Google's error envelope rather than OpenAI's, including the `GenerateContentRequest.contents` complaint for a request with no `messages`, and its model objects carry `display_name` with no `created`. Completions no longer report a `system_fingerprint` or a `chatcmpl-` id prefix.
+- Interaction objects gained `object: "interaction"`, `service_tier`, and the `total_cached_tokens`/`total_tool_use_tokens`/`total_thought_tokens` counters; their modality is lowercase `text`, they carry no `output_tokens_by_modality`, their timestamps have no fractional seconds, and a create no longer emits a `user_input` step.
+- Catalog ids `gemini-3.1-pro` and `gemini-3-flash` do not exist; they are `gemini-3.1-pro-preview` and `gemini-3-flash-preview`.
+- The Files `403` echoes the id as the caller wrote it, without the `files/` prefix.
 - Tool argument synthesis no longer yields `null` for every property of a Gemini schema: types are matched case-insensitively, so Gemini's uppercase `Type` enum (`STRING`, `OBJECT`, ...) resolves like lowercase JSON Schema types.
 
 ## [0.3.0] - 2026-08-01

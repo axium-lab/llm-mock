@@ -79,18 +79,22 @@ function usageFor(promptText: string, outputText: string): InteractionUsage {
   const input = approxTokens(promptText);
   const output = approxTokens(outputText);
   return {
-    total_input_tokens: input,
-    total_output_tokens: output,
     total_tokens: input + output,
-    input_tokens_by_modality: [{ modality: "TEXT", tokens: input }],
-    output_tokens_by_modality: [{ modality: "TEXT", tokens: output }],
+    total_input_tokens: input,
+    input_tokens_by_modality: [{ modality: "text", tokens: input }],
+    total_cached_tokens: 0,
+    total_output_tokens: output,
+    total_tool_use_tokens: 0,
+    // This mock has no model and therefore never thinks.
+    total_thought_tokens: 0,
   };
 }
 
 // ISO timestamps derived from the id rather than the clock, so identical
-// requests stay byte-identical.
+// requests stay byte-identical. Seconds precision, no fractional part, which
+// is how the live API formats them.
 function timestampFor(id: string): string {
-  return new Date(deterministicCreated(id) * 1000).toISOString();
+  return `${new Date(deterministicCreated(id) * 1000).toISOString().slice(0, 19)}Z`;
 }
 
 function textContent(text: string): TextContent[] {
@@ -110,10 +114,13 @@ export function buildInteraction(request: CreateInteractionRequest, overrides: O
 
   // A turn that calls tools carries no prose unless the request pinned some.
   const output = toolCalls.length > 0 ? overrides.text : (overrides.text ?? echoFallback(prompt));
-  const id = deterministicId("", { model, input: request.input, output, toolCalls }).slice(0, 20);
+  // Live ids carry a version prefix ahead of an opaque blob.
+  const id = `v1_${deterministicId("", { model, input: request.input, output, toolCalls }).slice(0, 20)}`;
 
+  // No user_input step: the live API reports only what the model produced, and
+  // echoing the prompt back is what the `include_input` flag on a retrieval is
+  // for. Skipping it also keeps `output_text` resolving off the last steps.
   const steps: Step[] = [
-    ...(prompt ? [{ type: "user_input" as const, content: textContent(prompt) }] : []),
     ...(output === undefined ? [] : [{ type: "model_output" as const, content: textContent(output) }]),
     ...toolCalls.map(
       (call): FunctionCallStep => ({
@@ -150,9 +157,21 @@ export function buildSyntheticInteraction(id: string, status: InteractionStatus 
   });
 }
 
-function assemble(params: Omit<Interaction, "created" | "updated">): Interaction {
+// Field order mirrors the live response, so a diff against a recorded one
+// lines up.
+function assemble(params: Omit<Interaction, "created" | "updated" | "service_tier" | "object">): Interaction {
   const stamp = timestampFor(params.id);
-  return { ...params, created: stamp, updated: stamp };
+  return {
+    id: params.id,
+    status: params.status,
+    usage: params.usage,
+    created: stamp,
+    updated: stamp,
+    service_tier: "standard",
+    steps: params.steps,
+    object: "interaction",
+    model: params.model,
+  };
 }
 
 // Event sequence for `stream: true`: created → per step start/delta(s)/stop →

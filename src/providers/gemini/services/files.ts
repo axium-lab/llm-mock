@@ -121,11 +121,12 @@ function resourceName(id: string): string {
 }
 
 // This is the error the real API answers for a file that is missing or owned by
-// someone else — it does not distinguish the two cases.
-function notFound(name: string): ApiError {
+// someone else — it does not distinguish the two cases. It echoes the id as the
+// caller wrote it, without the resource prefix.
+function notFound(id: string): ApiError {
   return new ApiError(
     403,
-    `You do not have permission to access the File ${name} or it may not exist.`,
+    `You do not have permission to access the File ${id} or it may not exist.`,
     "PERMISSION_DENIED",
   );
 }
@@ -136,7 +137,7 @@ function notFound(name: string): ApiError {
 export function retrieveFile(id: string): GeminiFile {
   const name = resourceName(id);
   const bare = name.slice("files/".length);
-  if (bare.startsWith(MISSING_FILE_PREFIX)) throw notFound(name);
+  if (bare.startsWith(MISSING_FILE_PREFIX)) throw notFound(bare);
 
   const known = CATALOG.find((file) => file.name === name);
   if (known) return known;

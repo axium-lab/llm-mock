@@ -19,6 +19,8 @@ describe("gemini models", () => {
 
     expect(names).toContain("models/gemini-3.6-flash");
     expect(names).toContain("models/gemini-embedding-001");
+    // Preview models keep the suffix the live catalog gives them.
+    expect(names).toContain("models/gemini-3.1-pro-preview");
   });
 
   it("retrieves a single model with its wire fields mapped", async () => {
@@ -58,7 +60,8 @@ describe("gemini models", () => {
     const body = (await res.json()) as ErrorBody;
     expect(body.error.status).toBe("NOT_FOUND");
     expect(body.error.message).toContain("models/gemini-unknown is not found for API version v1beta");
-    expect(body.error.details?.[0]?.reason).toBe("MODEL_NOT_FOUND");
+    // No `details`: on the live API only an invalid API key carries them.
+    expect(body.error.details).toBeUndefined();
   });
 
   it("serves the same catalog on v1 and v1beta", async () => {

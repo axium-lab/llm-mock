@@ -1,6 +1,6 @@
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import OpenAI, { NotFoundError } from "openai";
+import OpenAI from "openai";
 import { INVALID_API_KEY, startServer, stopServer, VALID_API_KEY } from "../server";
 
 const MODEL = "gemini-3.6-flash";
@@ -90,6 +90,33 @@ describe("gemini OpenAI-compatibility layer", () => {
     expect(models.data[0]?.owned_by).toBe("google");
   });
 
+  it("shapes a model the way this layer does: display_name, no created", async () => {
+    const res = await fetch(`${baseURL}/models/gemini-3.6-flash`, {
+      headers: { authorization: `Bearer ${VALID_API_KEY}` },
+    });
+    const body = (await res.json()) as Record<string, unknown>;
+
+    expect(body).toEqual({
+      id: "models/gemini-3.6-flash",
+      object: "model",
+      owned_by: "google",
+      display_name: "Gemini 3.6 Flash",
+    });
+  });
+
+  it("omits system_fingerprint and OpenAI's chatcmpl- id prefix", async () => {
+    const res = await fetch(`${baseURL}/chat/completions`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${VALID_API_KEY}`, "content-type": "application/json" },
+      body: JSON.stringify({ model: MODEL, messages: [{ role: "user", content: "hi" }] }),
+    });
+    const body = (await res.json()) as { id: string; system_fingerprint?: string };
+
+    // Gemini's backend mints neither.
+    expect(body.system_fingerprint).toBeUndefined();
+    expect(body.id).not.toStartWith("chatcmpl-");
+  });
+
   it("retrieves a model by bare id or by resource name", async () => {
     const [bare, prefixed] = await Promise.all([
       client.models.retrieve(MODEL),
@@ -101,13 +128,14 @@ describe("gemini OpenAI-compatibility layer", () => {
   });
 
   it("404s an OpenAI model, which this layer does not serve", async () => {
-    try {
-      await client.models.retrieve("gpt-4o");
-      throw new Error("expected the request to fail");
-    } catch (error) {
-      expect(error).toBeInstanceOf(NotFoundError);
-      expect((error as NotFoundError).code).toBe("model_not_found");
-    }
+    const res = await fetch(`${baseURL}/models/gpt-4o`, {
+      headers: { authorization: `Bearer ${VALID_API_KEY}` },
+    });
+    expect(res.status).toBe(404);
+
+    const body = (await res.json()) as { error: { message: string; status: string } };
+    expect(body.error.status).toBe("NOT_FOUND");
+    expect(body.error.message).toBe("Model is not found: models/gpt-4o for api version v1main");
   });
 
   it("does not expose the Responses API, absent from the real compat layer", async () => {
@@ -125,7 +153,7 @@ describe("gemini OpenAI-compatibility layer", () => {
     expect(res.status).toBe(404);
   });
 
-  it("reports validation errors in OpenAI's envelope", async () => {
+  it("leaks Google's error envelope, not OpenAI's, on a validation failure", async () => {
     const res = await fetch(`${baseURL}/chat/completions`, {
       method: "POST",
       headers: { authorization: `Bearer ${VALID_API_KEY}`, "content-type": "application/json" },
@@ -133,21 +161,34 @@ describe("gemini OpenAI-compatibility layer", () => {
     });
     expect(res.status).toBe(400);
 
-    const body = (await res.json()) as { error: { type: string; param: string | null; status?: string } };
-    expect(body.error.type).toBe("invalid_request_error");
-    expect(body.error.param).toBe("messages");
-    expect(body.error.status).toBeUndefined();
+    // The layer translates requests, not failures: the request has already
+    // become a generateContent call by the time it is validated, so that is
+    // what the complaint names.
+    const body = (await res.json()) as { error: { status: string; message: string; type?: string } };
+    expect(body.error.status).toBe("INVALID_ARGUMENT");
+    expect(body.error.message).toContain("GenerateContentRequest.contents");
+    expect(body.error.type).toBeUndefined();
   });
 
-  it("reports a bad key in Google's envelope, since auth is checked upstream", async () => {
+  it("reports a bad key with this layer's own shorter message", async () => {
     const res = await fetch(`${baseURL}/models`, {
       headers: { authorization: `Bearer ${INVALID_API_KEY}` },
     });
     expect(res.status).toBe(400);
 
-    const body = (await res.json()) as { error: { status: string; code: unknown } };
+    const body = (await res.json()) as { error: { status: string; message: string; details?: unknown } };
     expect(body.error.status).toBe("INVALID_ARGUMENT");
-    expect(body.error.code).toBe(400);
+    expect(body.error.message).toBe("Please pass a valid API key");
+    expect(body.error.details).toBeUndefined();
+  });
+
+  it("answers a missing credential with 404, not the 403 the native surface gives", async () => {
+    const res = await fetch(`${baseURL}/models`);
+    expect(res.status).toBe(404);
+
+    const body = (await res.json()) as { error: { message: string; status: string } };
+    expect(body.error.status).toBe("NOT_FOUND");
+    expect(body.error.message).toBe("Requested entity was not found.");
   });
 
   it("leaves the native Gemini surface untouched", async () => {
