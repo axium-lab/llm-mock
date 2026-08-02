@@ -3,7 +3,7 @@ import { deterministicCreated, deterministicId } from "../../../core/ids";
 import type { Overrides } from "../../../core/override";
 import { approxTokens } from "../../../core/usage";
 import { chunkText } from "../../../core/sse";
-import { resolveToolCalls, type ResolvedToolCall } from "./tools";
+import { resolveToolCalls, type ResolvedToolCall } from "../../../core/tools";
 import type {
   FunctionCallItem,
   OutputItem,

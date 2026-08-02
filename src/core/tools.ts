@@ -1,10 +1,10 @@
-import { deterministicId } from "../../../core/ids";
-import type { ToolCallOverride } from "../../../core/override";
+import { deterministicId } from "./ids";
+import type { ToolCallOverride } from "./override";
 
-// Shared tool-calling logic for both Chat Completions and the Responses API.
-// The two endpoints disagree on where a tool's name lives and on how a tool
-// result is fed back, so each one normalizes its own shapes and then reuses
-// everything below.
+// Shared tool-calling logic across providers and endpoints: Chat Completions,
+// the Responses API and Gemini's generateContent. They disagree on where a
+// tool's name lives and on how a tool result is fed back, so each caller
+// normalizes its own shapes and then reuses everything below.
 
 export interface ResolvedToolCall {
   id: string;
@@ -20,18 +20,31 @@ interface ToolSpec {
 
 type ToolChoice = { mode: "auto" | "none" | "required" } | { mode: "named"; name: string };
 
-// Chat Completions nests the definition under `function`; the Responses API
-// keeps `name`/`parameters` at the top level. Both are accepted.
+// Three layouts reach this function: Chat Completions nests the definition
+// under `function`, the Responses API keeps `name`/`parameters` at the top
+// level, and Gemini groups several declarations inside one `functionDeclarations`
+// entry. All are accepted.
 export function normalizeTools(tools: unknown): ToolSpec[] {
   if (!Array.isArray(tools)) return [];
   return tools.flatMap((tool) => {
     if (!tool || typeof tool !== "object") return [];
     const record = tool as Record<string, unknown>;
+
+    const declarations = record.functionDeclarations;
+    if (Array.isArray(declarations)) return declarations.flatMap(toSpec);
+
     const nested = record.function as Record<string, unknown> | undefined;
-    const source = nested && typeof nested === "object" ? nested : record;
-    const name = source.name;
-    return typeof name === "string" ? [{ name, parameters: source.parameters }] : [];
+    return toSpec(nested && typeof nested === "object" ? nested : record);
   });
+}
+
+function toSpec(source: unknown): ToolSpec[] {
+  if (!source || typeof source !== "object") return [];
+  const record = source as Record<string, unknown>;
+  if (typeof record.name !== "string") return [];
+  // Gemini accepts a plain JSON Schema under its own key as an alternative to
+  // the Schema-typed `parameters`.
+  return [{ name: record.name, parameters: record.parameters ?? record.parametersJsonSchema }];
 }
 
 // tool_choice is either a keyword or an object naming one function, again with
@@ -55,7 +68,10 @@ function synthesizeValue(schema: unknown): unknown {
   if (record.default !== undefined) return record.default;
   if (Array.isArray(record.enum) && record.enum.length > 0) return record.enum[0];
 
-  const type = Array.isArray(record.type) ? record.type[0] : record.type;
+  // JSON Schema spells types in lowercase, Gemini's Schema enum in uppercase
+  // ("STRING", "OBJECT", ...). Both name the same types.
+  const declared = Array.isArray(record.type) ? record.type[0] : record.type;
+  const type = typeof declared === "string" ? declared.toLowerCase() : declared;
   switch (type) {
     case "string":
       return "mock";
