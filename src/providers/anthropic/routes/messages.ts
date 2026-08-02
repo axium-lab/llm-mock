@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { ApiError } from "../../../core/errors";
 import { requestOverrides } from "../../../core/override";
+import { openSSE, sendEvent } from "../../../core/sse";
 import { buildMessage } from "../services/messages";
+import { buildMessageEvents } from "../services/stream";
 import type { MessageRequest } from "../types";
 
 export const messagesRouter = Router();
@@ -36,5 +38,20 @@ function assertRequest(body: MessageRequest): MessageRequest {
 
 messagesRouter.post("/", (req, res) => {
   const body = assertRequest(req.body as MessageRequest);
-  res.json(buildMessage(body, requestOverrides(req)));
+  const message = buildMessage(body, requestOverrides(req));
+
+  if (!body.stream) {
+    res.json(message);
+    return;
+  }
+
+  openSSE(res);
+  for (const event of buildMessageEvents(message)) {
+    // The event name is not decoration here: without the `event:` line the
+    // SDK reads zero chunks from the stream.
+    sendEvent(res, event.data, event.name);
+  }
+  // No sentinel — `message_stop` above is the terminator, and the SDK errors
+  // out on a stream that ends without one.
+  res.end();
 });

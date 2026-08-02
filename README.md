@@ -129,7 +129,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
 | Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, Interactions API, streaming, tool calls, embeddings |
 | Azure OpenAI | `/azure/openai` | ✅ Supported — chat completions, streaming, tool calls, embeddings, content filtering |
-| Anthropic | `/anthropic` | 🚧 In progress — messages, tool use, thinking, models |
+| Anthropic | `/anthropic` | 🚧 In progress — messages, streaming, tool use, thinking, models |
 
 Note that where the version segment lives depends on the SDK, not on us. The OpenAI client appends only the request path, so its `baseURL` carries the version; `@google/genai` appends the version itself, so its `baseUrl` stops at the provider prefix:
 
@@ -424,7 +424,7 @@ Work in progress. This is the one provider here that shares nothing structural w
 
 | Endpoint | Notes |
 | --- | --- |
-| `POST /anthropic/v1/messages` | The whole generative surface: content blocks, `system`, tool use, thinking, `stop_reason`, `usage` |
+| `POST /anthropic/v1/messages` | The whole generative surface: content blocks, `system`, tool use, thinking, `stop_reason`, `usage`, and SSE with `stream: true` |
 | `GET /anthropic/v1/models` | Simulated catalog, cursor-paginated by `after_id`/`before_id` |
 | `GET /anthropic/v1/models/{id}` | `max_input_tokens` is the context window; `capabilities` is a nested tree of supported flags |
 
@@ -474,6 +474,29 @@ Four shapes here differ from the other providers, and they are the API's, not th
 - **Thinking blocks are emitted whenever thinking is on**, but `display` decides whether they carry text: the default `"omitted"` leaves `thinking` an empty string, and `"summarized"` fills in a summary. That empty-but-present block is what a streaming UI sees as a long pause, so it is worth being able to test.
 
 Consecutive same-role messages are accepted — the real API combines them into one turn — but the conversation must open with `user`. The `x-llm-mock-response` and `x-llm-mock-tool-calls` headers work exactly as on the other providers.
+
+**Streaming uses named SSE events**, and this is the sharpest divergence on the whole server. Every frame carries an `event:` line as well as `data:`, and there is no sentinel string — the stream ends on a named `message_stop`:
+
+```
+event: message_start
+data: {"type":"message_start","message":{…,"content":[],"stop_reason":null}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Echo: "}}
+
+event: message_stop
+data: {"type":"message_stop"}
+```
+
+Both halves are load-bearing, verified against the real client: drop the `event:` lines and the SDK reads **zero** chunks; drop `message_stop` and it errors with *"stream ended without producing a Message"*. That makes three SSE conventions across the five providers here:
+
+| Provider | Frame | Terminator |
+| --- | --- | --- |
+| OpenAI, Azure | `data:` only | `data: [DONE]` |
+| Gemini, Gemini Enterprise | `data:` only | end of stream (a `[DONE]` is rejected) |
+| Anthropic | `event:` **and** `data:` | `event: message_stop` |
+
+A tool call streams its arguments as `input_json_delta` pieces of a JSON string, and a thinking block streams `thinking_delta` pieces followed by its `signature` under a separate `signature_delta`.
 
 **Managed Agents is out of scope** — the `/v1/agents`, `/v1/sessions`, `/v1/environments`, `/v1/vaults` and `/v1/memory_stores` surface is not mocked. That is a deliberate decision, not an oversight: it is larger than everything else on this provider combined.
 
