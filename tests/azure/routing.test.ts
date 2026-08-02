@@ -42,8 +42,9 @@ describe("azure routing", () => {
 
   it("404s an unimplemented v1 path instead of blaming api-version", async () => {
     // The v1 tree is terminal: without that, this would fall through to the
-    // classic tree and be rejected for a missing api-version.
-    const res = await raw("/v1/chat/completions", {
+    // classic tree and be rejected for a missing api-version, which would be a
+    // misleading answer for a path that simply does not exist here.
+    const res = await raw("/v1/audio/speech", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: "{}",

@@ -347,7 +347,8 @@ Work in progress. Azure serves the same models as OpenAI through a different fro
 | `POST …/openai/deployments/{deployment}/chat/completions` | Full `chat.completion` object, SSE streaming with `[DONE]`, tool calls |
 | `POST …/openai/deployments/{deployment}/embeddings` | Deterministic unit vectors, correct dimension per model |
 | `…/openai/deployments/{deployment}/…?api-version=` | The classic surface. A **deployment name replaces the model** in the path, and `api-version` is required on every call |
-| `…/openai/v1/…` | The newer surface: OpenAI's contract verbatim, no `api-version`, no deployments |
+| `POST /azure/openai/v1/chat/completions` | The newer surface: OpenAI's contract verbatim, no `api-version`, no deployments |
+| `POST /azure/openai/v1/embeddings` | Same handlers as the deployment path, addressed by model |
 | `GET /azure/openai/models?api-version=` | Model catalog, outside the deployment path |
 
 Azure puts the resource name in the hostname (`{resource}.openai.azure.com`) and keeps `/openai` in the path. A mock cannot hand out subdomains, but it does not need to — the SDK takes an arbitrary URL:
@@ -363,6 +364,17 @@ const client = new AzureOpenAI({
 ```
 
 Use `baseURL` rather than `endpoint`: the SDK reads `OPENAI_BASE_URL` from the environment and then refuses to combine it with `endpoint`, so a stray env var would break the client before it sends anything.
+
+The v1 surface needs no Azure-specific client at all — a plain `OpenAI` pointed one level deeper:
+
+```ts
+const client = new OpenAI({
+  baseURL: "http://localhost:3000/azure/openai/v1",
+  apiKey: "sk-mock-key-01",
+});
+```
+
+Both surfaces run the same handlers, so the same request returns the same body on either. The reserved `missing-` prefix belongs to the deployment path only: on v1 there is no deployment to be missing, and `missing-one` is just a model name.
 
 **Deployments.** Any name works, the way every provider here accepts any model id — except names starting with `missing-`, which return the real `404 DeploymentNotFound`. That is the error Azure users hit most, and the one their code most needs to handle. The deployment routes the call; the `model` echoed back is the one the client asked for, since the two need not agree.
 

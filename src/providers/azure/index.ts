@@ -5,6 +5,7 @@ import { azureAuthScheme } from "./auth";
 import { assertApiVersion } from "./deployments";
 import { errorHandler, notFoundHandler } from "./errors";
 import { deploymentsRouter } from "./routes/deployments";
+import { inferenceRouter } from "./routes/inference";
 import { modelsRouter } from "./routes/models";
 
 export const azureProvider: Provider = {
@@ -19,11 +20,14 @@ export const azureProvider: Provider = {
     api.use(createAuthMiddleware(apiKeys, azureAuthScheme));
 
     // The v1 surface: OpenAI's contract verbatim, with no api-version and no
-    // deployments. Terminal, so an unimplemented path here 404s instead of
-    // falling through to the classic tree and being told its api-version is
-    // missing.
+    // deployments — the model in the body is addressed directly. The same
+    // inference handlers serve it as serve the deployment paths.
+    //
+    // Terminal, so an unimplemented path here 404s instead of falling through
+    // to the classic tree and being told its api-version is missing.
     const v1 = Router();
     v1.use("/models", modelsRouter);
+    v1.use(inferenceRouter);
     v1.use(notFoundHandler);
     api.use("/v1", v1);
 
