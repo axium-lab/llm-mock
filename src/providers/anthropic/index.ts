@@ -3,6 +3,8 @@ import { createAuthMiddleware } from "../../core/auth";
 import type { Provider, ProviderDeps } from "../types";
 import { anthropicAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
+import { batchesRouter } from "./routes/batches";
+import { countTokensRouter } from "./routes/count-tokens";
 import { messagesRouter } from "./routes/messages";
 import { modelsRouter } from "./routes/models";
 import { requireVersion } from "./version";
@@ -16,6 +18,10 @@ export const anthropicProvider: Provider = {
     const v1 = Router();
     v1.use(createAuthMiddleware(apiKeys, anthropicAuthScheme));
     v1.use(requireVersion);
+    // The two sub-resources are registered first: Express matches in order, so
+    // the literal paths have to win over the bare /messages mount.
+    v1.use("/messages/batches", batchesRouter);
+    v1.use("/messages/count_tokens", countTokensRouter);
     v1.use("/messages", messagesRouter);
     v1.use("/models", modelsRouter);
 

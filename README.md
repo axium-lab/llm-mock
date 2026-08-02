@@ -129,7 +129,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
 | Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, Interactions API, streaming, tool calls, embeddings |
 | Azure OpenAI | `/azure/openai` | ✅ Supported — chat completions, streaming, tool calls, embeddings, content filtering |
-| Anthropic | `/anthropic` | 🚧 In progress — messages, streaming, tool use, thinking, models |
+| Anthropic | `/anthropic` | 🚧 In progress — messages, streaming, tool use, thinking, models, token counting, batches |
 
 Note that where the version segment lives depends on the SDK, not on us. The OpenAI client appends only the request path, so its `baseURL` carries the version; `@google/genai` appends the version itself, so its `baseUrl` stops at the provider prefix:
 
@@ -425,6 +425,13 @@ Work in progress. This is the one provider here that shares nothing structural w
 | Endpoint | Notes |
 | --- | --- |
 | `POST /anthropic/v1/messages` | The whole generative surface: content blocks, `system`, tool use, thinking, `stop_reason`, `usage`, and SSE with `stream: true` |
+| `POST /anthropic/v1/messages/count_tokens` | What a prompt costs before you send it |
+| `POST /anthropic/v1/messages/batches` | Half-price asynchronous batch of message requests |
+| `GET /anthropic/v1/messages/batches` | Always an empty page — a stateless mock keeps no list |
+| `GET /anthropic/v1/messages/batches/{id}` | Status and per-request counts |
+| `GET /anthropic/v1/messages/batches/{id}/results` | JSONL, one result per line, keyed by `custom_id` |
+| `POST /anthropic/v1/messages/batches/{id}/cancel` | Moves the batch to `canceling` |
+| `DELETE /anthropic/v1/messages/batches/{id}` | Returns `message_batch_deleted` |
 | `GET /anthropic/v1/models` | Simulated catalog, cursor-paginated by `after_id`/`before_id` |
 | `GET /anthropic/v1/models/{id}` | `max_input_tokens` is the context window; `capabilities` is a nested tree of supported flags |
 
@@ -497,6 +504,41 @@ Both halves are load-bearing, verified against the real client: drop the `event:
 | Anthropic | `event:` **and** `data:` | `event: message_stop` |
 
 A tool call streams its arguments as `input_json_delta` pieces of a JSON string, and a thinking block streams `thinking_delta` pieces followed by its `signature` under a separate `signature_delta`.
+
+#### Token counting
+
+```ts
+const { input_tokens } = await client.messages.countTokens({
+  model: "claude-opus-5",
+  system: "You are terse.",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+The count adds up the messages, the system prompt and the serialized tool declarations, exactly the way `/v1/messages` builds its `usage.input_tokens` — so counting a prompt and then sending it gives the same number twice. It is an approximation, like every token count on this server; what it is good for is asserting that a prompt got bigger or smaller, not that it costs 412 tokens.
+
+#### Batches
+
+```ts
+const batch = await client.messages.batches.create({
+  requests: [
+    { custom_id: "a", params: { model: "claude-opus-5", max_tokens: 64, messages: [{ role: "user", content: "one" }] } },
+    { custom_id: "b", params: { model: "claude-opus-5", max_tokens: 64, messages: [{ role: "user", content: "two" }] } },
+  ],
+});
+
+for await (const result of await client.messages.batches.results(batch.id)) {
+  result.custom_id;         // "a"
+  result.result.type;       // "succeeded"
+  result.result.message;    // a full Message, echoing that request's prompt
+}
+```
+
+A batch is created by one request and read back by several others, which normally needs a store — and this server never keeps one. **The batch rides inside its own id**, the same trick the Files endpoints use: `msgbatch_` followed by the base64url of the `custom_id`, model and prompt of every request. Retrieve, results, cancel and delete all just decode it, so they work across restarts and across processes.
+
+That has one visible consequence, and it is deliberate that you see it rather than not: an id travels in a URL, so it cannot grow forever. Past roughly 1600 characters — a few dozen short requests — creating the batch fails with a `400` that says exactly that, instead of quietly dropping requests. The real API takes 100,000 of them; if you need that shape, you are testing the API, not your code.
+
+**Batches complete instantly.** With no clock to advance and no state to advance it in, a new batch is already `ended` and its results are already there. When you need to exercise the polling branch — the one that reads `processing_status` and waits — pin the status with `x-llm-mock-batch-status: in_progress` (or `canceling`, or `ended`). A batch that has not ended has a null `results_url` and its results endpoint answers `400`, the same as the real one.
 
 **Managed Agents is out of scope** — the `/v1/agents`, `/v1/sessions`, `/v1/environments`, `/v1/vaults` and `/v1/memory_stores` surface is not mocked. That is a deliberate decision, not an oversight: it is larger than everything else on this provider combined.
 
