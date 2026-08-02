@@ -126,7 +126,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | Provider | Prefix | Status |
 | --- | --- | --- |
 | OpenAI | `/openai/v1` | ✅ Supported |
-| Gemini (AI Studio) | `/gemini` | 🚧 In progress — `generateContent`, Interactions API, files, streaming, tool calls, models |
+| Gemini (AI Studio) | `/gemini` | 🚧 In progress — `generateContent`, Interactions API, embeddings, files, streaming, tool calls, models |
 | Anthropic | `/anthropic` | 🔜 Planned |
 | Gemini Enterprise (Vertex AI) | — | 🔜 Planned |
 | Azure OpenAI | — | 🔜 Planned |
@@ -173,6 +173,9 @@ Work in progress. Both `v1beta` and `v1` serve the same mock, so either `apiVers
 | --- | --- |
 | `POST /gemini/v1beta/models/{model}:generateContent` | Full response: `candidates`, `finishReason`, `usageMetadata` split by modality, `modelVersion`, `responseId`. `candidateCount`, `systemInstruction`, `tools` and `toolConfig` are simulated |
 | `POST /gemini/v1beta/models/{model}:streamGenerateContent` | SSE with `?alt=sse`, streamed JSON array without it |
+| `POST /gemini/v1beta/models/{model}:batchEmbedContents` | Deterministic unit vectors; what the SDK calls even for one input |
+| `POST /gemini/v1beta/models/{model}:embedContent` | The singular form, for curl and non-SDK callers |
+| `POST /gemini/v1beta/models/{model}:countTokens` | Accepts bare `contents` or a whole `generateContentRequest` |
 | `GET /gemini/v1beta/models` | Simulated catalog (`gemini-3.1-pro`, `gemini-3.6-flash`, `gemini-3.5-flash-lite`, `gemini-embedding-001`, ...) |
 | `GET /gemini/v1beta/models/{model}` | `404` in Google's `google.rpc.Status` format for unknown models |
 | `GET /gemini/v1beta/tunedModels` | Always empty; this mock mints no tuned models |

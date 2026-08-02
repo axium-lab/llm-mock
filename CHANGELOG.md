@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Gemini (AI Studio) provider mounted at `/gemini`, served on both `v1beta` and `v1`: model catalog (`GET /models`, `GET /models/{model}`, empty `GET /tunedModels`), validated against the official `@google/genai` SDK.
 - `POST /gemini/v1beta/models/{model}:generateContent`, with `candidates`, `finishReason`, `usageMetadata` split by modality, `modelVersion` and `responseId`, honoring `candidateCount` and counting `systemInstruction` towards the prompt tokens.
 - `POST /gemini/v1beta/models/{model}:streamGenerateContent`: SSE with `?alt=sse` and a streamed JSON array without it. No `[DONE]` sentinel, which the Gemini SDK would reject as an incomplete JSON segment.
+- Gemini embeddings: `:batchEmbedContents` (what the SDK calls even for a single input) and the singular `:embedContent`, with hash-seeded unit vectors, per-model native dimensions (3072 for `gemini-embedding-001`, 768 for the older models) and `outputDimensionality` truncation.
+- `:countTokens`, accepting either a bare `contents` list or a whole `generateContentRequest` so a system instruction and tool declarations are counted too.
 - Gemini Files API: the two-step resumable upload at `POST /gemini/upload/v1beta/files`, plus `GET /files` with `pageSize`/`pageToken`, `GET /files/{name}` and an idempotent `DELETE`.
 - Stateless resumable uploads: the session metadata rides inside the `x-goog-upload-url` handed to the client, and the file's metadata inside the name it is minted, so `upload` → `get` round-trips on any instance without a store. `sha256Hash` is the real digest of the bytes received.
 - Interactions API, Google's next-generation surface: `POST /gemini/v1beta/interactions` with `steps`, snake_case `usage` and tool calls, `GET /interactions/{id}` synthesized statelessly (with `?stream=true` replay), `POST /interactions/{id}/cancel` and an idempotent `DELETE`.
@@ -30,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Responses API now echoes the `tools` and `tool_choice` it received instead of always reporting `[]` and `"auto"`.
 - Tests are now grouped by provider under `tests/openai/` and `tests/gemini/`, sharing the server harness in `tests/server.ts`.
 - Tool-calling logic moved from `src/providers/openai/services/tools.ts` to `src/core/tools.ts`, now that a second provider uses it.
+- Deterministic embedding vectors moved to `src/core/embeddings.ts`, shared by both providers; what differs between them is the wire envelope and the default dimension count, not the vector.
 
 ### Fixed
 

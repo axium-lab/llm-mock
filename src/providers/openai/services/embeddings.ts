@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { deterministicVector } from "../../../core/embeddings";
 import { ApiError } from "../../../core/errors";
 import { approxTokens } from "../../../core/usage";
 import type { EmbeddingObject, EmbeddingRequest } from "../types";
@@ -10,21 +10,6 @@ const MODEL_DIMENSIONS: Record<string, number> = {
 };
 
 const DEFAULT_DIMENSIONS = 1536;
-
-// Deterministic pseudo-random unit vector seeded by the input text, so the
-// same input always produces the same embedding.
-function deterministicVector(seedText: string, dimensions: number): number[] {
-  const values: number[] = [];
-  let counter = 0;
-  while (values.length < dimensions) {
-    const hash = createHash("sha256").update(`${seedText}:${counter++}`).digest();
-    for (let i = 0; i + 1 < hash.length && values.length < dimensions; i += 2) {
-      values.push((hash.readUInt16BE(i) / 0xffff) * 2 - 1);
-    }
-  }
-  const norm = Math.sqrt(values.reduce((sum, value) => sum + value * value, 0)) || 1;
-  return values.map((value) => value / norm);
-}
 
 // The official SDK requests base64 by default and decodes it client-side.
 function encodeBase64(vector: number[]): string {

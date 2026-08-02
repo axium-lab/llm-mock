@@ -3,13 +3,15 @@ import { ApiError } from "../../../core/errors";
 import { requestOverrides } from "../../../core/override";
 import { openSSE, sendEvent } from "../../../core/sse";
 import { parseRpcTarget } from "../rpc-path";
+import { countTokens } from "../services/count-tokens";
+import { batchEmbedContents, embedContent } from "../services/embeddings";
 import {
   buildGenerateContentChunks,
   buildGenerateContentResponse,
   normalizeContents,
 } from "../services/generate-content";
 import { getModel, listModels, modelNotFound } from "../services/models";
-import type { GenerateContentRequest } from "../types";
+import type { CountTokensRequest, EmbedContentRequest, GenerateContentRequest } from "../types";
 
 export const modelsRouter = Router();
 
@@ -63,6 +65,19 @@ modelsRouter.post("/:target", (req, res) => {
       res.end();
       return;
     }
+
+    case "embedContent":
+      res.json(embedContent(resource, req.body as EmbedContentRequest));
+      return;
+
+    // What the SDK actually calls, even for a single input.
+    case "batchEmbedContents":
+      res.json(batchEmbedContents(resource, req.body as { requests?: EmbedContentRequest[] }));
+      return;
+
+    case "countTokens":
+      res.json(countTokens(req.body as CountTokensRequest));
+      return;
 
     default:
       throw modelNotFound(resource, method ?? "POST");

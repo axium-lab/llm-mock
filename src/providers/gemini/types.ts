@@ -216,3 +216,28 @@ export interface UploadStartMetadata {
   mimeType?: string;
   sizeBytes?: string | number;
 }
+
+// ---------------------------------------------------------------------------
+// Embeddings and token counting
+
+export interface ContentEmbedding {
+  values: number[];
+}
+
+export interface EmbedContentRequest {
+  content?: Content | Content[] | string;
+  taskType?: string;
+  title?: string;
+  outputDimensionality?: unknown;
+  model?: string;
+}
+
+export interface CountTokensRequest {
+  contents?: Content[] | Content | string;
+  generateContentRequest?: GenerateContentRequest;
+}
+
+export interface CountTokensResponse {
+  totalTokens: number;
+  promptTokensDetails: ModalityTokenCount[];
+}
