@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>llm-mock — Test LLM integrations without exposing your API key</title>
-<meta name="description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Test LLM integrations in CI without a real API key. Free hosted instance, open source, by Axium." />
+<meta name="description" content="Self-hosted mock of the OpenAI and Gemini APIs. Change the baseURL, keep your code. Test LLM integrations in CI without a real API key. Free hosted instance, open source, by Axium." />
 <link rel="canonical" href="https://llm-mock.dev/" />
 <meta name="theme-color" content="#0b0e14" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
@@ -14,15 +14,15 @@
 <meta property="og:site_name" content="llm-mock" />
 <meta property="og:locale" content="en_US" />
 <meta property="og:title" content="llm-mock — Test LLM integrations without exposing your API key" />
-<meta property="og:description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Free hosted instance, open source, by Axium." />
+<meta property="og:description" content="Self-hosted mock of the OpenAI and Gemini APIs. Change the baseURL, keep your code. Free hosted instance, open source, by Axium." />
 <meta property="og:url" content="https://llm-mock.dev/" />
 <meta property="og:image" content="https://llm-mock.dev/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="llm-mock — a self-hosted, OpenAI-compatible mock server. baseURL: https://api.llm-mock.dev/openai/v1" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI and Gemini APIs. baseURL: https://api.llm-mock.dev/openai/v1" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="llm-mock — Test LLM integrations without exposing your API key" />
-<meta name="twitter:description" content="Self-hosted, OpenAI-compatible mock server. Change the baseURL, keep your code. Free hosted instance, open source." />
+<meta name="twitter:description" content="Self-hosted mock of the OpenAI and Gemini APIs. Change the baseURL, keep your code. Free hosted instance, open source." />
 <meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
 
 <!-- Structured data -->
@@ -33,7 +33,7 @@
   "name": "llm-mock",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
-  "description": "Self-hosted, OpenAI-compatible mock server for testing LLM integrations without a real API key.",
+  "description": "Self-hosted mock of the OpenAI and Gemini APIs for testing LLM integrations without a real API key.",
   "url": "https://llm-mock.dev/",
   "downloadUrl": "https://github.com/axium-lab/llm-mock",
   "license": "https://opensource.org/licenses/MIT",
@@ -220,7 +220,7 @@
     <span class="eyebrow">open source · MIT</span>
     <h1>Test your LLM integrations<br /><span class="hl">without exposing your API key</span></h1>
     <p class="sub">
-      A self-hosted, OpenAI-compatible mock server. Same endpoints, same response shapes,
+      A self-hosted mock of the OpenAI and Gemini APIs. Same endpoints, same response shapes,
       same streaming — with deterministic replies and no real key required. Change the
       <code>baseURL</code>, keep your code.
     </p>
@@ -243,11 +243,12 @@
     <div class="hosted-card">
       <span class="eyebrow">⚡ Zero install</span>
       <h3>Use the free hosted instance</h3>
-      <p>No download, no signup, no key of your own to manage. Point any OpenAI SDK's <code>baseURL</code> at the hosted mock and start testing right now:</p>
+      <p>No download, no signup, no key of your own to manage. Point your SDK's <code>baseURL</code> at the hosted mock and start testing right now:</p>
       <div class="cmd">
         <code><span class="prompt">baseURL</span>https://api.llm-mock.dev/openai/v1</code>
         <button class="copy-btn" data-cmd="https://api.llm-mock.dev/openai/v1">Copy</button>
       </div>
+      <p style="margin: 14px 0 0;">Gemini lives at <code>/gemini</code> and Gemini Enterprise at <code>/gemini-enterprise</code> on the same host.</p>
     </div>
 
     <h3 class="selfhost">Prefer to self-host?</h3>
@@ -267,7 +268,7 @@ bun start</code></pre>
 <section id="how">
   <div class="wrap">
     <h2>Change one line, keep your code</h2>
-    <p class="section-sub">The official <code>openai</code> SDK talks to llm-mock exactly as it talks to the real API. No mocking libraries, no request interception.</p>
+    <p class="section-sub">The official <code>openai</code> and <code>@google/genai</code> SDKs talk to llm-mock exactly as they talk to the real APIs. No mocking libraries, no request interception.</p>
 <pre><code><span class="tok-key">import</span> OpenAI <span class="tok-key">from</span> <span class="tok-str">"openai"</span>;
 
 <span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">OpenAI</span>({
@@ -281,6 +282,20 @@ bun start</code></pre>
 });
 
 console.<span class="tok-fn">log</span>(completion.choices[<span class="tok-str">0</span>].message.content); <span class="tok-com">// "Echo: Hello!"</span></code></pre>
+    <p class="section-sub" style="margin: 22px 0 0;">Same idea for Gemini — note that <code>@google/genai</code> appends the version segment itself, so its <code>baseUrl</code> stops at the prefix:</p>
+<pre><code><span class="tok-key">import</span> { GoogleGenAI } <span class="tok-key">from</span> <span class="tok-str">"@google/genai"</span>;
+
+<span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+  httpOptions: { baseUrl: <span class="tok-str">"http://localhost:3000/gemini"</span> },
+});
+
+<span class="tok-key">const</span> response = <span class="tok-key">await</span> ai.models.<span class="tok-fn">generateContent</span>({
+  model: <span class="tok-str">"gemini-3.6-flash"</span>,
+  contents: <span class="tok-str">"Hello!"</span>,
+});
+
+console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">// "Echo: Hello!"</span></code></pre>
   </div>
 </section>
 
@@ -290,8 +305,12 @@ console.<span class="tok-fn">log</span>(completion.choices[<span class="tok-str"
     <p class="section-sub">Not a stub — a faithful contract, verified in CI against the official SDK.</p>
     <div class="features">
       <div class="feature">
-        <h3>OpenAI-compatible contract</h3>
-        <p>Responses match the official API shapes, validated in CI with the official <code>openai</code> SDK as the client.</p>
+        <h3>Faithful contracts</h3>
+        <p>Responses match each provider's real shapes, validated in CI with the official <code>openai</code> and <code>@google/genai</code> SDKs as the clients.</p>
+      </div>
+      <div class="feature">
+        <h3>Three providers, one server</h3>
+        <p>OpenAI, Gemini (AI Studio) and Gemini Enterprise, each under its own prefix with its own auth scheme and error envelope.</p>
       </div>
       <div class="feature">
         <h3>Streaming (SSE)</h3>
@@ -335,9 +354,9 @@ console.<span class="tok-fn">log</span>(completion.choices[<span class="tok-str"
       </thead>
       <tbody>
         <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+        <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+        <tr><td>Gemini Enterprise (ex-Vertex AI)</td><td><code>/gemini-enterprise</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
         <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
-        <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
-        <tr><td>Gemini Enterprise (Vertex AI)</td><td><span class="dash">—</span></td><td><span class="badge soon">🔜 Planned</span></td></tr>
         <tr><td>Azure OpenAI</td><td><span class="dash">—</span></td><td><span class="badge soon">🔜 Planned</span></td></tr>
       </tbody>
     </table>

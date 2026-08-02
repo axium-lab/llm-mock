@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>API reference — llm-mock (OpenAI-compatible mock server)</title>
-<meta name="description" content="API reference for llm-mock: base URLs, authentication, endpoints, response-control headers, error envelopes and SSE streaming for the OpenAI-compatible mock server." />
+<title>API reference — llm-mock (OpenAI &amp; Gemini mock server)</title>
+<meta name="description" content="API reference for llm-mock: base URLs, authentication, endpoints, response-control headers, error envelopes and SSE streaming for the OpenAI, Gemini and Gemini Enterprise mock server." />
 <link rel="canonical" href="https://llm-mock.dev/api.html" />
 <meta name="theme-color" content="#0b0e14" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
@@ -14,15 +14,15 @@
 <meta property="og:site_name" content="llm-mock" />
 <meta property="og:locale" content="en_US" />
 <meta property="og:title" content="llm-mock API reference" />
-<meta property="og:description" content="Endpoints, headers, errors and streaming for the OpenAI-compatible llm-mock server." />
+<meta property="og:description" content="Endpoints, headers, errors and streaming for the OpenAI, Gemini and Gemini Enterprise surfaces of llm-mock." />
 <meta property="og:url" content="https://llm-mock.dev/api.html" />
 <meta property="og:image" content="https://llm-mock.dev/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="llm-mock — a self-hosted, OpenAI-compatible mock server. baseURL: https://api.llm-mock.dev/openai/v1" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI and Gemini APIs. baseURL: https://api.llm-mock.dev/openai/v1" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="llm-mock API reference" />
-<meta name="twitter:description" content="Endpoints, headers, errors and streaming for the OpenAI-compatible llm-mock server." />
+<meta name="twitter:description" content="Endpoints, headers, errors and streaming for the OpenAI, Gemini and Gemini Enterprise surfaces of llm-mock." />
 <meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
 
 <!-- Structured data -->
@@ -31,7 +31,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "llm-mock API reference",
-  "description": "Base URLs, authentication, endpoints, response-control headers, error envelopes and SSE streaming for the OpenAI-compatible llm-mock server.",
+  "description": "Base URLs, authentication, endpoints, response-control headers, error envelopes and SSE streaming for the OpenAI, Gemini and Gemini Enterprise surfaces of llm-mock.",
   "url": "https://llm-mock.dev/api.html",
   "author": { "@type": "Organization", "name": "Axium", "url": "https://axium-lab.com" },
   "about": { "@type": "SoftwareApplication", "name": "llm-mock", "url": "https://llm-mock.dev/" }
@@ -114,6 +114,11 @@
   .toc li { margin: 0 0 9px; }
   .toc a { color: var(--muted); }
   .toc a:hover { color: var(--text); text-decoration: none; }
+  .toc-group {
+    color: var(--muted); font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; margin: 18px 0 9px; opacity: 0.7;
+  }
+  .toc-group:first-of-type { margin-top: 0; }
 
   /* Sections */
   section { padding: 0 0 44px; scroll-margin-top: 22px; }
@@ -201,7 +206,8 @@
     <p class="sub">
       llm-mock speaks each provider's API contract — same endpoints, same response shapes,
       same error format, same SSE streaming — with deterministic, configurable replies and no real key.
-      OpenAI is implemented today; everything below lives under the <code>/openai</code> prefix.
+      Three providers are implemented: OpenAI under <code>/openai</code>, Gemini (AI Studio) under
+      <code>/gemini</code>, and Gemini Enterprise under <code>/gemini-enterprise</code>.
     </p>
   </div>
 </header>
@@ -210,9 +216,14 @@
 <div class="layout">
   <aside class="toc">
     <p class="toc-title">On this page</p>
+    <p class="toc-group">Common</p>
     <ul>
       <li><a href="#base-url">Base URL</a></li>
       <li><a href="#auth">Authentication</a></li>
+      <li><a href="#control">Controlling replies</a></li>
+    </ul>
+    <p class="toc-group">OpenAI</p>
+    <ul>
       <li><a href="#endpoints">Endpoints</a></li>
       <li><a href="#chat">Chat completions</a></li>
       <li><a href="#responses">Responses API</a></li>
@@ -221,9 +232,28 @@
       <li><a href="#embeddings">Embeddings</a></li>
       <li><a href="#files">Files</a></li>
       <li><a href="#uploads">Uploads</a></li>
-      <li><a href="#control">Controlling replies</a></li>
       <li><a href="#streaming">Streaming</a></li>
       <li><a href="#errors">Errors</a></li>
+    </ul>
+    <p class="toc-group">Gemini (AI Studio)</p>
+    <ul>
+      <li><a href="#gemini">Endpoints</a></li>
+      <li><a href="#gemini-generate">generateContent</a></li>
+      <li><a href="#gemini-tools">Tool calls</a></li>
+      <li><a href="#gemini-interactions">Interactions API</a></li>
+      <li><a href="#gemini-files">Files</a></li>
+      <li><a href="#gemini-compat">OpenAI-compat layer</a></li>
+      <li><a href="#gemini-errors">Errors</a></li>
+    </ul>
+    <p class="toc-group">Gemini Enterprise</p>
+    <ul>
+      <li><a href="#ge">Endpoints</a></li>
+      <li><a href="#ge-auth">Two auth modes</a></li>
+      <li><a href="#ge-embeddings">Embeddings via :predict</a></li>
+      <li><a href="#ge-interactions">Interactions API</a></li>
+    </ul>
+    <p class="toc-group">Reference</p>
+    <ul>
       <li><a href="#providers">Provider support</a></li>
     </ul>
   </aside>
@@ -231,14 +261,20 @@
   <main>
     <section id="base-url">
       <h2>Base URL</h2>
-      <p class="section-sub">Point any OpenAI SDK's <code>baseURL</code> at one of these. The path prefix (<code>/openai/v1</code>) is part of the base URL.</p>
+      <p class="section-sub">Each provider mounts under its own prefix. Point your SDK's base URL at one of these — on <code>api.llm-mock.dev</code> for the hosted instance, or <code>localhost:3000</code> for your own.</p>
       <table>
-        <thead><tr><th>Environment</th><th>Base URL</th></tr></thead>
+        <thead><tr><th>Provider</th><th>Base URL</th><th>SDK</th></tr></thead>
         <tbody>
-          <tr><td>Hosted (free, zero install)</td><td><code>https://api.llm-mock.dev/openai/v1</code></td></tr>
-          <tr><td>Local (source or Docker)</td><td><code>http://localhost:3000/openai/v1</code></td></tr>
+          <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><code>openai</code></td></tr>
+          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><code>@google/genai</code></td></tr>
+          <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><code>@google/genai</code>, <code>vertexai: true</code></td></tr>
         </tbody>
       </table>
+      <div class="callout">
+        Whether the version segment belongs in the base URL depends on the SDK, not on us. The OpenAI client
+        appends only the request path, so its <code>baseURL</code> carries <code>/v1</code>;
+        <code>@google/genai</code> appends the version itself, so its <code>baseUrl</code> stops at the prefix.
+      </div>
       <div class="callout">
         The hosted instance at <strong>api.llm-mock.dev</strong> is a shared, stateless mock meant for demos and CI —
         it holds no data and requires no signup. For full control (custom keys, isolation) run your own with Docker
@@ -249,25 +285,81 @@
 <span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">OpenAI</span>({
   baseURL: <span class="tok-str">"https://api.llm-mock.dev/openai/v1"</span>, <span class="tok-com">// or http://localhost:3000/openai/v1</span>
   apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+});
+
+<span class="tok-com">// Gemini — the SDK appends "v1beta" itself</span>
+<span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+  httpOptions: { baseUrl: <span class="tok-str">"https://api.llm-mock.dev/gemini"</span> },
 });</code></pre>
     </section>
 
     <section id="auth">
       <h2>Authentication</h2>
-      <p class="section-sub">Requests authenticate with a bearer token in the <code>Authorization</code> header, exactly like the real API. Keys are validated against a closed set, so you can test both the happy path and the failure path.</p>
+      <p class="section-sub">One key set serves every provider: <code>sk-mock-key-01</code> … <code>sk-mock-key-10</code> ship in the repo and on the hosted instance. What changes per provider is <strong>where the credential travels</strong> and <strong>what a rejection looks like</strong> — both mirror the real service.</p>
       <table>
-        <thead><tr><th>Key</th><th>Result</th></tr></thead>
+        <thead><tr><th>Provider</th><th>Credential</th><th>Invalid</th><th>Missing</th></tr></thead>
         <tbody>
-          <tr><td><code>sk-mock-key-01</code> … <code>sk-mock-key-10</code></td><td><span class="badge ok">✅ Valid</span> — ship in the repo (and on the hosted instance)</td></tr>
-          <tr><td>any other key (e.g. <code>sk-mock-invalid</code>)</td><td><span class="badge soon">401</span> — real OpenAI <code>invalid_api_key</code> envelope</td></tr>
+          <tr>
+            <td>OpenAI</td>
+            <td><code>Authorization: Bearer</code></td>
+            <td><span class="badge soon">401</span> <code>invalid_api_key</code></td>
+            <td><span class="badge soon">401</span></td>
+          </tr>
+          <tr>
+            <td>Gemini</td>
+            <td><code>x-goog-api-key</code> (also <code>?key=</code> or Bearer)</td>
+            <td><span class="badge soon">400</span> <code>INVALID_ARGUMENT</code></td>
+            <td><span class="badge soon">403</span> <code>PERMISSION_DENIED</code></td>
+          </tr>
+          <tr>
+            <td>Gemini · <code>/openai</code> layer</td>
+            <td><code>Authorization: Bearer</code></td>
+            <td><span class="badge soon">400</span> <code>Please pass a valid API key</code></td>
+            <td><span class="badge soon">404</span> <code>NOT_FOUND</code></td>
+          </tr>
+          <tr>
+            <td>Gemini Enterprise</td>
+            <td>Bearer (regional) or <code>x-goog-api-key</code> (express)</td>
+            <td><span class="badge soon">401</span> / <span class="badge soon">400</span> by transport</td>
+            <td><span class="badge soon">401</span> <code>UNAUTHENTICATED</code></td>
+          </tr>
         </tbody>
       </table>
-      <p>Run your own instance to use a custom key set — point <code>LLM_MOCK_API_KEYS_FILE</code> at your own JSON array of keys.</p>
+      <p>Use <code>sk-mock-invalid</code> as the documented known-bad key. Run your own instance for a custom key set — point <code>LLM_MOCK_API_KEYS_FILE</code> at your own JSON array of keys.</p>
+      <div class="callout">
+        Google reports a bad API key as a <strong>400</strong>, not a 401, and attaches
+        <code>details</code> only in that one case. Every other error — missing credential, unknown model,
+        unknown file — carries <code>code</code>, <code>message</code> and <code>status</code> and nothing else.
+        These shapes were checked against the live API.
+      </div>
+    </section>
+
+    <section id="control">
+      <h2>Controlling replies</h2>
+      <p class="section-sub">By default every completion echoes the last user message. When a test needs a specific reply, the request itself carries it in a header — nothing to register beforehand, nothing to clean up.</p>
+      <table>
+        <thead><tr><th>Header</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>x-llm-mock-response</code></td><td>ASCII reply to return verbatim as the assistant message</td></tr>
+          <tr><td><code>x-llm-mock-response-base64</code></td><td>Base64-encoded reply for content beyond ASCII (UTF-8). Wins when both headers are present.</td></tr>
+          <tr><td><code>x-llm-mock-tool-calls</code></td><td>JSON array of tool calls the reply must contain. See <a href="#tools">Tool calls</a>.</td></tr>
+        </tbody>
+      </table>
+<pre><code><span class="tok-key">const</span> completion = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>(
+  { model: <span class="tok-str">"gpt-4o"</span>, messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"What's the weather like?"</span> }] },
+  { headers: { <span class="tok-str">"x-llm-mock-response"</span>: <span class="tok-str">"It is sunny in Valencia."</span> } },
+);
+<span class="tok-com">// completion.choices[0].message.content === "It is sunny in Valencia."</span></code></pre>
+      <div class="callout">
+        Because the canned response travels <strong>with the request</strong>, the server keeps no state at all:
+        the same request always returns the same response, no matter which instance, replica or restart serves it.
+      </div>
     </section>
 
     <section id="endpoints">
-      <h2>Endpoints</h2>
-      <p class="section-sub">OpenAI is the provider implemented today; these are its endpoints under the <code>/openai</code> prefix.</p>
+      <h2>OpenAI · Endpoints</h2>
+      <p class="section-sub">Everything under the <code>/openai</code> prefix. The sections that follow — chat completions through errors — all describe this provider.</p>
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
         <tbody>
@@ -298,7 +390,7 @@
     </section>
 
     <section id="chat">
-      <h2>Chat completions</h2>
+      <h2>OpenAI · Chat completions</h2>
       <p class="section-sub"><code>POST /openai/v1/chat/completions</code> — returns a full <code>chat.completion</code> object. By default the assistant echoes the last user message (<code>"Echo: &lt;your prompt&gt;"</code>).</p>
 <pre><code>curl https://api.llm-mock.dev/openai/v1/chat/completions \
   -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
@@ -308,7 +400,7 @@
     </section>
 
     <section id="responses">
-      <h2>Responses API</h2>
+      <h2>OpenAI · Responses API</h2>
       <p class="section-sub">The newer <code>/responses</code> surface is fully modelled, including the typed SSE event stream.</p>
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
@@ -321,7 +413,7 @@
     </section>
 
     <section id="tools">
-      <h2>Tool calls</h2>
+      <h2>OpenAI · Tool calls</h2>
       <p class="section-sub">Both surfaces return real tool calls, so an agent loop runs end to end without a model. Chat completions answer with <code>message.tool_calls</code> and <code>finish_reason: "tool_calls"</code>; the Responses API emits a <code>function_call</code> output item and echoes the <code>tools</code> / <code>tool_choice</code> it received.</p>
       <table>
         <thead><tr><th>Trigger</th><th>Behaviour</th></tr></thead>
@@ -343,7 +435,7 @@
     </section>
 
     <section id="models">
-      <h2>Models</h2>
+      <h2>OpenAI · Models</h2>
       <p class="section-sub">A simulated catalog so model-discovery code paths work end to end.</p>
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
@@ -355,7 +447,7 @@
     </section>
 
     <section id="embeddings">
-      <h2>Embeddings</h2>
+      <h2>OpenAI · Embeddings</h2>
       <p class="section-sub"><code>POST /openai/v1/embeddings</code> — returns deterministic, hash-seeded unit vectors with the correct dimension per model. Honours the <code>dimensions</code> param and both <code>float</code> and <code>base64</code> encodings.</p>
 <pre><code>curl https://api.llm-mock.dev/openai/v1/embeddings \
   -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
@@ -364,7 +456,7 @@
     </section>
 
     <section id="files">
-      <h2>Files</h2>
+      <h2>OpenAI · Files</h2>
       <p class="section-sub">Files are the one part of the contract that is inherently stateful, and llm-mock stores nothing. Instead of a server-side store, <strong>the id carries the metadata</strong>: the id returned by an upload encodes its filename, size and purpose, so a later retrieve answers accurately on any instance, after any restart.</p>
 <pre><code>curl https://api.llm-mock.dev/openai/v1/files \
   -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
@@ -388,7 +480,7 @@
     </section>
 
     <section id="uploads">
-      <h2>Uploads</h2>
+      <h2>OpenAI · Uploads</h2>
       <p class="section-sub">The chunked <code>/uploads</code> flow works the same way, so <code>complete</code> echoes back what <code>create</code> was told. Parts may be named or nameless — a sliced <code>Blob</code> works exactly as it does against the real API.</p>
 <pre><code><span class="tok-key">const</span> upload = <span class="tok-key">await</span> client.uploads.<span class="tok-fn">create</span>({
   filename: <span class="tok-str">"training-examples.jsonl"</span>,
@@ -405,30 +497,9 @@
       </div>
     </section>
 
-    <section id="control">
-      <h2>Controlling replies</h2>
-      <p class="section-sub">By default every completion echoes the last user message. When a test needs a specific reply, the request itself carries it in a header — nothing to register beforehand, nothing to clean up.</p>
-      <table>
-        <thead><tr><th>Header</th><th>Purpose</th></tr></thead>
-        <tbody>
-          <tr><td><code>x-llm-mock-response</code></td><td>ASCII reply to return verbatim as the assistant message</td></tr>
-          <tr><td><code>x-llm-mock-response-base64</code></td><td>Base64-encoded reply for content beyond ASCII (UTF-8). Wins when both headers are present.</td></tr>
-          <tr><td><code>x-llm-mock-tool-calls</code></td><td>JSON array of tool calls the reply must contain. See <a href="#tools">Tool calls</a>.</td></tr>
-        </tbody>
-      </table>
-<pre><code><span class="tok-key">const</span> completion = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>(
-  { model: <span class="tok-str">"gpt-4o"</span>, messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"What's the weather like?"</span> }] },
-  { headers: { <span class="tok-str">"x-llm-mock-response"</span>: <span class="tok-str">"It is sunny in Valencia."</span> } },
-);
-<span class="tok-com">// completion.choices[0].message.content === "It is sunny in Valencia."</span></code></pre>
-      <div class="callout">
-        Because the canned response travels <strong>with the request</strong>, the server keeps no state at all:
-        the same request always returns the same response, no matter which instance, replica or restart serves it.
-      </div>
-    </section>
 
     <section id="streaming">
-      <h2>Streaming (SSE)</h2>
+      <h2>OpenAI · Streaming (SSE)</h2>
       <p class="section-sub"><code>stream: true</code> works on both chat completions and the Responses API, emitting the real Server-Sent Events stream your SDK already knows how to consume.</p>
       <ul>
         <li><strong>Chat completions</strong> — delta chunks terminated by <code>data: [DONE]</code>. Add <code>stream_options.include_usage</code> for a final usage chunk.</li>
@@ -445,7 +516,7 @@
     </section>
 
     <section id="errors">
-      <h2>Errors</h2>
+      <h2>OpenAI · Errors</h2>
       <p class="section-sub">Failures return the exact OpenAI error envelope, so you can test your error handling too. Invalid keys, unknown models and validation errors all follow this shape:</p>
 <pre><code>{
   <span class="tok-key">"error"</span>: {
@@ -457,6 +528,247 @@
 }</code></pre>
     </section>
 
+    <section id="gemini">
+      <h2>Gemini (AI Studio) · Endpoints</h2>
+      <p class="section-sub">Everything under the <code>/gemini</code> prefix. Both <code>v1beta</code> and <code>v1</code> serve the same mock, so either <code>apiVersion</code> works. Custom methods are addressed the Google way, as <code>{resource}:{method}</code>.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:generateContent</code></td><td>Full response: <code>candidates</code>, <code>finishReason</code>, <code>usageMetadata</code> by modality, <code>modelVersion</code>, <code>responseId</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:streamGenerateContent</code></td><td>SSE with <code>?alt=sse</code>, streamed JSON array without it</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:batchEmbedContents</code></td><td>Deterministic unit vectors — what the SDK calls even for one input</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:embedContent</code></td><td>The singular form, for curl and non-SDK callers</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:countTokens</code></td><td>Accepts bare <code>contents</code> or a whole <code>generateContentRequest</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/models</code></td><td>Simulated catalog, ids checked against the live listing</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/models/{model}</code></td><td><code>404</code> in Google's <code>google.rpc.Status</code> format</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/interactions</code></td><td>Interactions API — <code>steps</code>, <code>usage</code>, tool calls, SSE with <code>stream: true</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/interactions/{id}</code></td><td>Stateless: synthesizes a deterministic interaction for any id</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/interactions/{id}/cancel</code></td><td>Returns the interaction as <code>cancelled</code></td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/gemini/v1beta/interactions/{id}</code></td><td>Idempotent; <code>200</code> with an empty body</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/upload/v1beta/files</code></td><td>Resumable upload, both steps. <code>upload/</code> sits <strong>before</strong> the version</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/files</code></td><td>Simulated catalog with <code>pageSize</code>/<code>pageToken</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/files/{name}</code></td><td>Stateless: the name carries the metadata, so an upload round-trips exactly</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/gemini/v1beta/files/{name}</code></td><td>Idempotent; returns <code>{}</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/openai/chat/completions</code></td><td>OpenAI-compatibility layer — see <a href="#gemini-compat">below</a></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/openai/embeddings</code></td><td>Same layer, at Gemini's dimensions</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/openai/models</code></td><td>Gemini's catalog in OpenAI's list envelope</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="gemini-generate">
+      <h2>Gemini · generateContent</h2>
+      <p class="section-sub">A turn is a <code>Content</code> and everything inside it is a <code>Part</code>. Multi-turn input, <code>systemInstruction</code> (counted towards the prompt tokens) and <code>candidateCount</code> are all simulated.</p>
+<pre><code><span class="tok-key">import</span> { GoogleGenAI } <span class="tok-key">from</span> <span class="tok-str">"@google/genai"</span>;
+
+<span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+  httpOptions: { baseUrl: <span class="tok-str">"http://localhost:3000/gemini"</span> },
+});
+
+<span class="tok-key">const</span> response = <span class="tok-key">await</span> ai.models.<span class="tok-fn">generateContent</span>({
+  model: <span class="tok-str">"gemini-3.6-flash"</span>,
+  contents: <span class="tok-str">"Hello!"</span>,
+});
+
+console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">// "Echo: Hello!"</span></code></pre>
+      <div class="callout">
+        Streaming here carries <strong>no <code>[DONE]</code> sentinel</strong>, unlike OpenAI's. The Gemini SDK
+        parses every event as JSON and rejects a trailing one it cannot parse.
+      </div>
+    </section>
+
+    <section id="gemini-tools">
+      <h2>Gemini · Tool calls</h2>
+      <p class="section-sub">Declare tools as <code>tools[].functionDeclarations[]</code>. Tool selection lives in <code>toolConfig.functionCallingConfig.mode</code> rather than in a <code>tool_choice</code> field.</p>
+      <table>
+        <thead><tr><th>Mode</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><code>ANY</code></td><td>Forces a call. With <code>allowedFunctionNames</code>, the named tool is picked</td></tr>
+          <tr><td><code>NONE</code></td><td>Never calls a tool</td></tr>
+          <tr><td><code>AUTO</code> (default)</td><td>Leaves it to the model — and this mock has none, so it answers with prose</td></tr>
+        </tbody>
+      </table>
+      <p>A call comes back as a <code>functionCall</code> part whose <code>args</code> is a <strong>decoded object</strong>, where OpenAI carries a JSON string. Streaming never splits a call across chunks. The loop terminates once a <code>functionResponse</code> part is in the conversation.</p>
+    </section>
+
+    <section id="gemini-interactions">
+      <h2>Gemini · Interactions API</h2>
+      <p class="section-sub">Google's next-generation surface, GA since June 2026 and the one its own quickstart now uses. It is a different contract from <code>generateContent</code>, not a wrapper: fields are <code>snake_case</code>, and a turn is a <code>Step</code> rather than a <code>Content</code>.</p>
+<pre><code><span class="tok-key">const</span> interaction = <span class="tok-key">await</span> ai.interactions.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"gemini-3.6-flash"</span>,
+  input: <span class="tok-str">"Hello!"</span>,
+});
+
+console.<span class="tok-fn">log</span>(interaction.output_text); <span class="tok-com">// "Echo: Hello!"</span></code></pre>
+      <p>Streaming emits <code>interaction.created</code> → <code>step.start</code> / <code>step.delta</code> / <code>step.stop</code> → <code>interaction.completed</code>. A function call's arguments arrive as <code>arguments_delta</code> pieces of a JSON string — the one place this API re-encodes what it otherwise sends decoded. Note that <code>tool_choice</code> lives inside <code>generation_config</code> here, not beside <code>tools</code>.</p>
+      <div class="callout">
+        The mock stays stateless here, as it does on OpenAI's Responses API: <code>create</code> stores nothing and
+        <code>GET /interactions/{id}</code> synthesizes a deterministic interaction for any id rather than 404ing.
+        So <code>store</code>, <code>background</code> and <code>previous_interaction_id</code> are accepted and
+        ignored — a test that depends on real server-side continuation is the one thing this endpoint cannot fake.
+      </div>
+    </section>
+
+    <section id="gemini-files">
+      <h2>Gemini · Files</h2>
+      <p class="section-sub">The full resumable protocol works, and still nothing is persisted.</p>
+<pre><code><span class="tok-key">const</span> file = <span class="tok-key">await</span> ai.files.<span class="tok-fn">upload</span>({
+  file: <span class="tok-key">new</span> <span class="tok-fn">Blob</span>([<span class="tok-str">"hello"</span>], { type: <span class="tok-str">"text/plain"</span> }),
+  config: { mimeType: <span class="tok-str">"text/plain"</span>, displayName: <span class="tok-str">"notes.txt"</span> },
+});
+
+<span class="tok-key">const</span> same = <span class="tok-key">await</span> ai.files.<span class="tok-fn">get</span>({ name: file.name }); <span class="tok-com">// round-trips exactly</span></code></pre>
+      <p>Both halves stay stateless. The upload session has no server-side table behind it: the metadata declared at <code>start</code> travels back inside the <code>x-goog-upload-url</code> the client is told to use, and returns with the bytes. The file's own metadata then rides inside the name it is given. <code>sha256Hash</code> is the genuine digest of the bytes received, so a client that verifies it succeeds.</p>
+      <div class="callout">
+        Minted names run past the 40 characters Google documents. That cap applies to names a <em>client</em>
+        supplies, not to ones the server returns — verified against <code>@google/genai</code>, which reads a
+        90-character name back without complaint. Use the <code>files/missing…</code> prefix to exercise the
+        not-found path, which the real API reports as <code>403 PERMISSION_DENIED</code> rather than a 404.
+      </div>
+    </section>
+
+    <section id="gemini-compat">
+      <h2>Gemini · OpenAI-compatibility layer</h2>
+      <p class="section-sub">Google runs an OpenAI-shaped surface at <code>/v1beta/openai</code>, so an app built on the <code>openai</code> SDK can talk to Gemini by changing only its <code>baseURL</code>. The mock serves it too.</p>
+<pre><code><span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">OpenAI</span>({
+  baseURL: <span class="tok-str">"http://localhost:3000/gemini/v1beta/openai"</span>,
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+});
+
+<span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"gemini-3.6-flash"</span>,
+  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
+});</code></pre>
+      <p>Successful responses come back in OpenAI's shapes — <code>chat.completion</code> objects, <code>[DONE]</code>-terminated streams, tool call arguments as a JSON string. What it serves underneath is still Gemini, and that shows: <code>/models</code> lists Gemini models with <code>owned_by: "google"</code> and a <code>display_name</code> but no <code>created</code>, completions carry no <code>system_fingerprint</code> and no <code>chatcmpl-</code> id prefix, and embeddings come out at Gemini's dimensions rather than OpenAI's 1536.</p>
+      <p><strong>Errors are Google's, not OpenAI's.</strong> The layer translates requests, not failures, and because the request has already become a <code>generateContent</code> call by the time it is validated, that is what the complaint names:</p>
+<pre><code>{
+  <span class="tok-key">"error"</span>: {
+    <span class="tok-key">"code"</span>: <span class="tok-str">400</span>,
+    <span class="tok-key">"message"</span>: <span class="tok-str">"* GenerateContentRequest.contents: contents is not specified\n"</span>,
+    <span class="tok-key">"status"</span>: <span class="tok-str">"INVALID_ARGUMENT"</span>
+  }
+}</code></pre>
+      <div class="callout">
+        Only what Google actually exposes is mounted. <strong>The Responses API and the Files endpoints are absent
+        from the real compatibility layer</strong>, so calling them here 404s exactly as it would against Google —
+        use <code>/openai/v1</code> for the former and Gemini's native <code>/gemini/v1beta/files</code> for the latter.
+      </div>
+    </section>
+
+    <section id="gemini-errors">
+      <h2>Gemini · Errors</h2>
+      <p class="section-sub">Two envelopes, and which one you get depends on the surface. Everything except <code>/interactions</code> answers in the <code>google.rpc.Status</code> envelope shared by every Google Cloud API:</p>
+<pre><code>{
+  <span class="tok-key">"error"</span>: {
+    <span class="tok-key">"code"</span>: <span class="tok-str">400</span>,
+    <span class="tok-key">"message"</span>: <span class="tok-str">"API key not valid. Please pass a valid API key."</span>,
+    <span class="tok-key">"status"</span>: <span class="tok-str">"INVALID_ARGUMENT"</span>,
+    <span class="tok-key">"details"</span>: [ <span class="tok-com">/* only ever present for an invalid API key */</span> ]
+  }
+}</code></pre>
+      <p>The Interactions API uses a flatter, OpenAI-looking envelope for its own errors:</p>
+<pre><code>{
+  <span class="tok-key">"error"</span>: { <span class="tok-key">"code"</span>: <span class="tok-str">"invalid_request"</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Missing input."</span> }
+}</code></pre>
+      <div class="callout">
+        A credential failure on <code>/interactions</code> still uses the <em>classic</em> envelope: Google's API
+        frontend rejects the key before the service ever runs. Verified against the live API, along with
+        everything else on this page marked as checked.
+      </div>
+    </section>
+
+    <section id="ge">
+      <h2>Gemini Enterprise · Endpoints</h2>
+      <p class="section-sub">Google renamed Vertex AI to the Gemini Enterprise Agent Platform. It serves the same model family as AI Studio through a different contract, under the <code>/gemini-enterprise</code> prefix. Both <code>v1beta1</code> — the SDK's default here — and <code>v1</code> are served.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:generateContent</code></td><td>Same contract as AI Studio, plus a <code>createTime</code> on every response</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:streamGenerateContent</code></td><td>SSE with <code>?alt=sse</code>, streamed JSON array without it</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:predict</code></td><td>Embeddings — this platform has no <code>:embedContent</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:countTokens</code></td><td>Reports <code>totalTokens</code> only</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini-enterprise/v1beta1/publishers/google/models</code></td><td>Publisher catalog, nested under <code>publisherModels</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini-enterprise/v1beta1/publishers/google/models/{model}</code></td><td><code>versionId</code> rather than <code>version</code>, and no token limits</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini-enterprise/v1beta1/interactions</code></td><td>Interactions API, same contract as AI Studio's</td></tr>
+        </tbody>
+      </table>
+      <p>Every model path comes in two shapes, and the same handler answers both: the regional one, which production code uses, and the express one.</p>
+<pre><code><span class="tok-com"># regional — OAuth, project and location in the path</span>
+/gemini-enterprise/v1beta1/projects/{project}/locations/{location}/publishers/google/models/{model}:generateContent
+
+<span class="tok-com"># express — API key, no project or location</span>
+/gemini-enterprise/v1beta1/publishers/google/models/{model}:generateContent</code></pre>
+      <div class="callout">
+        There is no Files API here, and that is the platform's doing rather than a gap in the mock:
+        <code>@google/genai</code> refuses the upload client-side with <em>"Gemini Enterprise Agent Platform
+        (previously known as Vertex AI) does not support uploading files. You can share files through a GCS
+        bucket."</em>
+      </div>
+    </section>
+
+    <section id="ge-auth">
+      <h2>Gemini Enterprise · Two auth modes</h2>
+      <p class="section-sub">Both are accepted against the same key set. Express mode takes an API key and addresses publisher models directly — it is by far the easier one to point at a mock:</p>
+<pre><code><span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
+  vertexai: <span class="tok-key">true</span>,
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+  httpOptions: { baseUrl: <span class="tok-str">"http://localhost:3000/gemini-enterprise"</span> },
+});</code></pre>
+      <p>Regional mode is how production code calls the platform — an OAuth token, and <code>projects/{p}/locations/{l}</code> in every path. The SDK will not emit a request without Application Default Credentials, so pointing it at a mock means handing it something that answers like an auth client:</p>
+<pre><code><span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
+  vertexai: <span class="tok-key">true</span>,
+  project: <span class="tok-str">"my-project"</span>,
+  location: <span class="tok-str">"europe-west1"</span>,
+  httpOptions: { baseUrl: <span class="tok-str">"http://localhost:3000/gemini-enterprise"</span> },
+  googleAuthOptions: {
+    authClient: {
+      getRequestHeaders: <span class="tok-key">async</span> () =&gt; <span class="tok-key">new</span> <span class="tok-fn">Headers</span>({ authorization: <span class="tok-str">"Bearer sk-mock-key-01"</span> }),
+      getAccessToken: <span class="tok-key">async</span> () =&gt; ({ token: <span class="tok-str">"sk-mock-key-01"</span> }),
+      request: <span class="tok-key">async</span> () =&gt; ({ data: {} }),
+    } <span class="tok-key">as never</span>,
+  },
+});</code></pre>
+      <p>A rejection differs by transport, matching the platform: a bad OAuth token is <code>401 UNAUTHENTICATED</code>, a bad API key <code>400 INVALID_ARGUMENT</code>.</p>
+      <div class="callout">
+        Unlike the AI Studio provider, none of this provider's shapes could be checked against the live service —
+        that needs a GCP project with the platform enabled. Its routes come from observing what the official SDK
+        puts on the wire, and its wire shapes from the SDK's own transformers, but its <strong>error messages and
+        codes are inference</strong> rather than observation.
+      </div>
+    </section>
+
+    <section id="ge-embeddings">
+      <h2>Gemini Enterprise · Embeddings via :predict</h2>
+      <p class="section-sub">This is where the two Google surfaces diverge most. There is no <code>:embedContent</code> here — embeddings ride the generic prediction endpoint, in an envelope that looks nothing like AI Studio's.</p>
+<pre><code><span class="tok-com">// POST …/publishers/google/models/text-embedding-005:predict</span>
+{
+  <span class="tok-key">"instances"</span>: [{ <span class="tok-key">"content"</span>: <span class="tok-str">"hello"</span>, <span class="tok-key">"task_type"</span>: <span class="tok-str">"SEMANTIC_SIMILARITY"</span> }],
+  <span class="tok-key">"parameters"</span>: { <span class="tok-key">"outputDimensionality"</span>: <span class="tok-str">768</span> }   <span class="tok-com">// per call, not per instance</span>
+}
+
+{
+  <span class="tok-key">"predictions"</span>: [{
+    <span class="tok-key">"embeddings"</span>: {
+      <span class="tok-key">"values"</span>: [ <span class="tok-com">/* … */</span> ],
+      <span class="tok-key">"statistics"</span>: { <span class="tok-key">"truncated"</span>: <span class="tok-key">false</span>, <span class="tok-key">"token_count"</span>: <span class="tok-str">2</span> }
+    }
+  }]
+}</code></pre>
+      <p>Note <code>task_type</code> and <code>token_count</code> in snake_case inside an otherwise camelCase API — that is the platform's own inconsistency, faithfully reproduced. <code>countTokens</code> here reports <code>totalTokens</code> and nothing else, where AI Studio's also breaks the count down by modality.</p>
+    </section>
+
+    <section id="ge-interactions">
+      <h2>Gemini Enterprise · Interactions API</h2>
+      <p class="section-sub">Served here too, on the same contract as AI Studio's — but reached through a path this platform builds oddly. In regional mode the SDK folds the entire version component, project and location included, into one percent-encoded path segment.</p>
+<pre><code><span class="tok-com"># express</span>
+/gemini-enterprise/v1beta1/interactions
+
+<span class="tok-com"># regional</span>
+/gemini-enterprise/v1beta1%2Fprojects%2F{project}%2Flocations%2F{location}/interactions</code></pre>
+      <p>Both shapes reach the same handler. Everything else — <code>steps</code>, <code>usage</code>, streaming events, the stateless retrieval — behaves exactly as on the <a href="#gemini-interactions">AI Studio surface</a>.</p>
+    </section>
+
     <section id="providers">
       <h2>Provider support</h2>
       <p class="section-sub">Multi-provider by design: each provider mounts under its own URL prefix and implements its own API contract. Here's where each one stands today.</p>
@@ -464,9 +776,9 @@
         <thead><tr><th>Provider</th><th>Prefix</th><th>Status</th></tr></thead>
         <tbody>
           <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+          <tr><td>Gemini Enterprise (ex-Vertex AI)</td><td><code>/gemini-enterprise</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
           <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
-          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
-          <tr><td>Gemini Enterprise (Vertex AI)</td><td><span class="dash">—</span></td><td><span class="badge soon">🔜 Planned</span></td></tr>
           <tr><td>Azure OpenAI</td><td><span class="dash">—</span></td><td><span class="badge soon">🔜 Planned</span></td></tr>
         </tbody>
       </table>
