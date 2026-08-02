@@ -149,7 +149,7 @@
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/parts</code></td><td>Accepts a part of up to 64 MB, named or nameless</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/complete</code></td><td>Returns the upload as <code>completed</code>, with the nested <code>file</code> object</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/cancel</code></td><td>Returns the upload as <code>cancelled</code></td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Healthcheck (mock-only, outside any provider contract)</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Healthcheck (mock-only, outside any provider contract); returns <code>status</code> and the running <code>version</code></td></tr>
         </tbody>
       </table>
       <div class="callout">

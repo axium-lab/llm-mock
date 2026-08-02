@@ -7,10 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0] - 2026-08-02
+## [0.6.1] - 2026-08-02
 
 ### Added
 
+- `GET /health` now also reports the running `version`, read from `package.json`, so a deployed container can be matched against the release and image tag it was built from.
 - Gemini (AI Studio) provider mounted at `/gemini`, served on both `v1beta` and `v1`: model catalog (`GET /models`, `GET /models/{model}`, empty `GET /tunedModels`), validated against the official `@google/genai` SDK.
 - `POST /gemini/v1beta/models/{model}:generateContent`, with `candidates`, `finishReason`, `usageMetadata` split by modality, `modelVersion` and `responseId`, honoring `candidateCount` and counting `systemInstruction` towards the prompt tokens.
 - `POST /gemini/v1beta/models/{model}:streamGenerateContent`: SSE with `?alt=sse` and a streamed JSON array without it. No `[DONE]` sentinel, which the Gemini SDK would reject as an incomplete JSON segment.
@@ -115,7 +116,7 @@ The Gemini provider was verified end to end against the live `generativelanguage
 - `GET /health` healthcheck.
 - CI running the integration suite against the official `openai` SDK, and a release workflow publishing a multi-arch Docker image to GHCR.
 
-[0.6.0]: https://github.com/axium-lab/llm-mock/compare/v0.5.0...v0.6.0
+[0.6.1]: https://github.com/axium-lab/llm-mock/compare/v0.5.0...v0.6.1
 [0.3.0]: https://github.com/axium-lab/llm-mock/compare/v0.2...v0.3.0
 [0.2]: https://github.com/axium-lab/llm-mock/compare/v0.1.0...v0.2
 [0.1.0]: https://github.com/axium-lab/llm-mock/releases/tag/v0.1.0
