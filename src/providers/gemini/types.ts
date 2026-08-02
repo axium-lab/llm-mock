@@ -187,3 +187,32 @@ export interface InteractionEvent {
   event_type: string;
   [key: string]: unknown;
 }
+
+// ---------------------------------------------------------------------------
+// Files API
+
+export interface GeminiFile {
+  name: string;
+  displayName: string;
+  mimeType: string;
+  // A string on the wire, not a number, as with every int64 in a Google API.
+  sizeBytes: string;
+  createTime: string;
+  updateTime: string;
+  expirationTime: string;
+  sha256Hash: string;
+  uri: string;
+  state: "PROCESSING" | "ACTIVE" | "FAILED";
+}
+
+export interface ListFilesResponse {
+  files: GeminiFile[];
+  nextPageToken?: string;
+}
+
+// Metadata the client declares when it opens a resumable upload.
+export interface UploadStartMetadata {
+  displayName?: string;
+  mimeType?: string;
+  sizeBytes?: string | number;
+}

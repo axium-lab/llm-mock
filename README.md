@@ -126,7 +126,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | Provider | Prefix | Status |
 | --- | --- | --- |
 | OpenAI | `/openai/v1` | ✅ Supported |
-| Gemini (AI Studio) | `/gemini` | 🚧 In progress — `generateContent`, Interactions API, streaming, tool calls, models |
+| Gemini (AI Studio) | `/gemini` | 🚧 In progress — `generateContent`, Interactions API, files, streaming, tool calls, models |
 | Anthropic | `/anthropic` | 🔜 Planned |
 | Gemini Enterprise (Vertex AI) | — | 🔜 Planned |
 | Azure OpenAI | — | 🔜 Planned |
@@ -180,6 +180,10 @@ Work in progress. Both `v1beta` and `v1` serve the same mock, so either `apiVers
 | `GET /gemini/v1beta/interactions/{id}` | Stateless: synthesizes a deterministic interaction for any id. `?stream=true` replays it as events |
 | `POST /gemini/v1beta/interactions/{id}/cancel` | Returns the interaction as `cancelled` |
 | `DELETE /gemini/v1beta/interactions/{id}` | Idempotent; `200` with an empty body, which is what the SDK expects |
+| `POST /gemini/upload/v1beta/files` | Resumable upload, both steps. Note the `upload/` segment sits **before** the version |
+| `GET /gemini/v1beta/files` | Simulated catalog with `pageSize`/`pageToken` pagination |
+| `GET /gemini/v1beta/files/{name}` | Stateless: the name carries the file's metadata, so an upload round-trips exactly |
+| `DELETE /gemini/v1beta/files/{name}` | Idempotent; returns `{}` |
 
 Custom methods are addressed the Google way, as `{resource}:{method}` — `models/gemini-3.6-flash:generateContent`. Those that are not implemented yet answer with the same `404` the real API returns for a method a model does not support.
 
@@ -209,6 +213,23 @@ console.log(interaction.output_text); // "Echo: Hello!"
 The mock stays stateless here, exactly as it does on OpenAI's Responses API: `create` never stores anything, and `GET /interactions/{id}` synthesizes a deterministic interaction for whatever id you ask for instead of returning a `404`. So `store`, `background` and `previous_interaction_id` are accepted and ignored — a test that depends on real server-side continuation is the one thing this endpoint cannot fake.
 
 Note that `tool_choice` lives inside `generation_config` on this surface, not beside `tools`. Streaming emits `interaction.created` → `step.start` / `step.delta` / `step.stop` → `interaction.completed`, and a function call's arguments arrive as `arguments_delta` pieces of a JSON string — the one place this API re-encodes what it otherwise sends decoded.
+
+#### Files
+
+The full resumable protocol works, and still nothing is persisted:
+
+```ts
+const file = await ai.files.upload({
+  file: new Blob(["hello"], { type: "text/plain" }),
+  config: { mimeType: "text/plain", displayName: "notes.txt" },
+});
+
+const same = await ai.files.get({ name: file.name });  // round-trips exactly
+```
+
+Both halves stay stateless. The upload session has no server-side table behind it: the metadata declared at `start` travels back to the client inside the `x-goog-upload-url` it is told to use, and returns with the bytes. The file's own metadata then rides inside the name it is given, so a later `get` answers accurately on any instance. `sha256Hash` is the genuine digest of the bytes received, so a client that verifies it succeeds.
+
+That makes minted names longer than the 40 characters Google documents. The cap applies to names a *client* supplies, not to ones the server returns — verified against `@google/genai`, which reads a 90-character name back without complaint. Reserve the `files/missing…` prefix to exercise the not-found path, which the real API reports as a `403 PERMISSION_DENIED` rather than a `404`.
 
 ### Mock-only
 
