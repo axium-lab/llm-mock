@@ -2,14 +2,17 @@ import { Router } from "express";
 import { ApiError } from "../../../core/errors";
 import { requestOverrides } from "../../../core/override";
 import { openSSE, sendEvent } from "../../../core/sse";
+import { countTokens } from "../../google-shared/count-tokens";
 import { normalizeContents } from "../../google-shared/generate-content";
 import { parseRpcTarget } from "../../google-shared/rpc-path";
-import type { GenerateContentRequest } from "../../google-shared/types";
+import type { CountTokensRequest, GenerateContentRequest } from "../../google-shared/types";
+import { predictEmbeddings } from "../services/embeddings";
 import {
   buildVertexGenerateContentChunks,
   buildVertexGenerateContentResponse,
 } from "../services/generate-content";
 import { getPublisherModel, listPublisherModels, modelNotFound } from "../services/models";
+import type { PredictRequest } from "../types";
 
 // mergeParams so the regional mount can see the project and location it
 // captured; on the express mount both are simply absent.
@@ -64,6 +67,19 @@ publisherModelsRouter.post("/:target", (req, res) => {
       }
       // No [DONE] sentinel: the SDK parses every event as JSON.
       res.end();
+      return;
+    }
+
+    // Embeddings have no method of their own here: they ride the generic
+    // prediction endpoint.
+    case "predict":
+      res.json(predictEmbeddings(resource, req.body as PredictRequest));
+      return;
+
+    case "countTokens": {
+      // Only the total: this platform reports no per-modality breakdown.
+      const { totalTokens } = countTokens(req.body as CountTokensRequest);
+      res.json({ totalTokens });
       return;
     }
 

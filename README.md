@@ -127,7 +127,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | --- | --- | --- |
 | OpenAI | `/openai/v1` | ✅ Supported |
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
-| Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | 🚧 In progress — `generateContent`, streaming, tool calls, models |
+| Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, streaming, tool calls, embeddings, models |
 | Anthropic | `/anthropic` | 🔜 Planned |
 | Azure OpenAI | — | 🔜 Planned |
 
@@ -270,12 +270,14 @@ One known divergence: against the live API some errors on this layer and on `/in
 
 ### Gemini Enterprise (ex-Vertex AI)
 
-Work in progress. Google renamed Vertex AI to the Gemini Enterprise Agent Platform; it serves the same model family as AI Studio but through a different contract. Both `v1beta1` (the SDK's default here) and `v1` are served.
+Google renamed Vertex AI to the Gemini Enterprise Agent Platform; it serves the same model family as AI Studio but through a different contract. Both `v1beta1` (the SDK's default here) and `v1` are served.
 
 | Endpoint | Notes |
 | --- | --- |
 | `POST /gemini-enterprise/v1beta1/publishers/google/models/{model}:generateContent` | Same contract as AI Studio, plus a `createTime` on every response |
 | `POST /gemini-enterprise/v1beta1/publishers/google/models/{model}:streamGenerateContent` | SSE with `?alt=sse`, streamed JSON array without it |
+| `POST /gemini-enterprise/v1beta1/publishers/google/models/{model}:predict` | Embeddings — this platform has no `:embedContent` |
+| `POST /gemini-enterprise/v1beta1/publishers/google/models/{model}:countTokens` | Reports `totalTokens` only |
 | `GET /gemini-enterprise/v1beta1/publishers/google/models` | Publisher catalog, nested under `publisherModels` |
 | `GET /gemini-enterprise/v1beta1/publishers/google/models/{model}` | `versionId` rather than `version`, and no token limits |
 | `…/v1beta1/projects/{project}/locations/{location}/publishers/google/models/…` | The same router answers the regional path shape |
@@ -309,6 +311,19 @@ const ai = new GoogleGenAI({
 ```
 
 A rejection differs by transport, matching the platform: a bad OAuth token is `401 UNAUTHENTICATED`, a bad API key `400 INVALID_ARGUMENT`. Unlike the AI Studio provider, none of this could be checked against the live service — it needs a GCP project with the platform enabled — so these shapes come from the official SDK's own types and transformers rather than from observed responses.
+
+Embeddings are where the two Google surfaces diverge most. There is no `:embedContent` here: they ride the generic prediction endpoint, in an envelope that looks nothing like AI Studio's.
+
+```jsonc
+// POST …/publishers/google/models/text-embedding-005:predict
+{ "instances": [{ "content": "hello", "task_type": "SEMANTIC_SIMILARITY" }],
+  "parameters": { "outputDimensionality": 768 } }        // per call, not per instance
+
+{ "predictions": [{ "embeddings": { "values": [ … ],
+                                    "statistics": { "truncated": false, "token_count": 2 } } }] }
+```
+
+Note `task_type` and `token_count` in snake_case inside an otherwise camelCase API — that is the platform's own inconsistency, faithfully reproduced. `countTokens` here reports `totalTokens` and nothing else, where AI Studio's also breaks the count down by modality.
 
 There is no Files API here, and that is the platform's doing rather than a gap in the mock: `@google/genai` refuses the upload client-side with *"Gemini Enterprise Agent Platform (previously known as Vertex AI) does not support uploading files. You can share files through a GCS bucket."*
 
