@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>API reference — llm-mock (OpenAI &amp; Gemini mock server)</title>
-<meta name="description" content="API reference for llm-mock: base URLs, authentication, endpoints, response-control headers, error envelopes and SSE streaming for the OpenAI, Azure OpenAI and Gemini mock server." />
+<title>API reference — llm-mock</title>
+<meta name="description" content="API reference for llm-mock: base URLs, authentication and response-control headers shared by every provider, with one page each for OpenAI, Anthropic, Gemini, Gemini Enterprise and Azure OpenAI." />
 <link rel="canonical" href="https://llm-mock.dev/api.html" />
 <meta name="theme-color" content="#0b0e14" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
@@ -13,16 +13,16 @@
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="llm-mock" />
 <meta property="og:locale" content="en_US" />
-<meta property="og:title" content="llm-mock API reference" />
-<meta property="og:description" content="Endpoints, headers, errors and streaming for the OpenAI, Azure OpenAI and Gemini surfaces of llm-mock." />
+<meta property="og:title" content="llm-mock — API reference" />
+<meta property="og:description" content="API reference for llm-mock: base URLs, authentication and response-control headers shared by every provider, with one page each for OpenAI, Anthropic, Gemini, Gemini Enterprise and Azure OpenAI." />
 <meta property="og:url" content="https://llm-mock.dev/api.html" />
 <meta property="og:image" content="https://llm-mock.dev/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Azure and Gemini APIs. baseURL: https://api.llm-mock.dev/openai/v1" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Anthropic, Gemini and Azure APIs." />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="llm-mock API reference" />
-<meta name="twitter:description" content="Endpoints, headers, errors and streaming for the OpenAI, Azure OpenAI and Gemini surfaces of llm-mock." />
+<meta name="twitter:title" content="llm-mock — API reference" />
+<meta name="twitter:description" content="API reference for llm-mock: base URLs, authentication and response-control headers shared by every provider, with one page each for OpenAI, Anthropic, Gemini, Gemini Enterprise and Azure OpenAI." />
 <meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
 
 <!-- Structured data -->
@@ -30,11 +30,19 @@
 {
   "@context": "https://schema.org",
   "@type": "TechArticle",
-  "headline": "llm-mock API reference",
-  "description": "Base URLs, authentication, endpoints, response-control headers, error envelopes and SSE streaming for the OpenAI, Azure OpenAI and Gemini surfaces of llm-mock.",
+  "headline": "llm-mock \u2014 API reference",
+  "description": "API reference for llm-mock: base URLs, authentication and response-control headers shared by every provider, with one page each for OpenAI, Anthropic, Gemini, Gemini Enterprise and Azure OpenAI.",
   "url": "https://llm-mock.dev/api.html",
-  "author": { "@type": "Organization", "name": "Axium", "url": "https://axium-lab.com" },
-  "about": { "@type": "SoftwareApplication", "name": "llm-mock", "url": "https://llm-mock.dev/" }
+  "author": {
+    "@type": "Organization",
+    "name": "Axium",
+    "url": "https://axium-lab.com"
+  },
+  "about": {
+    "@type": "SoftwareApplication",
+    "name": "llm-mock",
+    "url": "https://llm-mock.dev/"
+  }
 }
 </script>
 <script type="application/ld+json">
@@ -42,150 +50,23 @@
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://llm-mock.dev/" },
-    { "@type": "ListItem", "position": 2, "name": "API reference", "item": "https://llm-mock.dev/api.html" }
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://llm-mock.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "API reference",
+      "item": "https://llm-mock.dev/api.html"
+    }
   ]
 }
 </script>
 
-<style>
-  :root {
-    --bg: #0b0e14;
-    --bg-soft: #11151f;
-    --panel: #151a26;
-    --border: #232a3a;
-    --text: #e6e9f0;
-    --muted: #9aa4b8;
-    --accent: #7c9cff;
-    --accent-strong: #5b7cfa;
-    --green: #4ade80;
-    --code-bg: #0d1119;
-    --radius: 14px;
-    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-  }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; }
-
-  /* Nav */
-  nav {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 22px 0;
-  }
-  .brand { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
-  .brand a { color: var(--text); }
-  .brand a:hover { text-decoration: none; }
-  .brand span { color: var(--accent); }
-  .nav-links { display: flex; gap: 22px; align-items: center; font-size: 15px; }
-  .nav-links a { color: var(--muted); }
-  .nav-links a:hover { color: var(--text); text-decoration: none; }
-  .nav-links a.active { color: var(--text); }
-
-  /* Header */
-  header { padding: 40px 0 10px; }
-  .eyebrow {
-    display: inline-block; font-family: var(--mono); font-size: 13px;
-    color: var(--accent); background: rgba(124,156,255,0.1);
-    border: 1px solid rgba(124,156,255,0.25);
-    padding: 5px 12px; border-radius: 999px; margin-bottom: 20px;
-  }
-  h1 {
-    font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 0 0 16px;
-    letter-spacing: -0.03em; font-weight: 800;
-  }
-  header .sub { font-size: 18px; color: var(--muted); max-width: 680px; margin: 0; }
-
-  /* Layout with sidebar TOC */
-  .layout { display: grid; grid-template-columns: 200px 1fr; gap: 40px; padding: 30px 0 20px; }
-  .toc { position: sticky; top: 22px; align-self: start; font-size: 14px; }
-  .toc-title { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 12px; }
-  .toc ul { list-style: none; margin: 0; padding: 0; }
-  .toc li { margin: 0 0 9px; }
-  .toc a { color: var(--muted); }
-  .toc a:hover { color: var(--text); text-decoration: none; }
-  .toc-group {
-    color: var(--muted); font-size: 11px; text-transform: uppercase;
-    letter-spacing: 0.06em; margin: 18px 0 9px; opacity: 0.7;
-  }
-  .toc-group:first-of-type { margin-top: 0; }
-
-  /* Sections */
-  section { padding: 0 0 44px; scroll-margin-top: 22px; }
-  h2 { font-size: 24px; letter-spacing: -0.02em; margin: 0 0 8px; padding-top: 8px; }
-  h3 { font-size: 17px; margin: 26px 0 8px; }
-  .section-sub { color: var(--muted); margin: 0 0 20px; }
-  p { margin: 0 0 14px; }
-
-  /* Inline code */
-  code {
-    font-family: var(--mono); font-size: 0.9em; color: var(--accent);
-    background: rgba(124,156,255,0.08); padding: 1px 6px; border-radius: 5px;
-  }
-
-  /* Code panel */
-  pre {
-    background: var(--code-bg); border: 1px solid var(--border);
-    border-radius: 12px; padding: 18px 20px; overflow-x: auto;
-    font-family: var(--mono); font-size: 13.5px; line-height: 1.7; margin: 0 0 16px;
-  }
-  pre code { color: var(--text); background: none; padding: 0; font-size: inherit; }
-  .tok-key { color: #c792ea; }
-  .tok-str { color: #7fd88f; }
-  .tok-com { color: #5c6675; }
-  .tok-fn { color: var(--accent); }
-
-  /* Tables */
-  table {
-    width: 100%; border-collapse: collapse;
-    background: var(--panel); border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden; font-size: 14.5px; margin: 0 0 16px;
-  }
-  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  thead th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
-  tbody tr:last-child td { border-bottom: none; }
-  td code, th code { font-size: 13px; }
-
-  .method { font-family: var(--mono); font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 5px; }
-  .method.get { color: var(--green); background: rgba(74,222,128,0.1); }
-  .method.post { color: var(--accent); background: rgba(124,156,255,0.1); }
-  .method.delete { color: #ff8a8a; background: rgba(255,138,138,0.1); }
-  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; }
-  .badge.ok { color: var(--green); }
-  .badge.soon { color: var(--muted); }
-  .dash { color: var(--muted); opacity: 0.5; }
-
-  .callout {
-    background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent);
-    border-radius: 10px; padding: 14px 18px; margin: 0 0 16px; color: var(--muted); font-size: 14.5px;
-  }
-  .callout strong { color: var(--text); }
-
-  /* Footer */
-  footer {
-    border-top: 1px solid var(--border); padding: 36px 0 60px;
-    text-align: center; color: var(--muted); font-size: 14.5px;
-  }
-  .footer-brand { font-weight: 600; color: var(--text); }
-  .footer-links { margin-top: 12px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
-  .footer-links a { color: var(--muted); }
-
-  @media (max-width: 760px) {
-    .layout { grid-template-columns: 1fr; gap: 0; }
-    .toc { display: none; }
-    .nav-links a:not(.gh):not(.active) { display: none; }
-  }
-</style>
+<link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 <div class="wrap">
@@ -206,9 +87,7 @@
     <p class="sub">
       llm-mock speaks each provider's API contract — same endpoints, same response shapes,
       same error format, same SSE streaming — with deterministic, configurable replies and no real key.
-      Four providers are implemented: OpenAI under <code>/openai</code>, Gemini (AI Studio) under
-      <code>/gemini</code>, Gemini Enterprise under <code>/gemini-enterprise</code>, and Azure OpenAI
-      under <code>/azure/openai</code>.
+      Five providers are implemented; this page covers what they share, and each has its own reference.
     </p>
   </div>
 </header>
@@ -223,42 +102,13 @@
       <li><a href="#auth">Authentication</a></li>
       <li><a href="#control">Controlling replies</a></li>
     </ul>
-    <p class="toc-group">OpenAI</p>
+    <p class="toc-group">Providers</p>
     <ul>
-      <li><a href="#endpoints">Endpoints</a></li>
-      <li><a href="#chat">Chat completions</a></li>
-      <li><a href="#responses">Responses API</a></li>
-      <li><a href="#tools">Tool calls</a></li>
-      <li><a href="#models">Models</a></li>
-      <li><a href="#embeddings">Embeddings</a></li>
-      <li><a href="#files">Files</a></li>
-      <li><a href="#uploads">Uploads</a></li>
-      <li><a href="#streaming">Streaming</a></li>
-      <li><a href="#errors">Errors</a></li>
-    </ul>
-    <p class="toc-group">Gemini (AI Studio)</p>
-    <ul>
-      <li><a href="#gemini">Endpoints</a></li>
-      <li><a href="#gemini-generate">generateContent</a></li>
-      <li><a href="#gemini-tools">Tool calls</a></li>
-      <li><a href="#gemini-interactions">Interactions API</a></li>
-      <li><a href="#gemini-files">Files</a></li>
-      <li><a href="#gemini-compat">OpenAI-compat layer</a></li>
-      <li><a href="#gemini-errors">Errors</a></li>
-    </ul>
-    <p class="toc-group">Gemini Enterprise</p>
-    <ul>
-      <li><a href="#ge">Endpoints</a></li>
-      <li><a href="#ge-auth">Two auth modes</a></li>
-      <li><a href="#ge-embeddings">Embeddings via :predict</a></li>
-      <li><a href="#ge-interactions">Interactions API</a></li>
-    </ul>
-    <p class="toc-group">Azure OpenAI</p>
-    <ul>
-      <li><a href="#azure">Endpoints</a></li>
-      <li><a href="#azure-auth">Authentication</a></li>
-      <li><a href="#azure-deployments">Deployments</a></li>
-      <li><a href="#azure-filter">Content filtering</a></li>
+      <li><a href="api-openai.html">OpenAI</a></li>
+      <li><a href="api-anthropic.html">Anthropic</a></li>
+      <li><a href="api-gemini.html">Gemini (AI Studio)</a></li>
+      <li><a href="api-gemini-enterprise.html">Gemini Enterprise</a></li>
+      <li><a href="api-azure.html">Azure OpenAI</a></li>
     </ul>
     <p class="toc-group">Reference</p>
     <ul>
@@ -267,6 +117,21 @@
   </aside>
 
   <main>
+    <section id="providers-nav">
+      <h2>Per-provider reference</h2>
+      <p class="section-sub">Everything below this section is shared by every provider. Each provider's own endpoints, quirks and error shapes live on its own page.</p>
+      <table>
+        <thead><tr><th>Provider</th><th>Prefix</th><th>What's there</th></tr></thead>
+        <tbody>
+          <tr><td><a href="api-openai.html"><strong>OpenAI</strong></a></td><td><code>/openai/v1</code></td><td>Chat completions, Responses API, tool calls, files, uploads, streaming</td></tr>
+          <tr><td><a href="api-anthropic.html"><strong>Anthropic</strong></a></td><td><code>/anthropic</code></td><td>Messages with content blocks, thinking, named-event SSE, batches, files</td></tr>
+          <tr><td><a href="api-gemini.html"><strong>Gemini (AI Studio)</strong></a></td><td><code>/gemini</code></td><td>generateContent, Interactions API, files, OpenAI-compat layer</td></tr>
+          <tr><td><a href="api-gemini-enterprise.html"><strong>Gemini Enterprise</strong></a></td><td><code>/gemini-enterprise</code></td><td>Two auth modes, regional paths, embeddings via <code>:predict</code></td></tr>
+          <tr><td><a href="api-azure.html"><strong>Azure OpenAI</strong></a></td><td><code>/azure/openai</code></td><td>Deployments, <code>api-version</code>, Entra ID, content filtering</td></tr>
+        </tbody>
+      </table>
+    </section>
+
     <section id="base-url">
       <h2>Base URL</h2>
       <p class="section-sub">Each provider mounts under its own prefix. Point your SDK's base URL at one of these — on <code>api.llm-mock.dev</code> for the hosted instance, or <code>localhost:3000</code> for your own.</p>
@@ -274,6 +139,7 @@
         <thead><tr><th>Provider</th><th>Base URL</th><th>SDK</th></tr></thead>
         <tbody>
           <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><code>openai</code></td></tr>
+          <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><code>@anthropic-ai/sdk</code></td></tr>
           <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><code>@google/genai</code></td></tr>
           <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><code>@google/genai</code>, <code>vertexai: true</code></td></tr>
           <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><code>openai</code>, <code>AzureOpenAI</code></td></tr>
@@ -297,6 +163,12 @@
   apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
 });
 
+<span class="tok-com">// Anthropic — the version segment lives in the base URL</span>
+<span class="tok-key">const</span> anthropic = <span class="tok-key">new</span> <span class="tok-fn">Anthropic</span>({
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+  baseURL: <span class="tok-str">"https://api.llm-mock.dev/anthropic"</span>,
+});
+
 <span class="tok-com">// Gemini — the SDK appends "v1beta" itself</span>
 <span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
   apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
@@ -314,6 +186,12 @@
             <td>OpenAI</td>
             <td><code>Authorization: Bearer</code></td>
             <td><span class="badge soon">401</span> <code>invalid_api_key</code></td>
+            <td><span class="badge soon">401</span></td>
+          </tr>
+          <tr>
+            <td>Anthropic</td>
+            <td><code>x-api-key</code> (also Bearer, for OAuth)</td>
+            <td><span class="badge soon">401</span> <code>authentication_error</code></td>
             <td><span class="badge soon">401</span></td>
           </tr>
           <tr>
@@ -359,7 +237,9 @@
         <tbody>
           <tr><td><code>x-llm-mock-response</code></td><td>ASCII reply to return verbatim as the assistant message</td></tr>
           <tr><td><code>x-llm-mock-response-base64</code></td><td>Base64-encoded reply for content beyond ASCII (UTF-8). Wins when both headers are present.</td></tr>
-          <tr><td><code>x-llm-mock-tool-calls</code></td><td>JSON array of tool calls the reply must contain. See <a href="#tools">Tool calls</a>.</td></tr>
+          <tr><td><code>x-llm-mock-tool-calls</code></td><td>JSON array of tool calls the reply must contain. See <a href="api-openai.html#tools">Tool calls</a>.</td></tr>
+          <tr><td><code>x-llm-mock-content-filter</code></td><td>Azure only. Pins the content-filter verdict. See <a href="api-azure.html#azure-filter">Content filtering</a>.</td></tr>
+          <tr><td><code>x-llm-mock-batch-status</code></td><td>Anthropic only. Pins a batch's <code>processing_status</code>. See <a href="api-anthropic.html#anthropic-batches">Batches</a>.</td></tr>
         </tbody>
       </table>
 <pre><code><span class="tok-key">const</span> completion = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>(
@@ -373,523 +253,6 @@
       </div>
     </section>
 
-    <section id="endpoints">
-      <h2>OpenAI · Endpoints</h2>
-      <p class="section-sub">Everything under the <code>/openai</code> prefix. The sections that follow — chat completions through errors — all describe this provider.</p>
-      <table>
-        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/chat/completions</code></td><td>Full <code>chat.completion</code> object, <code>n</code> choices, SSE streaming, <code>stream_options.include_usage</code></td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Full <code>response</code> object, typed SSE event stream</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Stateless: synthesizes a deterministic response for any id</td></tr>
-          <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the OpenAI deletion object</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models</code></td><td>Simulated catalog (<code>gpt-4.1</code>, <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>text-embedding-3-*</code>, …)</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models/{model}</code></td><td><code>404</code> in OpenAI error format for unknown models</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/embeddings</code></td><td>Deterministic unit vectors, correct dimension per model, <code>dimensions</code> param, <code>float</code> and <code>base64</code> encoding</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/files</code></td><td><code>multipart/form-data</code> upload; validates <code>purpose</code>, honours <code>expires_after</code></td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/files</code></td><td>Simulated catalog with <code>purpose</code> filter and <code>limit</code>/<code>order</code>/<code>after</code> pagination</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/files/{id}</code></td><td>Stateless: the id carries the metadata, so an upload round-trips exactly</td></tr>
-          <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/files/{id}</code></td><td>Idempotent; returns the OpenAI deletion object</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/files/{id}/content</code></td><td>Deterministic placeholder bytes (valid JSONL for <code>fine-tune</code>/<code>batch</code> files)</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads</code></td><td>Creates a <code>pending</code> upload for the chunked flow</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/parts</code></td><td>Accepts a part of up to 64 MB, named or nameless</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/complete</code></td><td>Returns the upload as <code>completed</code>, with the nested <code>file</code> object</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/cancel</code></td><td>Returns the upload as <code>cancelled</code></td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Healthcheck (mock-only, outside any provider contract)</td></tr>
-        </tbody>
-      </table>
-      <div class="callout">
-        Parameters the mock does not simulate (<code>temperature</code>, <code>top_p</code>, <code>response_format</code>, …)
-        are <strong>accepted without error</strong>, because real SDK clients send them.
-        <code>tools</code> and <code>tool_choice</code> <strong>are</strong> simulated — see <a href="#tools">Tool calls</a>.
-      </div>
-    </section>
-
-    <section id="chat">
-      <h2>OpenAI · Chat completions</h2>
-      <p class="section-sub"><code>POST /openai/v1/chat/completions</code> — returns a full <code>chat.completion</code> object. By default the assistant echoes the last user message (<code>"Echo: &lt;your prompt&gt;"</code>).</p>
-<pre><code>curl https://api.llm-mock.dev/openai/v1/chat/completions \
-  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
-  -H <span class="tok-str">"Content-Type: application/json"</span> \
-  -d <span class="tok-str">'{"model": "gpt-4o", "messages": [{"role": "user", "content": "ping"}]}'</span></code></pre>
-      <p>Supports multiple choices via <code>n</code>, streaming via <code>stream: true</code>, and usage on the final stream chunk via <code>stream_options.include_usage</code>.</p>
-    </section>
-
-    <section id="responses">
-      <h2>OpenAI · Responses API</h2>
-      <p class="section-sub">The newer <code>/responses</code> surface is fully modelled, including the typed SSE event stream.</p>
-      <table>
-        <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Returns a full <code>response</code> object; with <code>stream: true</code> emits typed events (<code>response.created</code>, <code>response.output_text.delta</code>, <code>response.completed</code>, …)</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Stateless — synthesizes a deterministic response for any id, no store required</td></tr>
-          <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the standard OpenAI deletion object</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section id="tools">
-      <h2>OpenAI · Tool calls</h2>
-      <p class="section-sub">Both surfaces return real tool calls, so an agent loop runs end to end without a model. Chat completions answer with <code>message.tool_calls</code> and <code>finish_reason: "tool_calls"</code>; the Responses API emits a <code>function_call</code> output item and echoes the <code>tools</code> / <code>tool_choice</code> it received.</p>
-      <table>
-        <thead><tr><th>Trigger</th><th>Behaviour</th></tr></thead>
-        <tbody>
-          <tr><td><code>tool_choice: "required"</code></td><td>Calls the first declared tool</td></tr>
-          <tr><td><code>tool_choice: {type:"function", …name}</code></td><td>Calls that tool (name nested under <code>function</code> on chat completions, top level on responses)</td></tr>
-          <tr><td><code>tool_choice: "auto"</code> / <code>"none"</code></td><td>Answers with text — deciding to call a tool is the one thing a mock cannot do</td></tr>
-          <tr><td><code>x-llm-mock-tool-calls</code></td><td>Pins the exact calls, overriding <code>tool_choice</code></td></tr>
-          <tr><td>A tool result in the conversation</td><td>Stops forcing calls, so the loop terminates: <code>role: "tool"</code> message, or <code>function_call_output</code> item</td></tr>
-        </tbody>
-      </table>
-      <p>Arguments are synthesized from the tool's JSON Schema — <code>default</code> first, then the first <code>enum</code> value, then a placeholder per type — covering the <code>required</code> properties, or all of them when the schema declares none.</p>
-<pre><code>curl https://api.llm-mock.dev/openai/v1/chat/completions \
-  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
-  -H <span class="tok-str">"Content-Type: application/json"</span> \
-  -H <span class="tok-str">'x-llm-mock-tool-calls: [{"name":"get_weather","arguments":{"city":"Valencia"}}]'</span> \
-  -d <span class="tok-str">'{"model": "gpt-4o", "messages": [{"role": "user", "content": "weather?"}]}'</span></code></pre>
-      <p>The header takes a JSON array (a bare object counts as a single call); several entries produce parallel calls, each with its own id. Omit <code>arguments</code> to have them synthesized, pass an object to encode it, or a string to send it verbatim — handy for pinning malformed arguments. Streaming works too: <code>delta.tool_calls</code> pieces keyed by <code>index</code> on chat completions, <code>response.function_call_arguments.delta</code> / <code>.done</code> events on the Responses API.</p>
-    </section>
-
-    <section id="models">
-      <h2>OpenAI · Models</h2>
-      <p class="section-sub">A simulated catalog so model-discovery code paths work end to end.</p>
-      <table>
-        <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models</code></td><td>Lists <code>gpt-4.1</code>, <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>text-embedding-3-small</code>, <code>text-embedding-3-large</code>, …</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models/{model}</code></td><td>Returns the model object, or <code>404</code> in OpenAI error format for unknown models</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section id="embeddings">
-      <h2>OpenAI · Embeddings</h2>
-      <p class="section-sub"><code>POST /openai/v1/embeddings</code> — returns deterministic, hash-seeded unit vectors with the correct dimension per model. Honours the <code>dimensions</code> param and both <code>float</code> and <code>base64</code> encodings.</p>
-<pre><code>curl https://api.llm-mock.dev/openai/v1/embeddings \
-  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
-  -H <span class="tok-str">"Content-Type: application/json"</span> \
-  -d <span class="tok-str">'{"model": "text-embedding-3-small", "input": "hello"}'</span></code></pre>
-    </section>
-
-    <section id="files">
-      <h2>OpenAI · Files</h2>
-      <p class="section-sub">Files are the one part of the contract that is inherently stateful, and llm-mock stores nothing. Instead of a server-side store, <strong>the id carries the metadata</strong>: the id returned by an upload encodes its filename, size and purpose, so a later retrieve answers accurately on any instance, after any restart.</p>
-<pre><code>curl https://api.llm-mock.dev/openai/v1/files \
-  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
-  -F <span class="tok-str">"purpose=fine-tune"</span> \
-  -F <span class="tok-str">"file=@training.jsonl"</span></code></pre>
-<pre><code><span class="tok-key">const</span> file = <span class="tok-key">await</span> client.files.<span class="tok-fn">create</span>({
-  file: <span class="tok-key">await</span> <span class="tok-fn">toFile</span>(Buffer.<span class="tok-fn">from</span>(<span class="tok-str">'{"prompt":"hi"}\n'</span>), <span class="tok-str">"training.jsonl"</span>),
-  purpose: <span class="tok-str">"fine-tune"</span>,
-});
-<span class="tok-key">const</span> same = <span class="tok-key">await</span> client.files.<span class="tok-fn">retrieve</span>(file.id);
-<span class="tok-com">// identical object — no state involved</span></code></pre>
-      <table>
-        <thead><tr><th>Behaviour</th><th>What to expect</th></tr></thead>
-        <tbody>
-          <tr><td>Listing</td><td>A fixed simulated catalog (<code>file-mock-training-jsonl</code>, <code>file-mock-manual-pdf</code>, …), like the model catalog. Uploads never join it. Supports the <code>purpose</code> filter and <code>limit</code>/<code>order</code>/<code>after</code> pagination.</td></tr>
-          <tr><td>Content</td><td>Deterministic placeholder bytes, not what you uploaded: valid JSONL for <code>fine-tune</code>/<code>batch</code> files, a text marker otherwise. Pin exact bytes with <code>x-llm-mock-response</code>.</td></tr>
-          <tr><td>Unknown ids</td><td>Any well-formed id resolves with plausible synthetic metadata. For a <code>404</code>, use a reserved id: anything starting with <code>file-missing</code>.</td></tr>
-          <tr><td>Deletion</td><td>Idempotent; always reports <code>deleted: true</code>.</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section id="uploads">
-      <h2>OpenAI · Uploads</h2>
-      <p class="section-sub">The chunked <code>/uploads</code> flow works the same way, so <code>complete</code> echoes back what <code>create</code> was told. Parts may be named or nameless — a sliced <code>Blob</code> works exactly as it does against the real API.</p>
-<pre><code><span class="tok-key">const</span> upload = <span class="tok-key">await</span> client.uploads.<span class="tok-fn">create</span>({
-  filename: <span class="tok-str">"training-examples.jsonl"</span>,
-  bytes: <span class="tok-str">2048</span>,
-  mime_type: <span class="tok-str">"text/jsonl"</span>,
-  purpose: <span class="tok-str">"fine-tune"</span>,
-});
-<span class="tok-key">const</span> part = <span class="tok-key">await</span> client.uploads.parts.<span class="tok-fn">create</span>(upload.id, { data: <span class="tok-key">new</span> <span class="tok-fn">Blob</span>([chunk]) });
-<span class="tok-key">const</span> done = <span class="tok-key">await</span> client.uploads.<span class="tok-fn">complete</span>(upload.id, { part_ids: [part.id] });
-<span class="tok-com">// done.status === "completed", done.file.filename === "training-examples.jsonl"</span></code></pre>
-      <div class="callout">
-        The reserved <code>upload_missing</code> prefix always returns <code>404</code>, the same way <code>file-missing</code> does for files
-        and <code>sk-mock-invalid</code> does for API keys.
-      </div>
-    </section>
-
-
-    <section id="streaming">
-      <h2>OpenAI · Streaming (SSE)</h2>
-      <p class="section-sub"><code>stream: true</code> works on both chat completions and the Responses API, emitting the real Server-Sent Events stream your SDK already knows how to consume.</p>
-      <ul>
-        <li><strong>Chat completions</strong> — delta chunks terminated by <code>data: [DONE]</code>. Add <code>stream_options.include_usage</code> for a final usage chunk.</li>
-        <li><strong>Responses API</strong> — typed events: <code>response.created</code>, <code>response.output_text.delta</code>, <code>response.completed</code>, …</li>
-      </ul>
-<pre><code><span class="tok-key">const</span> stream = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>({
-  model: <span class="tok-str">"gpt-4o"</span>,
-  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
-  stream: <span class="tok-key">true</span>,
-});
-<span class="tok-key">for await</span> (<span class="tok-key">const</span> chunk <span class="tok-key">of</span> stream) {
-  process.stdout.<span class="tok-fn">write</span>(chunk.choices[<span class="tok-str">0</span>]?.delta?.content ?? <span class="tok-str">""</span>);
-}</code></pre>
-    </section>
-
-    <section id="errors">
-      <h2>OpenAI · Errors</h2>
-      <p class="section-sub">Failures return the exact OpenAI error envelope, so you can test your error handling too. Invalid keys, unknown models and validation errors all follow this shape:</p>
-<pre><code>{
-  <span class="tok-key">"error"</span>: {
-    <span class="tok-key">"message"</span>: <span class="tok-str">"Incorrect API key provided: sk-moc****alid. ..."</span>,
-    <span class="tok-key">"type"</span>: <span class="tok-str">"invalid_request_error"</span>,
-    <span class="tok-key">"param"</span>: <span class="tok-key">null</span>,
-    <span class="tok-key">"code"</span>: <span class="tok-str">"invalid_api_key"</span>
-  }
-}</code></pre>
-    </section>
-
-    <section id="gemini">
-      <h2>Gemini (AI Studio) · Endpoints</h2>
-      <p class="section-sub">Everything under the <code>/gemini</code> prefix. Both <code>v1beta</code> and <code>v1</code> serve the same mock, so either <code>apiVersion</code> works. Custom methods are addressed the Google way, as <code>{resource}:{method}</code>.</p>
-      <table>
-        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:generateContent</code></td><td>Full response: <code>candidates</code>, <code>finishReason</code>, <code>usageMetadata</code> by modality, <code>modelVersion</code>, <code>responseId</code></td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:streamGenerateContent</code></td><td>SSE with <code>?alt=sse</code>, streamed JSON array without it</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:batchEmbedContents</code></td><td>Deterministic unit vectors — what the SDK calls even for one input</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:embedContent</code></td><td>The singular form, for curl and non-SDK callers</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:countTokens</code></td><td>Accepts bare <code>contents</code> or a whole <code>generateContentRequest</code></td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/models</code></td><td>Simulated catalog, ids checked against the live listing</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/models/{model}</code></td><td><code>404</code> in Google's <code>google.rpc.Status</code> format</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/interactions</code></td><td>Interactions API — <code>steps</code>, <code>usage</code>, tool calls, SSE with <code>stream: true</code></td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/interactions/{id}</code></td><td>Stateless: synthesizes a deterministic interaction for any id</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/interactions/{id}/cancel</code></td><td>Returns the interaction as <code>cancelled</code></td></tr>
-          <tr><td><span class="method delete">DELETE</span></td><td><code>/gemini/v1beta/interactions/{id}</code></td><td>Idempotent; <code>200</code> with an empty body</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/upload/v1beta/files</code></td><td>Resumable upload, both steps. <code>upload/</code> sits <strong>before</strong> the version</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/files</code></td><td>Simulated catalog with <code>pageSize</code>/<code>pageToken</code></td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/files/{name}</code></td><td>Stateless: the name carries the metadata, so an upload round-trips exactly</td></tr>
-          <tr><td><span class="method delete">DELETE</span></td><td><code>/gemini/v1beta/files/{name}</code></td><td>Idempotent; returns <code>{}</code></td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/openai/chat/completions</code></td><td>OpenAI-compatibility layer — see <a href="#gemini-compat">below</a></td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/openai/embeddings</code></td><td>Same layer, at Gemini's dimensions</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/openai/models</code></td><td>Gemini's catalog in OpenAI's list envelope</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section id="gemini-generate">
-      <h2>Gemini · generateContent</h2>
-      <p class="section-sub">A turn is a <code>Content</code> and everything inside it is a <code>Part</code>. Multi-turn input, <code>systemInstruction</code> (counted towards the prompt tokens) and <code>candidateCount</code> are all simulated.</p>
-<pre><code><span class="tok-key">import</span> { GoogleGenAI } <span class="tok-key">from</span> <span class="tok-str">"@google/genai"</span>;
-
-<span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
-  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
-  httpOptions: { baseUrl: <span class="tok-str">"http://localhost:3000/gemini"</span> },
-});
-
-<span class="tok-key">const</span> response = <span class="tok-key">await</span> ai.models.<span class="tok-fn">generateContent</span>({
-  model: <span class="tok-str">"gemini-3.6-flash"</span>,
-  contents: <span class="tok-str">"Hello!"</span>,
-});
-
-console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">// "Echo: Hello!"</span></code></pre>
-      <div class="callout">
-        Streaming here carries <strong>no <code>[DONE]</code> sentinel</strong>, unlike OpenAI's. The Gemini SDK
-        parses every event as JSON and rejects a trailing one it cannot parse.
-      </div>
-    </section>
-
-    <section id="gemini-tools">
-      <h2>Gemini · Tool calls</h2>
-      <p class="section-sub">Declare tools as <code>tools[].functionDeclarations[]</code>. Tool selection lives in <code>toolConfig.functionCallingConfig.mode</code> rather than in a <code>tool_choice</code> field.</p>
-      <table>
-        <thead><tr><th>Mode</th><th>Behaviour</th></tr></thead>
-        <tbody>
-          <tr><td><code>ANY</code></td><td>Forces a call. With <code>allowedFunctionNames</code>, the named tool is picked</td></tr>
-          <tr><td><code>NONE</code></td><td>Never calls a tool</td></tr>
-          <tr><td><code>AUTO</code> (default)</td><td>Leaves it to the model — and this mock has none, so it answers with prose</td></tr>
-        </tbody>
-      </table>
-      <p>A call comes back as a <code>functionCall</code> part whose <code>args</code> is a <strong>decoded object</strong>, where OpenAI carries a JSON string. Streaming never splits a call across chunks. The loop terminates once a <code>functionResponse</code> part is in the conversation.</p>
-    </section>
-
-    <section id="gemini-interactions">
-      <h2>Gemini · Interactions API</h2>
-      <p class="section-sub">Google's next-generation surface, GA since June 2026 and the one its own quickstart now uses. It is a different contract from <code>generateContent</code>, not a wrapper: fields are <code>snake_case</code>, and a turn is a <code>Step</code> rather than a <code>Content</code>.</p>
-<pre><code><span class="tok-key">const</span> interaction = <span class="tok-key">await</span> ai.interactions.<span class="tok-fn">create</span>({
-  model: <span class="tok-str">"gemini-3.6-flash"</span>,
-  input: <span class="tok-str">"Hello!"</span>,
-});
-
-console.<span class="tok-fn">log</span>(interaction.output_text); <span class="tok-com">// "Echo: Hello!"</span></code></pre>
-      <p>Streaming emits <code>interaction.created</code> → <code>step.start</code> / <code>step.delta</code> / <code>step.stop</code> → <code>interaction.completed</code>. A function call's arguments arrive as <code>arguments_delta</code> pieces of a JSON string — the one place this API re-encodes what it otherwise sends decoded. Note that <code>tool_choice</code> lives inside <code>generation_config</code> here, not beside <code>tools</code>.</p>
-      <div class="callout">
-        The mock stays stateless here, as it does on OpenAI's Responses API: <code>create</code> stores nothing and
-        <code>GET /interactions/{id}</code> synthesizes a deterministic interaction for any id rather than 404ing.
-        So <code>store</code>, <code>background</code> and <code>previous_interaction_id</code> are accepted and
-        ignored — a test that depends on real server-side continuation is the one thing this endpoint cannot fake.
-      </div>
-    </section>
-
-    <section id="gemini-files">
-      <h2>Gemini · Files</h2>
-      <p class="section-sub">The full resumable protocol works, and still nothing is persisted.</p>
-<pre><code><span class="tok-key">const</span> file = <span class="tok-key">await</span> ai.files.<span class="tok-fn">upload</span>({
-  file: <span class="tok-key">new</span> <span class="tok-fn">Blob</span>([<span class="tok-str">"hello"</span>], { type: <span class="tok-str">"text/plain"</span> }),
-  config: { mimeType: <span class="tok-str">"text/plain"</span>, displayName: <span class="tok-str">"notes.txt"</span> },
-});
-
-<span class="tok-key">const</span> same = <span class="tok-key">await</span> ai.files.<span class="tok-fn">get</span>({ name: file.name }); <span class="tok-com">// round-trips exactly</span></code></pre>
-      <p>Both halves stay stateless. The upload session has no server-side table behind it: the metadata declared at <code>start</code> travels back inside the <code>x-goog-upload-url</code> the client is told to use, and returns with the bytes. The file's own metadata then rides inside the name it is given. <code>sha256Hash</code> is the genuine digest of the bytes received, so a client that verifies it succeeds.</p>
-      <div class="callout">
-        Minted names run past the 40 characters Google documents. That cap applies to names a <em>client</em>
-        supplies, not to ones the server returns — verified against <code>@google/genai</code>, which reads a
-        90-character name back without complaint. Use the <code>files/missing…</code> prefix to exercise the
-        not-found path, which the real API reports as <code>403 PERMISSION_DENIED</code> rather than a 404.
-      </div>
-    </section>
-
-    <section id="gemini-compat">
-      <h2>Gemini · OpenAI-compatibility layer</h2>
-      <p class="section-sub">Google runs an OpenAI-shaped surface at <code>/v1beta/openai</code>, so an app built on the <code>openai</code> SDK can talk to Gemini by changing only its <code>baseURL</code>. The mock serves it too.</p>
-<pre><code><span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">OpenAI</span>({
-  baseURL: <span class="tok-str">"http://localhost:3000/gemini/v1beta/openai"</span>,
-  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
-});
-
-<span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>({
-  model: <span class="tok-str">"gemini-3.6-flash"</span>,
-  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
-});</code></pre>
-      <p>Successful responses come back in OpenAI's shapes — <code>chat.completion</code> objects, <code>[DONE]</code>-terminated streams, tool call arguments as a JSON string. What it serves underneath is still Gemini, and that shows: <code>/models</code> lists Gemini models with <code>owned_by: "google"</code> and a <code>display_name</code> but no <code>created</code>, completions carry no <code>system_fingerprint</code> and no <code>chatcmpl-</code> id prefix, and embeddings come out at Gemini's dimensions rather than OpenAI's 1536.</p>
-      <p><strong>Errors are Google's, not OpenAI's.</strong> The layer translates requests, not failures, and because the request has already become a <code>generateContent</code> call by the time it is validated, that is what the complaint names:</p>
-<pre><code>{
-  <span class="tok-key">"error"</span>: {
-    <span class="tok-key">"code"</span>: <span class="tok-str">400</span>,
-    <span class="tok-key">"message"</span>: <span class="tok-str">"* GenerateContentRequest.contents: contents is not specified\n"</span>,
-    <span class="tok-key">"status"</span>: <span class="tok-str">"INVALID_ARGUMENT"</span>
-  }
-}</code></pre>
-      <div class="callout">
-        Only what Google actually exposes is mounted. <strong>The Responses API and the Files endpoints are absent
-        from the real compatibility layer</strong>, so calling them here 404s exactly as it would against Google —
-        use <code>/openai/v1</code> for the former and Gemini's native <code>/gemini/v1beta/files</code> for the latter.
-      </div>
-    </section>
-
-    <section id="gemini-errors">
-      <h2>Gemini · Errors</h2>
-      <p class="section-sub">Two envelopes, and which one you get depends on the surface. Everything except <code>/interactions</code> answers in the <code>google.rpc.Status</code> envelope shared by every Google Cloud API:</p>
-<pre><code>{
-  <span class="tok-key">"error"</span>: {
-    <span class="tok-key">"code"</span>: <span class="tok-str">400</span>,
-    <span class="tok-key">"message"</span>: <span class="tok-str">"API key not valid. Please pass a valid API key."</span>,
-    <span class="tok-key">"status"</span>: <span class="tok-str">"INVALID_ARGUMENT"</span>,
-    <span class="tok-key">"details"</span>: [ <span class="tok-com">/* only ever present for an invalid API key */</span> ]
-  }
-}</code></pre>
-      <p>The Interactions API uses a flatter, OpenAI-looking envelope for its own errors:</p>
-<pre><code>{
-  <span class="tok-key">"error"</span>: { <span class="tok-key">"code"</span>: <span class="tok-str">"invalid_request"</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Missing input."</span> }
-}</code></pre>
-      <div class="callout">
-        A credential failure on <code>/interactions</code> still uses the <em>classic</em> envelope: Google's API
-        frontend rejects the key before the service ever runs. Verified against the live API, along with
-        everything else on this page marked as checked.
-      </div>
-    </section>
-
-    <section id="ge">
-      <h2>Gemini Enterprise · Endpoints</h2>
-      <p class="section-sub">Google renamed Vertex AI to the Gemini Enterprise Agent Platform. It serves the same model family as AI Studio through a different contract, under the <code>/gemini-enterprise</code> prefix. Both <code>v1beta1</code> — the SDK's default here — and <code>v1</code> are served.</p>
-      <table>
-        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:generateContent</code></td><td>Same contract as AI Studio, plus a <code>createTime</code> on every response</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:streamGenerateContent</code></td><td>SSE with <code>?alt=sse</code>, streamed JSON array without it</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:predict</code></td><td>Embeddings — this platform has no <code>:embedContent</code></td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:countTokens</code></td><td>Reports <code>totalTokens</code> only</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/gemini-enterprise/v1beta1/publishers/google/models</code></td><td>Publisher catalog, nested under <code>publisherModels</code></td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/gemini-enterprise/v1beta1/publishers/google/models/{model}</code></td><td><code>versionId</code> rather than <code>version</code>, and no token limits</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini-enterprise/v1beta1/interactions</code></td><td>Interactions API, same contract as AI Studio's</td></tr>
-        </tbody>
-      </table>
-      <p>Every model path comes in two shapes, and the same handler answers both: the regional one, which production code uses, and the express one.</p>
-<pre><code><span class="tok-com"># regional — OAuth, project and location in the path</span>
-/gemini-enterprise/v1beta1/projects/{project}/locations/{location}/publishers/google/models/{model}:generateContent
-
-<span class="tok-com"># express — API key, no project or location</span>
-/gemini-enterprise/v1beta1/publishers/google/models/{model}:generateContent</code></pre>
-      <div class="callout">
-        There is no Files API here, and that is the platform's doing rather than a gap in the mock:
-        <code>@google/genai</code> refuses the upload client-side with <em>"Gemini Enterprise Agent Platform
-        (previously known as Vertex AI) does not support uploading files. You can share files through a GCS
-        bucket."</em>
-      </div>
-    </section>
-
-    <section id="ge-auth">
-      <h2>Gemini Enterprise · Two auth modes</h2>
-      <p class="section-sub">Both are accepted against the same key set. Express mode takes an API key and addresses publisher models directly — it is by far the easier one to point at a mock:</p>
-<pre><code><span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
-  vertexai: <span class="tok-key">true</span>,
-  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
-  httpOptions: { baseUrl: <span class="tok-str">"http://localhost:3000/gemini-enterprise"</span> },
-});</code></pre>
-      <p>Regional mode is how production code calls the platform — an OAuth token, and <code>projects/{p}/locations/{l}</code> in every path. The SDK will not emit a request without Application Default Credentials, so pointing it at a mock means handing it something that answers like an auth client:</p>
-<pre><code><span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
-  vertexai: <span class="tok-key">true</span>,
-  project: <span class="tok-str">"my-project"</span>,
-  location: <span class="tok-str">"europe-west1"</span>,
-  httpOptions: { baseUrl: <span class="tok-str">"http://localhost:3000/gemini-enterprise"</span> },
-  googleAuthOptions: {
-    authClient: {
-      getRequestHeaders: <span class="tok-key">async</span> () =&gt; <span class="tok-key">new</span> <span class="tok-fn">Headers</span>({ authorization: <span class="tok-str">"Bearer sk-mock-key-01"</span> }),
-      getAccessToken: <span class="tok-key">async</span> () =&gt; ({ token: <span class="tok-str">"sk-mock-key-01"</span> }),
-      request: <span class="tok-key">async</span> () =&gt; ({ data: {} }),
-    } <span class="tok-key">as never</span>,
-  },
-});</code></pre>
-      <p>A rejection differs by transport, matching the platform: a bad OAuth token is <code>401 UNAUTHENTICATED</code>, a bad API key <code>400 INVALID_ARGUMENT</code>.</p>
-      <div class="callout">
-        Unlike the AI Studio provider, none of this provider's shapes could be checked against the live service —
-        that needs a GCP project with the platform enabled. Its routes come from observing what the official SDK
-        puts on the wire, and its wire shapes from the SDK's own transformers, but its <strong>error messages and
-        codes are inference</strong> rather than observation.
-      </div>
-    </section>
-
-    <section id="ge-embeddings">
-      <h2>Gemini Enterprise · Embeddings via :predict</h2>
-      <p class="section-sub">This is where the two Google surfaces diverge most. There is no <code>:embedContent</code> here — embeddings ride the generic prediction endpoint, in an envelope that looks nothing like AI Studio's.</p>
-<pre><code><span class="tok-com">// POST …/publishers/google/models/text-embedding-005:predict</span>
-{
-  <span class="tok-key">"instances"</span>: [{ <span class="tok-key">"content"</span>: <span class="tok-str">"hello"</span>, <span class="tok-key">"task_type"</span>: <span class="tok-str">"SEMANTIC_SIMILARITY"</span> }],
-  <span class="tok-key">"parameters"</span>: { <span class="tok-key">"outputDimensionality"</span>: <span class="tok-str">768</span> }   <span class="tok-com">// per call, not per instance</span>
-}
-
-{
-  <span class="tok-key">"predictions"</span>: [{
-    <span class="tok-key">"embeddings"</span>: {
-      <span class="tok-key">"values"</span>: [ <span class="tok-com">/* … */</span> ],
-      <span class="tok-key">"statistics"</span>: { <span class="tok-key">"truncated"</span>: <span class="tok-key">false</span>, <span class="tok-key">"token_count"</span>: <span class="tok-str">2</span> }
-    }
-  }]
-}</code></pre>
-      <p>Note <code>task_type</code> and <code>token_count</code> in snake_case inside an otherwise camelCase API — that is the platform's own inconsistency, faithfully reproduced. <code>countTokens</code> here reports <code>totalTokens</code> and nothing else, where AI Studio's also breaks the count down by modality.</p>
-    </section>
-
-    <section id="ge-interactions">
-      <h2>Gemini Enterprise · Interactions API</h2>
-      <p class="section-sub">Served here too, on the same contract as AI Studio's — but reached through a path this platform builds oddly. In regional mode the SDK folds the entire version component, project and location included, into one percent-encoded path segment.</p>
-<pre><code><span class="tok-com"># express</span>
-/gemini-enterprise/v1beta1/interactions
-
-<span class="tok-com"># regional</span>
-/gemini-enterprise/v1beta1%2Fprojects%2F{project}%2Flocations%2F{location}/interactions</code></pre>
-      <p>Both shapes reach the same handler. Everything else — <code>steps</code>, <code>usage</code>, streaming events, the stateless retrieval — behaves exactly as on the <a href="#gemini-interactions">AI Studio surface</a>.</p>
-    </section>
-
-    <section id="azure">
-      <h2>Azure OpenAI · Endpoints</h2>
-      <p class="section-sub">Azure serves the same models as OpenAI through a different front door. Most of the differences are in the routing rather than the payloads — the exception being content filtering, which Azure adds to every response. Two surfaces are served under the <code>/azure/openai</code> prefix.</p>
-      <table>
-        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td><span class="method post">POST</span></td><td><code>…/deployments/{deployment}/chat/completions</code></td><td>Full <code>chat.completion</code> object, SSE streaming with <code>[DONE]</code>, tool calls</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>…/deployments/{deployment}/embeddings</code></td><td>Deterministic unit vectors, correct dimension per model</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/chat/completions</code></td><td>The newer surface: no <code>api-version</code>, no deployments</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/embeddings</code></td><td>Same handlers, addressed by model</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/models?api-version=</code></td><td>Model catalog, outside the deployment path</td></tr>
-        </tbody>
-      </table>
-      <p>The classic surface addresses a <strong>deployment</strong> rather than a model and requires <code>api-version</code> on every call. The v1 surface drops both:</p>
-<pre><code><span class="tok-com"># classic</span>
-/azure/openai/deployments/{deployment}/chat/completions?api-version=2024-10-21
-
-<span class="tok-com"># v1</span>
-/azure/openai/v1/chat/completions</code></pre>
-      <div class="callout">
-        Azure puts the resource name in the hostname (<code>{resource}.openai.azure.com</code>) and keeps
-        <code>/openai</code> in the path. A mock cannot hand out subdomains, but it does not need to — the SDK
-        takes an arbitrary URL, so the resource simply becomes part of the prefix. Both surfaces run the same
-        handlers, so the same request returns the same body on either.
-      </div>
-    </section>
-
-    <section id="azure-auth">
-      <h2>Azure · Authentication</h2>
-      <p class="section-sub">Azure takes the key in an <code>api-key</code> header rather than a bearer token — the single most common reason an OpenAI-shaped client fails against it. <code>Authorization: Bearer</code> is accepted too, as Entra ID callers use it.</p>
-<pre><code><span class="tok-key">import</span> { AzureOpenAI } <span class="tok-key">from</span> <span class="tok-str">"openai"</span>;
-
-<span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">AzureOpenAI</span>({
-  baseURL: <span class="tok-str">"http://localhost:3000/azure/openai"</span>,
-  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
-  apiVersion: <span class="tok-str">"2024-10-21"</span>,
-});</code></pre>
-      <p>Use <code>baseURL</code> rather than <code>endpoint</code>: the SDK reads <code>OPENAI_BASE_URL</code> from the environment and then refuses to combine it with <code>endpoint</code>, so a stray env var breaks the client before it sends anything. The v1 surface needs no Azure-specific client at all — a plain <code>OpenAI</code> pointed one level deeper at <code>/azure/openai/v1</code>.</p>
-      <p>The two failures answer differently, and that is Azure's own doing: a missing key is rejected by the API gateway, which knows nothing about the service's error envelope, while an invalid one gets the wrapped shape.</p>
-<pre><code><span class="tok-com">// missing credential — no `error` wrapper at all</span>
-{ <span class="tok-key">"statusCode"</span>: <span class="tok-str">401</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Access denied due to missing subscription key…"</span> }
-
-<span class="tok-com">// invalid credential — the service's envelope</span>
-{ <span class="tok-key">"error"</span>: { <span class="tok-key">"code"</span>: <span class="tok-str">"401"</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Access denied due to invalid subscription key…"</span> } }</code></pre>
-      <p>Note that Azure's <code>code</code> is a symbolic string (<code>DeploymentNotFound</code>, <code>BadRequest</code>) where OpenAI uses a snake_case slug or null.</p>
-    </section>
-
-    <section id="azure-deployments">
-      <h2>Azure · Deployments</h2>
-      <p class="section-sub">A deployment is a named alias a customer creates in their own Azure resource, pointing at a model. A mock has no resource and therefore no deployments, so any name is accepted — the way every provider here accepts any model id.</p>
-      <p>What cannot be dropped is the 404. <code>DeploymentNotFound</code> is the error Azure users hit most, and the one their code most needs to handle, so it is driven by the name itself: anything starting with <code>missing-</code> returns the real thing.</p>
-<pre><code>{
-  <span class="tok-key">"error"</span>: {
-    <span class="tok-key">"code"</span>: <span class="tok-str">"DeploymentNotFound"</span>,
-    <span class="tok-key">"message"</span>: <span class="tok-str">"The API deployment for this resource does not exist. If you created the deployment within the last 5 minutes, please wait a moment and try again."</span>
-  }
-}</code></pre>
-      <div class="callout">
-        The deployment routes the call; the <code>model</code> echoed back is the one the client asked for, since
-        the two need not agree — the SDK only uses <code>model</code> as the deployment segment when no fixed
-        deployment is configured. The reserved prefix belongs to the deployment path only: on the v1 surface there
-        is no deployment to be missing, and <code>missing-one</code> is just a model name.
-      </div>
-    </section>
-
-    <section id="azure-filter">
-      <h2>Azure · Content filtering</h2>
-      <p class="section-sub">The most Azure-specific thing about the service, and the reason an OpenAI-shaped client can meet a response it did not expect. Every chat completion carries the filter's verdict — on the prompt at the top level, on each choice individually.</p>
-<pre><code>{
-  <span class="tok-key">"choices"</span>: [{
-    <span class="tok-key">"message"</span>: { <span class="tok-key">"content"</span>: <span class="tok-str">"Echo: hello"</span> },
-    <span class="tok-key">"finish_reason"</span>: <span class="tok-str">"stop"</span>,
-    <span class="tok-key">"content_filter_results"</span>: {
-      <span class="tok-key">"hate"</span>:      { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"severity"</span>: <span class="tok-str">"safe"</span> },
-      <span class="tok-key">"self_harm"</span>: { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"severity"</span>: <span class="tok-str">"safe"</span> },
-      <span class="tok-key">"sexual"</span>:    { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"severity"</span>: <span class="tok-str">"safe"</span> },
-      <span class="tok-key">"violence"</span>:  { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"severity"</span>: <span class="tok-str">"safe"</span> }
-    }
-  }],
-  <span class="tok-key">"prompt_filter_results"</span>: [{
-    <span class="tok-key">"prompt_index"</span>: <span class="tok-str">0</span>,
-    <span class="tok-key">"content_filter_results"</span>: { <span class="tok-com">/* the four above, plus binary detectors */</span>
-      <span class="tok-key">"jailbreak"</span>: { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"detected"</span>: <span class="tok-key">false</span> } }
-  }]
-}</code></pre>
-      <p>To exercise the failure paths, pin the verdict with <code>x-llm-mock-content-filter</code>, as <code>&lt;target&gt;</code> or <code>&lt;target&gt;:&lt;category&gt;:&lt;severity&gt;</code>:</p>
-      <table>
-        <thead><tr><th>Value</th><th>Result</th></tr></thead>
-        <tbody>
-          <tr><td><code>prompt</code></td><td><span class="badge soon">400</span> with <code>code: "content_filter"</code>, and the verdict nested in <code>innererror</code></td></tr>
-          <tr><td><code>completion</code></td><td><span class="badge ok">200</span> with <code>content: null</code> and <code>finish_reason: "content_filter"</code></td></tr>
-          <tr><td><code>unavailable</code></td><td><span class="badge ok">200</span>, with an <code>error</code> object where the verdict would be — the documented "filter did not run" case</td></tr>
-        </tbody>
-      </table>
-      <p>Categories are <code>hate</code>, <code>self_harm</code>, <code>sexual</code>, <code>violence</code> and <code>jailbreak</code>; severities <code>safe</code>, <code>low</code>, <code>medium</code>, <code>high</code>. So <code>completion:violence:high</code> filters the reply and says which category did it.</p>
-      <div class="callout">
-        Two quirks are reproduced deliberately, because code written against OpenAI trips on both. A
-        <strong>streamed response opens with a chunk carrying no choices at all</strong>, just the prompt's
-        verdict — a client reaching straight for <code>chunk.choices[0]</code> breaks there. And the
-        blocked-prompt error nests its verdict under <code>content_filter_result</code>, <strong>singular</strong>,
-        against the plural used everywhere else.
-      </div>
-      <p>None of this provider's shapes could be checked against a live Azure resource. Its routes come from observing what <code>AzureOpenAI</code> puts on the wire, and its payloads from Microsoft's documentation and published examples — but they are not observed responses. The empty first streaming chunk in particular is reconstructed from reported behaviour rather than seen.</p>
-    </section>
-
     <section id="providers">
       <h2>Provider support</h2>
       <p class="section-sub">Multi-provider by design: each provider mounts under its own URL prefix and implements its own API contract. Here's where each one stands today.</p>
@@ -900,7 +263,7 @@ console.<span class="tok-fn">log</span>(interaction.output_text); <span class="t
           <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
           <tr><td>Gemini Enterprise (ex-Vertex AI)</td><td><code>/gemini-enterprise</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
           <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
-          <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+          <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
         </tbody>
       </table>
       <p>Want a provider prioritized? <a href="https://github.com/axium-lab/llm-mock/issues">Open an issue</a> — or a PR.</p>
@@ -914,6 +277,7 @@ console.<span class="tok-fn">log</span>(interaction.output_text); <span class="t
     <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
     <div class="footer-links">
       <a href="index.html">Home</a>
+      <a href="api.html">API reference</a>
       <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
       <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
       <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>

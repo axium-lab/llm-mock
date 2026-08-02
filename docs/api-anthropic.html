@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Anthropic API reference — llm-mock</title>
+<meta name="description" content="Anthropic endpoints on llm-mock: the Messages API with content blocks, tool use, thinking, named-event SSE streaming, token counting, message batches, files and the error envelope." />
+<link rel="canonical" href="https://llm-mock.dev/api-anthropic.html" />
+<meta name="theme-color" content="#0b0e14" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+
+<!-- Open Graph / social -->
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="llm-mock" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:title" content="llm-mock — Anthropic API reference" />
+<meta property="og:description" content="Anthropic endpoints on llm-mock: the Messages API with content blocks, tool use, thinking, named-event SSE streaming, token counting, message batches, files and the error envelope." />
+<meta property="og:url" content="https://llm-mock.dev/api-anthropic.html" />
+<meta property="og:image" content="https://llm-mock.dev/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Anthropic, Gemini and Azure APIs." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="llm-mock — Anthropic API reference" />
+<meta name="twitter:description" content="Anthropic endpoints on llm-mock: the Messages API with content blocks, tool use, thinking, named-event SSE streaming, token counting, message batches, files and the error envelope." />
+<meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "llm-mock \u2014 Anthropic API reference",
+  "description": "Anthropic endpoints on llm-mock: the Messages API with content blocks, tool use, thinking, named-event SSE streaming, token counting, message batches, files and the error envelope.",
+  "url": "https://llm-mock.dev/api-anthropic.html",
+  "author": {
+    "@type": "Organization",
+    "name": "Axium",
+    "url": "https://axium-lab.com"
+  },
+  "about": {
+    "@type": "SoftwareApplication",
+    "name": "llm-mock",
+    "url": "https://llm-mock.dev/"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://llm-mock.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "API reference",
+      "item": "https://llm-mock.dev/api.html"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Anthropic",
+      "item": "https://llm-mock.dev/api-anthropic.html"
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a class="active" href="api.html">API docs</a>
+      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
+    </div>
+  </nav>
+</div>
+
+<header>
+  <div class="wrap">
+    <span class="eyebrow">Anthropic</span>
+    <h1>Anthropic API reference</h1>
+    <p class="sub">The <code>/anthropic</code> surface: one <code>POST /v1/messages</code> carrying content blocks, tool use and thinking, plus token counting, batches, files and models. The one provider here that shares nothing structural with OpenAI.</p>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="layout">
+  <aside class="toc">
+    <p class="toc-title">On this page</p>
+    <p class="toc-group">Anthropic</p>
+    <ul>
+      <li><a href="#anthropic">Endpoints</a></li>
+      <li><a href="#anthropic-messages">Messages</a></li>
+      <li><a href="#anthropic-tools">Tool calls</a></li>
+      <li><a href="#anthropic-streaming">Streaming</a></li>
+      <li><a href="#anthropic-batches">Batches</a></li>
+      <li><a href="#anthropic-files">Files</a></li>
+      <li><a href="#anthropic-errors">Errors &amp; headers</a></li>
+    </ul>
+    <p class="toc-group">Common</p>
+    <ul>
+      <li><a href="api.html#base-url">Base URL</a></li>
+      <li><a href="api.html#auth">Authentication</a></li>
+      <li><a href="api.html#control">Controlling replies</a></li>
+    </ul>
+    <p class="toc-group">Other providers</p>
+    <ul>
+      <li><a href="api-openai.html">OpenAI</a></li>
+      <li><a href="api-gemini.html">Gemini (AI Studio)</a></li>
+      <li><a href="api-gemini-enterprise.html">Gemini Enterprise</a></li>
+      <li><a href="api-azure.html">Azure OpenAI</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <section id="anthropic">
+      <h2>Anthropic &middot; Endpoints</h2>
+      <p class="section-sub">Everything under the <code>/anthropic</code> prefix. This is the one provider here that shares nothing structural with OpenAI: everything generative goes through a single <code>POST /v1/messages</code>, replies are lists of typed content blocks, and the system prompt is a top-level field rather than a message.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/anthropic/v1/messages</code></td><td>Content blocks, <code>system</code>, tool use, thinking, <code>stop_reason</code>, <code>usage</code>, SSE with <code>stream: true</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/anthropic/v1/messages/count_tokens</code></td><td>What a prompt costs before you send it</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/anthropic/v1/messages/batches</code></td><td>Asynchronous batch of message requests</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/anthropic/v1/messages/batches/{id}</code></td><td>Status and per-request counts</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/anthropic/v1/messages/batches/{id}/results</code></td><td>JSONL, one result per line, keyed by <code>custom_id</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/anthropic/v1/messages/batches/{id}/cancel</code></td><td>Moves the batch to <code>canceling</code></td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/anthropic/v1/messages/batches/{id}</code></td><td>Returns <code>message_batch_deleted</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/anthropic/v1/models</code></td><td>Simulated catalog, cursor-paginated by <code>after_id</code>/<code>before_id</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/anthropic/v1/models/{id}</code></td><td><code>max_input_tokens</code> is the context window; <code>capabilities</code> is a nested tree of flags</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/anthropic/v1/files</code></td><td>Multipart upload, beta-gated &mdash; see <a href="#anthropic-files">Files</a></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/anthropic/v1/files</code></td><td>Simulated catalog, filterable by <code>scope_id</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/anthropic/v1/files/{id}</code></td><td><code>filename</code>, <code>mime_type</code>, <code>size_bytes</code>, <code>downloadable</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/anthropic/v1/files/{id}/content</code></td><td>Only for files the API produced itself</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/anthropic/v1/files/{id}</code></td><td>Returns <code>file_deleted</code></td></tr>
+        </tbody>
+      </table>
+<pre><code><span class="tok-key">import</span> Anthropic <span class="tok-key">from</span> <span class="tok-str">"@anthropic-ai/sdk"</span>;
+
+<span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">Anthropic</span>({
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+  baseURL: <span class="tok-str">"https://api.llm-mock.dev/anthropic"</span>,
+});</code></pre>
+      <div class="callout">
+        <strong>Managed Agents is out of scope.</strong> The <code>/v1/agents</code>, <code>/v1/sessions</code>,
+        <code>/v1/environments</code>, <code>/v1/vaults</code> and <code>/v1/memory_stores</code> surface is not mocked.
+        That is a deliberate decision, not an oversight: it is larger than everything else on this provider combined.
+      </div>
+    </section>
+
+    <section id="anthropic-messages">
+      <h2>Anthropic &middot; Messages</h2>
+      <p class="section-sub">One endpoint carries the whole generative surface. Four shapes differ from every other provider here, and all four are the API's doing, not the mock's.</p>
+<pre><code><span class="tok-key">const</span> message = <span class="tok-key">await</span> client.messages.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"claude-opus-5"</span>,
+  max_tokens: <span class="tok-str">1024</span>,
+  system: <span class="tok-str">"You are terse."</span>,
+  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
+});
+
+message.content; <span class="tok-com">// [{ type: "text", text: "Echo: Hello!", citations: null }]</span></code></pre>
+      <table>
+        <thead><tr><th>Shape</th><th>What differs</th></tr></thead>
+        <tbody>
+          <tr><td><code>max_tokens</code></td><td>Required. Omitting it is a <code>400</code>, where every other provider defaults it.</td></tr>
+          <tr><td><code>system</code></td><td>A top-level field, not a message with <code>role: "system"</code>. It counts towards <code>input_tokens</code>.</td></tr>
+          <tr><td><code>stop_reason</code></td><td>Where OpenAI has <code>finish_reason</code>. One of <code>end_turn</code>, <code>max_tokens</code>, <code>stop_sequence</code>, <code>tool_use</code>, <code>refusal</code>.</td></tr>
+          <tr><td><code>thinking</code></td><td>Blocks are emitted whenever thinking is on, but <code>display</code> decides whether they carry text.</td></tr>
+        </tbody>
+      </table>
+      <p>The default <code>display: "omitted"</code> leaves <code>thinking</code> an empty string; <code>"summarized"</code> fills in a summary. That empty-but-present block is what a streaming UI sees as a long pause, so it is worth being able to test.</p>
+      <p>Consecutive same-role messages are accepted &mdash; the real API combines them into one turn &mdash; but the conversation must open with <code>user</code>. The <code>x-llm-mock-response</code> and <code>x-llm-mock-tool-calls</code> headers work exactly as on the other providers.</p>
+      <h3>Token counting</h3>
+<pre><code><span class="tok-key">const</span> { input_tokens } = <span class="tok-key">await</span> client.messages.<span class="tok-fn">countTokens</span>({
+  model: <span class="tok-str">"claude-opus-5"</span>,
+  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
+});</code></pre>
+      <p>The count adds up the messages, the system prompt and the serialized tool declarations exactly the way <code>/v1/messages</code> builds its <code>usage.input_tokens</code> &mdash; so counting a prompt and then sending it gives the same number twice. It is an approximation, like every token count on this server: good for asserting that a prompt got bigger or smaller, not that it costs 412 tokens.</p>
+    </section>
+
+    <section id="anthropic-tools">
+      <h2>Anthropic &middot; Tool calls</h2>
+      <p class="section-sub">Tool calls are content blocks here, not a parallel <code>tool_calls</code> array. A <code>tool_use</code> block carries a <strong>decoded</strong> <code>input</code> object &mdash; not OpenAI's JSON string &mdash; and an id prefixed <code>toolu_</code>.</p>
+<pre><code><span class="tok-key">const</span> message = <span class="tok-key">await</span> client.messages.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"claude-opus-5"</span>,
+  max_tokens: <span class="tok-str">1024</span>,
+  tools: [{ name: <span class="tok-str">"get_weather"</span>, input_schema: { <span class="tok-com">/* JSON Schema */</span> } }],
+  tool_choice: { type: <span class="tok-str">"any"</span> },
+  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Weather in Valencia?"</span> }],
+});
+
+message.content; <span class="tok-com">// [{ type: "tool_use", id: "toolu_…", name: "get_weather", input: { city: "…" } }]</span></code></pre>
+      <table>
+        <thead><tr><th><code>tool_choice</code></th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td><code>{ type: "any" }</code></td><td>Forces a call</td></tr>
+          <tr><td><code>{ type: "tool", name }</code></td><td>Names the one to call</td></tr>
+          <tr><td><code>{ type: "none" }</code></td><td>Forbids them</td></tr>
+          <tr><td><code>{ type: "auto" }</code></td><td>The default &mdash; left to a model this mock does not have, so no call is made</td></tr>
+        </tbody>
+      </table>
+      <p>The result comes back as a <code>tool_result</code> block inside a <strong>user</strong> message, and its presence terminates the loop: the next reply is prose, not another call. Arguments are synthesized from your JSON Schema, or pinned exactly with <code>x-llm-mock-tool-calls</code>.</p>
+    </section>
+
+    <section id="anthropic-streaming">
+      <h2>Anthropic &middot; Streaming (SSE)</h2>
+      <p class="section-sub">The sharpest divergence on the whole server. Every frame carries an <code>event:</code> line as well as <code>data:</code>, and there is no sentinel string &mdash; the stream ends on a named <code>message_stop</code>.</p>
+<pre><code>event: message_start
+data: {"type":"message_start","message":{…,"content":[],"stop_reason":null}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Echo: "}}
+
+event: message_stop
+data: {"type":"message_stop"}</code></pre>
+      <div class="callout">
+        Both halves are load-bearing, verified against the real client: drop the <code>event:</code> lines and the SDK
+        reads <strong>zero</strong> chunks; drop <code>message_stop</code> and it errors with
+        <em>"stream ended without producing a Message"</em>.
+      </div>
+      <p>That makes three SSE conventions across the five providers here:</p>
+      <table>
+        <thead><tr><th>Provider</th><th>Frame</th><th>Terminator</th></tr></thead>
+        <tbody>
+          <tr><td>OpenAI, Azure</td><td><code>data:</code> only</td><td><code>data: [DONE]</code></td></tr>
+          <tr><td>Gemini, Gemini Enterprise</td><td><code>data:</code> only</td><td>End of stream (a <code>[DONE]</code> is rejected)</td></tr>
+          <tr><td>Anthropic</td><td><code>event:</code> <strong>and</strong> <code>data:</code></td><td><code>event: message_stop</code></td></tr>
+        </tbody>
+      </table>
+      <p>A tool call streams its arguments as <code>input_json_delta</code> pieces of a JSON string, and a thinking block streams <code>thinking_delta</code> pieces followed by its <code>signature</code> under a separate <code>signature_delta</code>.</p>
+    </section>
+
+    <section id="anthropic-batches">
+      <h2>Anthropic &middot; Batches</h2>
+      <p class="section-sub">A batch is created by one request and read back by several others, which normally needs a store &mdash; and this server never keeps one.</p>
+<pre><code><span class="tok-key">const</span> batch = <span class="tok-key">await</span> client.messages.batches.<span class="tok-fn">create</span>({
+  requests: [
+    { custom_id: <span class="tok-str">"a"</span>, params: { model: <span class="tok-str">"claude-opus-5"</span>, max_tokens: <span class="tok-str">64</span>, messages: [<span class="tok-com">/* … */</span>] } },
+  ],
+});
+
+<span class="tok-key">for</span> <span class="tok-key">await</span> (<span class="tok-key">const</span> result <span class="tok-key">of</span> <span class="tok-key">await</span> client.messages.batches.<span class="tok-fn">results</span>(batch.id)) {
+  result.custom_id;      <span class="tok-com">// "a"</span>
+  result.result.message; <span class="tok-com">// a full Message, echoing that request's prompt</span>
+}</code></pre>
+      <p><strong>The batch rides inside its own id</strong>, the same trick the Files endpoints use: <code>msgbatch_</code> followed by the base64url of the <code>custom_id</code>, model and prompt of every request. Retrieve, results, cancel and delete all just decode it, so they work across restarts and across processes.</p>
+      <div class="callout">
+        That has one visible consequence, and it is deliberate that you see it. An id travels in a URL, so it cannot
+        grow forever: past roughly 1600 characters &mdash; a few dozen short requests &mdash; creating the batch fails
+        with a <strong>400</strong> that says exactly that, instead of quietly dropping requests. The real API takes
+        100,000 of them; if you need that shape, you are testing the API, not your code.
+      </div>
+      <p><strong>Batches complete instantly.</strong> With no clock to advance and no state to advance it in, a new batch is already <code>ended</code> and its results are already there. When you need to exercise the polling branch &mdash; the one that reads <code>processing_status</code> and waits &mdash; pin the status with a header:</p>
+      <table>
+        <thead><tr><th>Header</th><th>Values</th></tr></thead>
+        <tbody>
+          <tr><td><code>x-llm-mock-batch-status</code></td><td><code>in_progress</code>, <code>canceling</code>, <code>ended</code> (the default)</td></tr>
+        </tbody>
+      </table>
+      <p>A batch that has not ended has a null <code>results_url</code> and its results endpoint answers <code>400</code>, the same as the real one. Listing always returns an empty page: a stateless mock keeps no list of batches.</p>
+    </section>
+
+    <section id="anthropic-files">
+      <h2>Anthropic &middot; Files</h2>
+      <p class="section-sub">Uploaded files carry their metadata <strong>inside the id they are minted</strong>, so an upload round-trips to a retrieve with nothing stored. Same bytes and same name give the same id, so a test can assert on it.</p>
+<pre><code><span class="tok-key">const</span> file = <span class="tok-key">await</span> client.beta.files.<span class="tok-fn">upload</span>({
+  file: <span class="tok-key">await</span> <span class="tok-fn">toFile</span>(Buffer.<span class="tok-fn">from</span>(<span class="tok-str">"hello"</span>), <span class="tok-str">"notes.txt"</span>, { type: <span class="tok-str">"text/plain"</span> }),
+});
+
+<span class="tok-key">await</span> client.beta.messages.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"claude-opus-5"</span>,
+  max_tokens: <span class="tok-str">1024</span>,
+  betas: [<span class="tok-str">"files-api-2025-04-14"</span>],
+  messages: [{ role: <span class="tok-str">"user"</span>, content: [{ type: <span class="tok-str">"document"</span>, source: { type: <span class="tok-str">"file"</span>, file_id: file.id } }] }],
+});</code></pre>
+      <div class="callout">
+        <strong>The beta flag is part of the contract.</strong> Every call has to carry
+        <code>anthropic-beta: files-api-2025-04-14</code>, and a call without it is a <code>400</code> that says so.
+        The header may list several betas comma-separated, or be repeated &mdash; both are accepted. The SDK also
+        appends <code>?beta=true</code> to the path, which is its own routing artefact; the mock does not require it.
+      </div>
+      <p><strong>A file you uploaded cannot be downloaded</strong>, on the real API and here: <code>GET /content</code> on one answers <code>403</code>. Only files the API produced itself &mdash; code execution output &mdash; can be read back, so the simulated catalog carries two of those to make the download path testable at all. Their bytes are a deterministic placeholder, and <code>x-llm-mock-response</code> pins them.</p>
+      <p><code>file_missing…</code> is reserved and always <code>404</code>s; a foreign-looking id resolves to a plausible synthetic file rather than an error, so ids copied out of production logs still behave. A message whose only content is a file attachment echoes the attachment &mdash; <code>Echo: [file_mock_report_pdf]</code> &mdash; because without that, a prose-less turn would fall through to the generic greeting and there would be no way to assert the reference arrived.</p>
+    </section>
+
+    <section id="anthropic-errors">
+      <h2>Anthropic &middot; Errors &amp; headers</h2>
+      <p class="section-sub">Three things differ from every other provider on this server, and all three are the API's own doing.</p>
+      <table>
+        <thead><tr><th>What</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>Credential</td><td><code>x-api-key</code>, not a bearer token. <code>Authorization: Bearer</code> is accepted too, as OAuth callers use it.</td></tr>
+          <tr><td><code>anthropic-version</code></td><td>Required on every request. Any value is accepted; a missing header is a <code>400</code>.</td></tr>
+          <tr><td>Error envelope</td><td>Wraps twice and echoes the request id. The only one here that uses HTTP <code>529</code>.</td></tr>
+        </tbody>
+      </table>
+<pre><code>{
+  <span class="tok-key">"type"</span>: <span class="tok-str">"error"</span>,
+  <span class="tok-key">"error"</span>: { <span class="tok-key">"type"</span>: <span class="tok-str">"authentication_error"</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"invalid x-api-key"</span> },
+  <span class="tok-key">"request_id"</span>: <span class="tok-str">"req_011CSHoEeqs5C35K2UUqR7Fy"</span>
+}</code></pre>
+      <p>The <code>request_id</code> matches the <code>x-request-id</code> response header, as it does on the real API. Error types are <code>invalid_request_error</code>, <code>authentication_error</code>, <code>permission_error</code>, <code>not_found_error</code>, <code>request_too_large</code>, <code>rate_limit_error</code>, <code>api_error</code> and <code>overloaded_error</code> (<code>529</code>).</p>
+      <div class="callout">
+        Validating <code>anthropic-version</code> against a list of known versions would mean maintaining that list
+        and guessing at versions that do not exist yet, so any value passes. A <em>missing</em> header still fails &mdash;
+        that is the classic mistake when calling this API by hand, and worth reproducing.
+      </div>
+    </section>
+
+    <section id="next">
+      <h2>Other providers</h2>
+      <p class="section-sub">Same server, same key set, one page each.</p>
+      <table>
+        <thead><tr><th>Provider</th><th>Prefix</th><th>Reference</th></tr></thead>
+        <tbody>
+          <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><a href="api-openai.html">Read →</a></td></tr>
+          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><a href="api-gemini.html">Read →</a></td></tr>
+          <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><a href="api-gemini-enterprise.html">Read →</a></td></tr>
+          <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><a href="api-azure.html">Read →</a></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="api.html">API reference</a>
+      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
+      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
+      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

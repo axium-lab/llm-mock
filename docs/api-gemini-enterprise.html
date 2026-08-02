@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gemini Enterprise API reference — llm-mock</title>
+<meta name="description" content="Gemini Enterprise (ex-Vertex AI) endpoints on llm-mock: publisher models, regional and express paths, two auth modes, embeddings via :predict and the Interactions API." />
+<link rel="canonical" href="https://llm-mock.dev/api-gemini-enterprise.html" />
+<meta name="theme-color" content="#0b0e14" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+
+<!-- Open Graph / social -->
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="llm-mock" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:title" content="llm-mock — Gemini Enterprise API reference" />
+<meta property="og:description" content="Gemini Enterprise (ex-Vertex AI) endpoints on llm-mock: publisher models, regional and express paths, two auth modes, embeddings via :predict and the Interactions API." />
+<meta property="og:url" content="https://llm-mock.dev/api-gemini-enterprise.html" />
+<meta property="og:image" content="https://llm-mock.dev/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Anthropic, Gemini and Azure APIs." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="llm-mock — Gemini Enterprise API reference" />
+<meta name="twitter:description" content="Gemini Enterprise (ex-Vertex AI) endpoints on llm-mock: publisher models, regional and express paths, two auth modes, embeddings via :predict and the Interactions API." />
+<meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "llm-mock \u2014 Gemini Enterprise API reference",
+  "description": "Gemini Enterprise (ex-Vertex AI) endpoints on llm-mock: publisher models, regional and express paths, two auth modes, embeddings via :predict and the Interactions API.",
+  "url": "https://llm-mock.dev/api-gemini-enterprise.html",
+  "author": {
+    "@type": "Organization",
+    "name": "Axium",
+    "url": "https://axium-lab.com"
+  },
+  "about": {
+    "@type": "SoftwareApplication",
+    "name": "llm-mock",
+    "url": "https://llm-mock.dev/"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://llm-mock.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "API reference",
+      "item": "https://llm-mock.dev/api.html"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Gemini Enterprise",
+      "item": "https://llm-mock.dev/api-gemini-enterprise.html"
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a class="active" href="api.html">API docs</a>
+      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
+    </div>
+  </nav>
+</div>
+
+<header>
+  <div class="wrap">
+    <span class="eyebrow">Gemini Enterprise</span>
+    <h1>Gemini Enterprise API reference</h1>
+    <p class="sub">The <code>/gemini-enterprise</code> surface &mdash; the platform formerly called Vertex AI. Two auth modes, two path shapes, embeddings through <code>:predict</code>, and the same Interactions API as AI Studio.</p>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="layout">
+  <aside class="toc">
+    <p class="toc-title">On this page</p>
+    <p class="toc-group">Gemini Enterprise</p>
+    <ul>
+      <li><a href="#ge">Endpoints</a></li>
+      <li><a href="#ge-auth">Two auth modes</a></li>
+      <li><a href="#ge-embeddings">Embeddings via :predict</a></li>
+      <li><a href="#ge-interactions">Interactions API</a></li>
+    </ul>
+    <p class="toc-group">Common</p>
+    <ul>
+      <li><a href="api.html#base-url">Base URL</a></li>
+      <li><a href="api.html#auth">Authentication</a></li>
+      <li><a href="api.html#control">Controlling replies</a></li>
+    </ul>
+    <p class="toc-group">Other providers</p>
+    <ul>
+      <li><a href="api-openai.html">OpenAI</a></li>
+      <li><a href="api-anthropic.html">Anthropic</a></li>
+      <li><a href="api-gemini.html">Gemini (AI Studio)</a></li>
+      <li><a href="api-azure.html">Azure OpenAI</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <section id="ge">
+      <h2>Gemini Enterprise · Endpoints</h2>
+      <p class="section-sub">Google renamed Vertex AI to the Gemini Enterprise Agent Platform. It serves the same model family as AI Studio through a different contract, under the <code>/gemini-enterprise</code> prefix. Both <code>v1beta1</code> — the SDK's default here — and <code>v1</code> are served.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:generateContent</code></td><td>Same contract as AI Studio, plus a <code>createTime</code> on every response</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:streamGenerateContent</code></td><td>SSE with <code>?alt=sse</code>, streamed JSON array without it</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:predict</code></td><td>Embeddings — this platform has no <code>:embedContent</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:countTokens</code></td><td>Reports <code>totalTokens</code> only</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini-enterprise/v1beta1/publishers/google/models</code></td><td>Publisher catalog, nested under <code>publisherModels</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/gemini-enterprise/v1beta1/publishers/google/models/{model}</code></td><td><code>versionId</code> rather than <code>version</code>, and no token limits</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini-enterprise/v1beta1/interactions</code></td><td>Interactions API, same contract as AI Studio's</td></tr>
+        </tbody>
+      </table>
+      <p>Every model path comes in two shapes, and the same handler answers both: the regional one, which production code uses, and the express one.</p>
+<pre><code><span class="tok-com"># regional — OAuth, project and location in the path</span>
+/gemini-enterprise/v1beta1/projects/{project}/locations/{location}/publishers/google/models/{model}:generateContent
+
+<span class="tok-com"># express — API key, no project or location</span>
+/gemini-enterprise/v1beta1/publishers/google/models/{model}:generateContent</code></pre>
+      <div class="callout">
+        There is no Files API here, and that is the platform's doing rather than a gap in the mock:
+        <code>@google/genai</code> refuses the upload client-side with <em>"Gemini Enterprise Agent Platform
+        (previously known as Vertex AI) does not support uploading files. You can share files through a GCS
+        bucket."</em>
+      </div>
+    </section>
+
+    <section id="ge-auth">
+      <h2>Gemini Enterprise · Two auth modes</h2>
+      <p class="section-sub">Both are accepted against the same key set. Express mode takes an API key and addresses publisher models directly — it is by far the easier one to point at a mock:</p>
+<pre><code><span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
+  vertexai: <span class="tok-key">true</span>,
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+  httpOptions: { baseUrl: <span class="tok-str">"http://localhost:3000/gemini-enterprise"</span> },
+});</code></pre>
+      <p>Regional mode is how production code calls the platform — an OAuth token, and <code>projects/{p}/locations/{l}</code> in every path. The SDK will not emit a request without Application Default Credentials, so pointing it at a mock means handing it something that answers like an auth client:</p>
+<pre><code><span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
+  vertexai: <span class="tok-key">true</span>,
+  project: <span class="tok-str">"my-project"</span>,
+  location: <span class="tok-str">"europe-west1"</span>,
+  httpOptions: { baseUrl: <span class="tok-str">"http://localhost:3000/gemini-enterprise"</span> },
+  googleAuthOptions: {
+    authClient: {
+      getRequestHeaders: <span class="tok-key">async</span> () =&gt; <span class="tok-key">new</span> <span class="tok-fn">Headers</span>({ authorization: <span class="tok-str">"Bearer sk-mock-key-01"</span> }),
+      getAccessToken: <span class="tok-key">async</span> () =&gt; ({ token: <span class="tok-str">"sk-mock-key-01"</span> }),
+      request: <span class="tok-key">async</span> () =&gt; ({ data: {} }),
+    } <span class="tok-key">as never</span>,
+  },
+});</code></pre>
+      <p>A rejection differs by transport, matching the platform: a bad OAuth token is <code>401 UNAUTHENTICATED</code>, a bad API key <code>400 INVALID_ARGUMENT</code>.</p>
+      <div class="callout">
+        Unlike the AI Studio provider, none of this provider's shapes could be checked against the live service —
+        that needs a GCP project with the platform enabled. Its routes come from observing what the official SDK
+        puts on the wire, and its wire shapes from the SDK's own transformers, but its <strong>error messages and
+        codes are inference</strong> rather than observation.
+      </div>
+    </section>
+
+    <section id="ge-embeddings">
+      <h2>Gemini Enterprise · Embeddings via :predict</h2>
+      <p class="section-sub">This is where the two Google surfaces diverge most. There is no <code>:embedContent</code> here — embeddings ride the generic prediction endpoint, in an envelope that looks nothing like AI Studio's.</p>
+<pre><code><span class="tok-com">// POST …/publishers/google/models/text-embedding-005:predict</span>
+{
+  <span class="tok-key">"instances"</span>: [{ <span class="tok-key">"content"</span>: <span class="tok-str">"hello"</span>, <span class="tok-key">"task_type"</span>: <span class="tok-str">"SEMANTIC_SIMILARITY"</span> }],
+  <span class="tok-key">"parameters"</span>: { <span class="tok-key">"outputDimensionality"</span>: <span class="tok-str">768</span> }   <span class="tok-com">// per call, not per instance</span>
+}
+
+{
+  <span class="tok-key">"predictions"</span>: [{
+    <span class="tok-key">"embeddings"</span>: {
+      <span class="tok-key">"values"</span>: [ <span class="tok-com">/* … */</span> ],
+      <span class="tok-key">"statistics"</span>: { <span class="tok-key">"truncated"</span>: <span class="tok-key">false</span>, <span class="tok-key">"token_count"</span>: <span class="tok-str">2</span> }
+    }
+  }]
+}</code></pre>
+      <p>Note <code>task_type</code> and <code>token_count</code> in snake_case inside an otherwise camelCase API — that is the platform's own inconsistency, faithfully reproduced. <code>countTokens</code> here reports <code>totalTokens</code> and nothing else, where AI Studio's also breaks the count down by modality.</p>
+    </section>
+
+    <section id="ge-interactions">
+      <h2>Gemini Enterprise · Interactions API</h2>
+      <p class="section-sub">Served here too, on the same contract as AI Studio's — but reached through a path this platform builds oddly. In regional mode the SDK folds the entire version component, project and location included, into one percent-encoded path segment.</p>
+<pre><code><span class="tok-com"># express</span>
+/gemini-enterprise/v1beta1/interactions
+
+<span class="tok-com"># regional</span>
+/gemini-enterprise/v1beta1%2Fprojects%2F{project}%2Flocations%2F{location}/interactions</code></pre>
+      <p>Both shapes reach the same handler. Everything else — <code>steps</code>, <code>usage</code>, streaming events, the stateless retrieval — behaves exactly as on the <a href="api-gemini.html#gemini-interactions">AI Studio surface</a>.</p>
+    </section>
+
+    <section id="next">
+      <h2>Other providers</h2>
+      <p class="section-sub">Same server, same key set, one page each.</p>
+      <table>
+        <thead><tr><th>Provider</th><th>Prefix</th><th>Reference</th></tr></thead>
+        <tbody>
+          <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><a href="api-openai.html">Read →</a></td></tr>
+          <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><a href="api-anthropic.html">Read →</a></td></tr>
+          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><a href="api-gemini.html">Read →</a></td></tr>
+          <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><a href="api-azure.html">Read →</a></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="api.html">API reference</a>
+      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
+      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
+      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

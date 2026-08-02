@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OpenAI API reference — llm-mock</title>
+<meta name="description" content="OpenAI endpoints on llm-mock: chat completions, Responses API, tool calls, models, embeddings, files, uploads, SSE streaming and error shapes." />
+<link rel="canonical" href="https://llm-mock.dev/api-openai.html" />
+<meta name="theme-color" content="#0b0e14" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+
+<!-- Open Graph / social -->
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="llm-mock" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:title" content="llm-mock — OpenAI API reference" />
+<meta property="og:description" content="OpenAI endpoints on llm-mock: chat completions, Responses API, tool calls, models, embeddings, files, uploads, SSE streaming and error shapes." />
+<meta property="og:url" content="https://llm-mock.dev/api-openai.html" />
+<meta property="og:image" content="https://llm-mock.dev/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Anthropic, Gemini and Azure APIs." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="llm-mock — OpenAI API reference" />
+<meta name="twitter:description" content="OpenAI endpoints on llm-mock: chat completions, Responses API, tool calls, models, embeddings, files, uploads, SSE streaming and error shapes." />
+<meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "llm-mock \u2014 OpenAI API reference",
+  "description": "OpenAI endpoints on llm-mock: chat completions, Responses API, tool calls, models, embeddings, files, uploads, SSE streaming and error shapes.",
+  "url": "https://llm-mock.dev/api-openai.html",
+  "author": {
+    "@type": "Organization",
+    "name": "Axium",
+    "url": "https://axium-lab.com"
+  },
+  "about": {
+    "@type": "SoftwareApplication",
+    "name": "llm-mock",
+    "url": "https://llm-mock.dev/"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://llm-mock.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "API reference",
+      "item": "https://llm-mock.dev/api.html"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "OpenAI",
+      "item": "https://llm-mock.dev/api-openai.html"
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a class="active" href="api.html">API docs</a>
+      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
+    </div>
+  </nav>
+</div>
+
+<header>
+  <div class="wrap">
+    <span class="eyebrow">OpenAI</span>
+    <h1>OpenAI API reference</h1>
+    <p class="sub">The <code>/openai</code> surface: chat completions, the Responses API, tool calls, models, embeddings, files, uploads, SSE streaming and the error envelope. Point the official <code>openai</code> client at <code>/openai/v1</code> and nothing else changes.</p>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="layout">
+  <aside class="toc">
+    <p class="toc-title">On this page</p>
+    <p class="toc-group">OpenAI</p>
+    <ul>
+      <li><a href="#endpoints">Endpoints</a></li>
+      <li><a href="#chat">Chat completions</a></li>
+      <li><a href="#responses">Responses API</a></li>
+      <li><a href="#tools">Tool calls</a></li>
+      <li><a href="#models">Models</a></li>
+      <li><a href="#embeddings">Embeddings</a></li>
+      <li><a href="#files">Files</a></li>
+      <li><a href="#uploads">Uploads</a></li>
+      <li><a href="#streaming">Streaming</a></li>
+      <li><a href="#errors">Errors</a></li>
+    </ul>
+    <p class="toc-group">Common</p>
+    <ul>
+      <li><a href="api.html#base-url">Base URL</a></li>
+      <li><a href="api.html#auth">Authentication</a></li>
+      <li><a href="api.html#control">Controlling replies</a></li>
+    </ul>
+    <p class="toc-group">Other providers</p>
+    <ul>
+      <li><a href="api-anthropic.html">Anthropic</a></li>
+      <li><a href="api-gemini.html">Gemini (AI Studio)</a></li>
+      <li><a href="api-gemini-enterprise.html">Gemini Enterprise</a></li>
+      <li><a href="api-azure.html">Azure OpenAI</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <section id="endpoints">
+      <h2>OpenAI · Endpoints</h2>
+      <p class="section-sub">Everything under the <code>/openai</code> prefix. The sections that follow — chat completions through errors — all describe this provider.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/chat/completions</code></td><td>Full <code>chat.completion</code> object, <code>n</code> choices, SSE streaming, <code>stream_options.include_usage</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Full <code>response</code> object, typed SSE event stream</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Stateless: synthesizes a deterministic response for any id</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the OpenAI deletion object</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models</code></td><td>Simulated catalog (<code>gpt-4.1</code>, <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>text-embedding-3-*</code>, …)</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models/{model}</code></td><td><code>404</code> in OpenAI error format for unknown models</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/embeddings</code></td><td>Deterministic unit vectors, correct dimension per model, <code>dimensions</code> param, <code>float</code> and <code>base64</code> encoding</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/files</code></td><td><code>multipart/form-data</code> upload; validates <code>purpose</code>, honours <code>expires_after</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/files</code></td><td>Simulated catalog with <code>purpose</code> filter and <code>limit</code>/<code>order</code>/<code>after</code> pagination</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/files/{id}</code></td><td>Stateless: the id carries the metadata, so an upload round-trips exactly</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/files/{id}</code></td><td>Idempotent; returns the OpenAI deletion object</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/files/{id}/content</code></td><td>Deterministic placeholder bytes (valid JSONL for <code>fine-tune</code>/<code>batch</code> files)</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads</code></td><td>Creates a <code>pending</code> upload for the chunked flow</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/parts</code></td><td>Accepts a part of up to 64 MB, named or nameless</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/complete</code></td><td>Returns the upload as <code>completed</code>, with the nested <code>file</code> object</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/cancel</code></td><td>Returns the upload as <code>cancelled</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Healthcheck (mock-only, outside any provider contract)</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">
+        Parameters the mock does not simulate (<code>temperature</code>, <code>top_p</code>, <code>response_format</code>, …)
+        are <strong>accepted without error</strong>, because real SDK clients send them.
+        <code>tools</code> and <code>tool_choice</code> <strong>are</strong> simulated — see <a href="#tools">Tool calls</a>.
+      </div>
+    </section>
+
+    <section id="chat">
+      <h2>OpenAI · Chat completions</h2>
+      <p class="section-sub"><code>POST /openai/v1/chat/completions</code> — returns a full <code>chat.completion</code> object. By default the assistant echoes the last user message (<code>"Echo: &lt;your prompt&gt;"</code>).</p>
+<pre><code>curl https://api.llm-mock.dev/openai/v1/chat/completions \
+  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"model": "gpt-4o", "messages": [{"role": "user", "content": "ping"}]}'</span></code></pre>
+      <p>Supports multiple choices via <code>n</code>, streaming via <code>stream: true</code>, and usage on the final stream chunk via <code>stream_options.include_usage</code>.</p>
+    </section>
+
+    <section id="responses">
+      <h2>OpenAI · Responses API</h2>
+      <p class="section-sub">The newer <code>/responses</code> surface is fully modelled, including the typed SSE event stream.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Returns a full <code>response</code> object; with <code>stream: true</code> emits typed events (<code>response.created</code>, <code>response.output_text.delta</code>, <code>response.completed</code>, …)</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Stateless — synthesizes a deterministic response for any id, no store required</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the standard OpenAI deletion object</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="tools">
+      <h2>OpenAI · Tool calls</h2>
+      <p class="section-sub">Both surfaces return real tool calls, so an agent loop runs end to end without a model. Chat completions answer with <code>message.tool_calls</code> and <code>finish_reason: "tool_calls"</code>; the Responses API emits a <code>function_call</code> output item and echoes the <code>tools</code> / <code>tool_choice</code> it received.</p>
+      <table>
+        <thead><tr><th>Trigger</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><code>tool_choice: "required"</code></td><td>Calls the first declared tool</td></tr>
+          <tr><td><code>tool_choice: {type:"function", …name}</code></td><td>Calls that tool (name nested under <code>function</code> on chat completions, top level on responses)</td></tr>
+          <tr><td><code>tool_choice: "auto"</code> / <code>"none"</code></td><td>Answers with text — deciding to call a tool is the one thing a mock cannot do</td></tr>
+          <tr><td><code>x-llm-mock-tool-calls</code></td><td>Pins the exact calls, overriding <code>tool_choice</code></td></tr>
+          <tr><td>A tool result in the conversation</td><td>Stops forcing calls, so the loop terminates: <code>role: "tool"</code> message, or <code>function_call_output</code> item</td></tr>
+        </tbody>
+      </table>
+      <p>Arguments are synthesized from the tool's JSON Schema — <code>default</code> first, then the first <code>enum</code> value, then a placeholder per type — covering the <code>required</code> properties, or all of them when the schema declares none.</p>
+<pre><code>curl https://api.llm-mock.dev/openai/v1/chat/completions \
+  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -H <span class="tok-str">'x-llm-mock-tool-calls: [{"name":"get_weather","arguments":{"city":"Valencia"}}]'</span> \
+  -d <span class="tok-str">'{"model": "gpt-4o", "messages": [{"role": "user", "content": "weather?"}]}'</span></code></pre>
+      <p>The header takes a JSON array (a bare object counts as a single call); several entries produce parallel calls, each with its own id. Omit <code>arguments</code> to have them synthesized, pass an object to encode it, or a string to send it verbatim — handy for pinning malformed arguments. Streaming works too: <code>delta.tool_calls</code> pieces keyed by <code>index</code> on chat completions, <code>response.function_call_arguments.delta</code> / <code>.done</code> events on the Responses API.</p>
+    </section>
+
+    <section id="models">
+      <h2>OpenAI · Models</h2>
+      <p class="section-sub">A simulated catalog so model-discovery code paths work end to end.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models</code></td><td>Lists <code>gpt-4.1</code>, <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>text-embedding-3-small</code>, <code>text-embedding-3-large</code>, …</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models/{model}</code></td><td>Returns the model object, or <code>404</code> in OpenAI error format for unknown models</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="embeddings">
+      <h2>OpenAI · Embeddings</h2>
+      <p class="section-sub"><code>POST /openai/v1/embeddings</code> — returns deterministic, hash-seeded unit vectors with the correct dimension per model. Honours the <code>dimensions</code> param and both <code>float</code> and <code>base64</code> encodings.</p>
+<pre><code>curl https://api.llm-mock.dev/openai/v1/embeddings \
+  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"model": "text-embedding-3-small", "input": "hello"}'</span></code></pre>
+    </section>
+
+    <section id="files">
+      <h2>OpenAI · Files</h2>
+      <p class="section-sub">Files are the one part of the contract that is inherently stateful, and llm-mock stores nothing. Instead of a server-side store, <strong>the id carries the metadata</strong>: the id returned by an upload encodes its filename, size and purpose, so a later retrieve answers accurately on any instance, after any restart.</p>
+<pre><code>curl https://api.llm-mock.dev/openai/v1/files \
+  -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
+  -F <span class="tok-str">"purpose=fine-tune"</span> \
+  -F <span class="tok-str">"file=@training.jsonl"</span></code></pre>
+<pre><code><span class="tok-key">const</span> file = <span class="tok-key">await</span> client.files.<span class="tok-fn">create</span>({
+  file: <span class="tok-key">await</span> <span class="tok-fn">toFile</span>(Buffer.<span class="tok-fn">from</span>(<span class="tok-str">'{"prompt":"hi"}\n'</span>), <span class="tok-str">"training.jsonl"</span>),
+  purpose: <span class="tok-str">"fine-tune"</span>,
+});
+<span class="tok-key">const</span> same = <span class="tok-key">await</span> client.files.<span class="tok-fn">retrieve</span>(file.id);
+<span class="tok-com">// identical object — no state involved</span></code></pre>
+      <table>
+        <thead><tr><th>Behaviour</th><th>What to expect</th></tr></thead>
+        <tbody>
+          <tr><td>Listing</td><td>A fixed simulated catalog (<code>file-mock-training-jsonl</code>, <code>file-mock-manual-pdf</code>, …), like the model catalog. Uploads never join it. Supports the <code>purpose</code> filter and <code>limit</code>/<code>order</code>/<code>after</code> pagination.</td></tr>
+          <tr><td>Content</td><td>Deterministic placeholder bytes, not what you uploaded: valid JSONL for <code>fine-tune</code>/<code>batch</code> files, a text marker otherwise. Pin exact bytes with <code>x-llm-mock-response</code>.</td></tr>
+          <tr><td>Unknown ids</td><td>Any well-formed id resolves with plausible synthetic metadata. For a <code>404</code>, use a reserved id: anything starting with <code>file-missing</code>.</td></tr>
+          <tr><td>Deletion</td><td>Idempotent; always reports <code>deleted: true</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="uploads">
+      <h2>OpenAI · Uploads</h2>
+      <p class="section-sub">The chunked <code>/uploads</code> flow works the same way, so <code>complete</code> echoes back what <code>create</code> was told. Parts may be named or nameless — a sliced <code>Blob</code> works exactly as it does against the real API.</p>
+<pre><code><span class="tok-key">const</span> upload = <span class="tok-key">await</span> client.uploads.<span class="tok-fn">create</span>({
+  filename: <span class="tok-str">"training-examples.jsonl"</span>,
+  bytes: <span class="tok-str">2048</span>,
+  mime_type: <span class="tok-str">"text/jsonl"</span>,
+  purpose: <span class="tok-str">"fine-tune"</span>,
+});
+<span class="tok-key">const</span> part = <span class="tok-key">await</span> client.uploads.parts.<span class="tok-fn">create</span>(upload.id, { data: <span class="tok-key">new</span> <span class="tok-fn">Blob</span>([chunk]) });
+<span class="tok-key">const</span> done = <span class="tok-key">await</span> client.uploads.<span class="tok-fn">complete</span>(upload.id, { part_ids: [part.id] });
+<span class="tok-com">// done.status === "completed", done.file.filename === "training-examples.jsonl"</span></code></pre>
+      <div class="callout">
+        The reserved <code>upload_missing</code> prefix always returns <code>404</code>, the same way <code>file-missing</code> does for files
+        and <code>sk-mock-invalid</code> does for API keys.
+      </div>
+    </section>
+
+    <section id="streaming">
+      <h2>OpenAI · Streaming (SSE)</h2>
+      <p class="section-sub"><code>stream: true</code> works on both chat completions and the Responses API, emitting the real Server-Sent Events stream your SDK already knows how to consume.</p>
+      <ul>
+        <li><strong>Chat completions</strong> — delta chunks terminated by <code>data: [DONE]</code>. Add <code>stream_options.include_usage</code> for a final usage chunk.</li>
+        <li><strong>Responses API</strong> — typed events: <code>response.created</code>, <code>response.output_text.delta</code>, <code>response.completed</code>, …</li>
+      </ul>
+<pre><code><span class="tok-key">const</span> stream = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"gpt-4o"</span>,
+  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
+  stream: <span class="tok-key">true</span>,
+});
+<span class="tok-key">for await</span> (<span class="tok-key">const</span> chunk <span class="tok-key">of</span> stream) {
+  process.stdout.<span class="tok-fn">write</span>(chunk.choices[<span class="tok-str">0</span>]?.delta?.content ?? <span class="tok-str">""</span>);
+}</code></pre>
+    </section>
+
+    <section id="errors">
+      <h2>OpenAI · Errors</h2>
+      <p class="section-sub">Failures return the exact OpenAI error envelope, so you can test your error handling too. Invalid keys, unknown models and validation errors all follow this shape:</p>
+<pre><code>{
+  <span class="tok-key">"error"</span>: {
+    <span class="tok-key">"message"</span>: <span class="tok-str">"Incorrect API key provided: sk-moc****alid. ..."</span>,
+    <span class="tok-key">"type"</span>: <span class="tok-str">"invalid_request_error"</span>,
+    <span class="tok-key">"param"</span>: <span class="tok-key">null</span>,
+    <span class="tok-key">"code"</span>: <span class="tok-str">"invalid_api_key"</span>
+  }
+}</code></pre>
+    </section>
+
+    <section id="next">
+      <h2>Other providers</h2>
+      <p class="section-sub">Same server, same key set, one page each.</p>
+      <table>
+        <thead><tr><th>Provider</th><th>Prefix</th><th>Reference</th></tr></thead>
+        <tbody>
+          <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><a href="api-anthropic.html">Read →</a></td></tr>
+          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><a href="api-gemini.html">Read →</a></td></tr>
+          <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><a href="api-gemini-enterprise.html">Read →</a></td></tr>
+          <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><a href="api-azure.html">Read →</a></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="api.html">API reference</a>
+      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
+      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
+      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

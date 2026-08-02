@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>llm-mock — Test LLM integrations without exposing your API key</title>
-<meta name="description" content="Self-hosted mock of the OpenAI, Azure and Gemini APIs. Change the baseURL, keep your code. Test LLM integrations in CI without a real API key. Free hosted instance, open source, by Axium." />
+<meta name="description" content="Self-hosted mock of the OpenAI, Anthropic, Azure and Gemini APIs. Change the baseURL, keep your code. Test LLM integrations in CI without a real API key. Free hosted instance, open source, by Axium." />
 <link rel="canonical" href="https://llm-mock.dev/" />
 <meta name="theme-color" content="#0b0e14" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
@@ -14,15 +14,15 @@
 <meta property="og:site_name" content="llm-mock" />
 <meta property="og:locale" content="en_US" />
 <meta property="og:title" content="llm-mock — Test LLM integrations without exposing your API key" />
-<meta property="og:description" content="Self-hosted mock of the OpenAI, Azure and Gemini APIs. Change the baseURL, keep your code. Free hosted instance, open source, by Axium." />
+<meta property="og:description" content="Self-hosted mock of the OpenAI, Anthropic, Azure and Gemini APIs. Change the baseURL, keep your code. Free hosted instance, open source, by Axium." />
 <meta property="og:url" content="https://llm-mock.dev/" />
 <meta property="og:image" content="https://llm-mock.dev/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Azure and Gemini APIs. baseURL: https://api.llm-mock.dev/openai/v1" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Anthropic, Azure and Gemini APIs. baseURL: https://api.llm-mock.dev/openai/v1" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="llm-mock — Test LLM integrations without exposing your API key" />
-<meta name="twitter:description" content="Self-hosted mock of the OpenAI, Azure and Gemini APIs. Change the baseURL, keep your code. Free hosted instance, open source." />
+<meta name="twitter:description" content="Self-hosted mock of the OpenAI, Anthropic, Azure and Gemini APIs. Change the baseURL, keep your code. Free hosted instance, open source." />
 <meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
 
 <!-- Structured data -->
@@ -33,7 +33,7 @@
   "name": "llm-mock",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Cross-platform",
-  "description": "Self-hosted mock of the OpenAI, Azure and Gemini APIs for testing LLM integrations without a real API key.",
+  "description": "Self-hosted mock of the OpenAI, Anthropic, Azure and Gemini APIs for testing LLM integrations without a real API key.",
   "url": "https://llm-mock.dev/",
   "downloadUrl": "https://github.com/axium-lab/llm-mock",
   "license": "https://opensource.org/licenses/MIT",
@@ -261,7 +261,9 @@ git clone https://github.com/axium-lab/llm-mock.git
 cd llm-mock
 bun install
 bun start</code></pre>
-    <p class="section-sub" style="margin-top: 22px;">See the <a href="api.html">API reference</a> for every endpoint, header and error shape.</p>
+    <p class="section-sub" style="margin-top: 22px;">See the <a href="api.html">API reference</a> for every endpoint, header and error shape — one page per provider:
+      <a href="api-openai.html">OpenAI</a>, <a href="api-anthropic.html">Anthropic</a>, <a href="api-gemini.html">Gemini</a>,
+      <a href="api-gemini-enterprise.html">Gemini Enterprise</a>, <a href="api-azure.html">Azure OpenAI</a>.</p>
   </div>
 </section>
 
@@ -306,11 +308,11 @@ console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">//
     <div class="features">
       <div class="feature">
         <h3>Faithful contracts</h3>
-        <p>Responses match each provider's real shapes, validated in CI with the official <code>openai</code> and <code>@google/genai</code> SDKs as the clients.</p>
+        <p>Responses match each provider's real shapes, validated in CI with the official <code>openai</code>, <code>@anthropic-ai/sdk</code> and <code>@google/genai</code> SDKs as the clients.</p>
       </div>
       <div class="feature">
-        <h3>Four providers, one server</h3>
-        <p>OpenAI, Gemini (AI Studio), Gemini Enterprise and Azure OpenAI, each under its own prefix with its own auth scheme and error envelope.</p>
+        <h3>Five providers, one server</h3>
+        <p>OpenAI, Anthropic, Gemini (AI Studio), Gemini Enterprise and Azure OpenAI, each under its own prefix with its own auth scheme and error envelope.</p>
       </div>
       <div class="feature">
         <h3>Streaming (SSE)</h3>
@@ -357,7 +359,7 @@ console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">//
         <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
         <tr><td>Gemini Enterprise (ex-Vertex AI)</td><td><code>/gemini-enterprise</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
         <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
-        <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge soon">🔜 Planned</span></td></tr>
+        <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
       </tbody>
     </table>
   </div>

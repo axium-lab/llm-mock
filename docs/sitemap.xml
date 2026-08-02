@@ -10,4 +10,29 @@
     <lastmod>2026-08-02</lastmod>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://llm-mock.dev/api-openai.html</loc>
+    <lastmod>2026-08-02</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://llm-mock.dev/api-anthropic.html</loc>
+    <lastmod>2026-08-02</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://llm-mock.dev/api-gemini.html</loc>
+    <lastmod>2026-08-02</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://llm-mock.dev/api-gemini-enterprise.html</loc>
+    <lastmod>2026-08-02</lastmod>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://llm-mock.dev/api-azure.html</loc>
+    <lastmod>2026-08-02</lastmod>
+    <priority>0.7</priority>
+  </url>
 </urlset>

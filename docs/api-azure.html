@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Azure OpenAI API reference — llm-mock</title>
+<meta name="description" content="Azure OpenAI endpoints on llm-mock: deployment paths, api-version, Entra ID auth, the v1 surface and content filtering with prompt_filter_results." />
+<link rel="canonical" href="https://llm-mock.dev/api-azure.html" />
+<meta name="theme-color" content="#0b0e14" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+
+<!-- Open Graph / social -->
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="llm-mock" />
+<meta property="og:locale" content="en_US" />
+<meta property="og:title" content="llm-mock — Azure OpenAI API reference" />
+<meta property="og:description" content="Azure OpenAI endpoints on llm-mock: deployment paths, api-version, Entra ID auth, the v1 surface and content filtering with prompt_filter_results." />
+<meta property="og:url" content="https://llm-mock.dev/api-azure.html" />
+<meta property="og:image" content="https://llm-mock.dev/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Anthropic, Gemini and Azure APIs." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="llm-mock — Azure OpenAI API reference" />
+<meta name="twitter:description" content="Azure OpenAI endpoints on llm-mock: deployment paths, api-version, Entra ID auth, the v1 surface and content filtering with prompt_filter_results." />
+<meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
+
+<!-- Structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "llm-mock \u2014 Azure OpenAI API reference",
+  "description": "Azure OpenAI endpoints on llm-mock: deployment paths, api-version, Entra ID auth, the v1 surface and content filtering with prompt_filter_results.",
+  "url": "https://llm-mock.dev/api-azure.html",
+  "author": {
+    "@type": "Organization",
+    "name": "Axium",
+    "url": "https://axium-lab.com"
+  },
+  "about": {
+    "@type": "SoftwareApplication",
+    "name": "llm-mock",
+    "url": "https://llm-mock.dev/"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://llm-mock.dev/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "API reference",
+      "item": "https://llm-mock.dev/api.html"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Azure OpenAI",
+      "item": "https://llm-mock.dev/api-azure.html"
+    }
+  ]
+}
+</script>
+
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a class="active" href="api.html">API docs</a>
+      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
+    </div>
+  </nav>
+</div>
+
+<header>
+  <div class="wrap">
+    <span class="eyebrow">Azure OpenAI</span>
+    <h1>Azure OpenAI API reference</h1>
+    <p class="sub">The <code>/azure/openai</code> surface: both the deployment-based contract with its required <code>api-version</code> and the newer <code>/openai/v1</code> one, plus the content filter that has no counterpart anywhere else.</p>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="layout">
+  <aside class="toc">
+    <p class="toc-title">On this page</p>
+    <p class="toc-group">Azure OpenAI</p>
+    <ul>
+      <li><a href="#azure">Endpoints</a></li>
+      <li><a href="#azure-auth">Authentication</a></li>
+      <li><a href="#azure-deployments">Deployments</a></li>
+      <li><a href="#azure-filter">Content filtering</a></li>
+    </ul>
+    <p class="toc-group">Common</p>
+    <ul>
+      <li><a href="api.html#base-url">Base URL</a></li>
+      <li><a href="api.html#auth">Authentication</a></li>
+      <li><a href="api.html#control">Controlling replies</a></li>
+    </ul>
+    <p class="toc-group">Other providers</p>
+    <ul>
+      <li><a href="api-openai.html">OpenAI</a></li>
+      <li><a href="api-anthropic.html">Anthropic</a></li>
+      <li><a href="api-gemini.html">Gemini (AI Studio)</a></li>
+      <li><a href="api-gemini-enterprise.html">Gemini Enterprise</a></li>
+    </ul>
+  </aside>
+
+  <main>
+    <section id="azure">
+      <h2>Azure OpenAI · Endpoints</h2>
+      <p class="section-sub">Azure serves the same models as OpenAI through a different front door. Most of the differences are in the routing rather than the payloads — the exception being content filtering, which Azure adds to every response. Two surfaces are served under the <code>/azure/openai</code> prefix.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>…/deployments/{deployment}/chat/completions</code></td><td>Full <code>chat.completion</code> object, SSE streaming with <code>[DONE]</code>, tool calls</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>…/deployments/{deployment}/embeddings</code></td><td>Deterministic unit vectors, correct dimension per model</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/chat/completions</code></td><td>The newer surface: no <code>api-version</code>, no deployments</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/embeddings</code></td><td>Same handlers, addressed by model</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/models?api-version=</code></td><td>Model catalog, outside the deployment path</td></tr>
+        </tbody>
+      </table>
+      <p>The classic surface addresses a <strong>deployment</strong> rather than a model and requires <code>api-version</code> on every call. The v1 surface drops both:</p>
+<pre><code><span class="tok-com"># classic</span>
+/azure/openai/deployments/{deployment}/chat/completions?api-version=2024-10-21
+
+<span class="tok-com"># v1</span>
+/azure/openai/v1/chat/completions</code></pre>
+      <div class="callout">
+        Azure puts the resource name in the hostname (<code>{resource}.openai.azure.com</code>) and keeps
+        <code>/openai</code> in the path. A mock cannot hand out subdomains, but it does not need to — the SDK
+        takes an arbitrary URL, so the resource simply becomes part of the prefix. Both surfaces run the same
+        handlers, so the same request returns the same body on either.
+      </div>
+    </section>
+
+    <section id="azure-auth">
+      <h2>Azure · Authentication</h2>
+      <p class="section-sub">Azure takes the key in an <code>api-key</code> header rather than a bearer token — the single most common reason an OpenAI-shaped client fails against it. <code>Authorization: Bearer</code> is accepted too, as Entra ID callers use it.</p>
+<pre><code><span class="tok-key">import</span> { AzureOpenAI } <span class="tok-key">from</span> <span class="tok-str">"openai"</span>;
+
+<span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">AzureOpenAI</span>({
+  baseURL: <span class="tok-str">"http://localhost:3000/azure/openai"</span>,
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+  apiVersion: <span class="tok-str">"2024-10-21"</span>,
+});</code></pre>
+      <p>Use <code>baseURL</code> rather than <code>endpoint</code>: the SDK reads <code>OPENAI_BASE_URL</code> from the environment and then refuses to combine it with <code>endpoint</code>, so a stray env var breaks the client before it sends anything. The v1 surface needs no Azure-specific client at all — a plain <code>OpenAI</code> pointed one level deeper at <code>/azure/openai/v1</code>.</p>
+      <p>The two failures answer differently, and that is Azure's own doing: a missing key is rejected by the API gateway, which knows nothing about the service's error envelope, while an invalid one gets the wrapped shape.</p>
+<pre><code><span class="tok-com">// missing credential — no `error` wrapper at all</span>
+{ <span class="tok-key">"statusCode"</span>: <span class="tok-str">401</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Access denied due to missing subscription key…"</span> }
+
+<span class="tok-com">// invalid credential — the service's envelope</span>
+{ <span class="tok-key">"error"</span>: { <span class="tok-key">"code"</span>: <span class="tok-str">"401"</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"Access denied due to invalid subscription key…"</span> } }</code></pre>
+      <p>Note that Azure's <code>code</code> is a symbolic string (<code>DeploymentNotFound</code>, <code>BadRequest</code>) where OpenAI uses a snake_case slug or null.</p>
+    </section>
+
+    <section id="azure-deployments">
+      <h2>Azure · Deployments</h2>
+      <p class="section-sub">A deployment is a named alias a customer creates in their own Azure resource, pointing at a model. A mock has no resource and therefore no deployments, so any name is accepted — the way every provider here accepts any model id.</p>
+      <p>What cannot be dropped is the 404. <code>DeploymentNotFound</code> is the error Azure users hit most, and the one their code most needs to handle, so it is driven by the name itself: anything starting with <code>missing-</code> returns the real thing.</p>
+<pre><code>{
+  <span class="tok-key">"error"</span>: {
+    <span class="tok-key">"code"</span>: <span class="tok-str">"DeploymentNotFound"</span>,
+    <span class="tok-key">"message"</span>: <span class="tok-str">"The API deployment for this resource does not exist. If you created the deployment within the last 5 minutes, please wait a moment and try again."</span>
+  }
+}</code></pre>
+      <div class="callout">
+        The deployment routes the call; the <code>model</code> echoed back is the one the client asked for, since
+        the two need not agree — the SDK only uses <code>model</code> as the deployment segment when no fixed
+        deployment is configured. The reserved prefix belongs to the deployment path only: on the v1 surface there
+        is no deployment to be missing, and <code>missing-one</code> is just a model name.
+      </div>
+    </section>
+
+    <section id="azure-filter">
+      <h2>Azure · Content filtering</h2>
+      <p class="section-sub">The most Azure-specific thing about the service, and the reason an OpenAI-shaped client can meet a response it did not expect. Every chat completion carries the filter's verdict — on the prompt at the top level, on each choice individually.</p>
+<pre><code>{
+  <span class="tok-key">"choices"</span>: [{
+    <span class="tok-key">"message"</span>: { <span class="tok-key">"content"</span>: <span class="tok-str">"Echo: hello"</span> },
+    <span class="tok-key">"finish_reason"</span>: <span class="tok-str">"stop"</span>,
+    <span class="tok-key">"content_filter_results"</span>: {
+      <span class="tok-key">"hate"</span>:      { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"severity"</span>: <span class="tok-str">"safe"</span> },
+      <span class="tok-key">"self_harm"</span>: { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"severity"</span>: <span class="tok-str">"safe"</span> },
+      <span class="tok-key">"sexual"</span>:    { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"severity"</span>: <span class="tok-str">"safe"</span> },
+      <span class="tok-key">"violence"</span>:  { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"severity"</span>: <span class="tok-str">"safe"</span> }
+    }
+  }],
+  <span class="tok-key">"prompt_filter_results"</span>: [{
+    <span class="tok-key">"prompt_index"</span>: <span class="tok-str">0</span>,
+    <span class="tok-key">"content_filter_results"</span>: { <span class="tok-com">/* the four above, plus binary detectors */</span>
+      <span class="tok-key">"jailbreak"</span>: { <span class="tok-key">"filtered"</span>: <span class="tok-key">false</span>, <span class="tok-key">"detected"</span>: <span class="tok-key">false</span> } }
+  }]
+}</code></pre>
+      <p>To exercise the failure paths, pin the verdict with <code>x-llm-mock-content-filter</code>, as <code>&lt;target&gt;</code> or <code>&lt;target&gt;:&lt;category&gt;:&lt;severity&gt;</code>:</p>
+      <table>
+        <thead><tr><th>Value</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td><code>prompt</code></td><td><span class="badge soon">400</span> with <code>code: "content_filter"</code>, and the verdict nested in <code>innererror</code></td></tr>
+          <tr><td><code>completion</code></td><td><span class="badge ok">200</span> with <code>content: null</code> and <code>finish_reason: "content_filter"</code></td></tr>
+          <tr><td><code>unavailable</code></td><td><span class="badge ok">200</span>, with an <code>error</code> object where the verdict would be — the documented "filter did not run" case</td></tr>
+        </tbody>
+      </table>
+      <p>Categories are <code>hate</code>, <code>self_harm</code>, <code>sexual</code>, <code>violence</code> and <code>jailbreak</code>; severities <code>safe</code>, <code>low</code>, <code>medium</code>, <code>high</code>. So <code>completion:violence:high</code> filters the reply and says which category did it.</p>
+      <div class="callout">
+        Two quirks are reproduced deliberately, because code written against OpenAI trips on both. A
+        <strong>streamed response opens with a chunk carrying no choices at all</strong>, just the prompt's
+        verdict — a client reaching straight for <code>chunk.choices[0]</code> breaks there. And the
+        blocked-prompt error nests its verdict under <code>content_filter_result</code>, <strong>singular</strong>,
+        against the plural used everywhere else.
+      </div>
+      <p>None of this provider's shapes could be checked against a live Azure resource. Its routes come from observing what <code>AzureOpenAI</code> puts on the wire, and its payloads from Microsoft's documentation and published examples — but they are not observed responses. The empty first streaming chunk in particular is reconstructed from reported behaviour rather than seen.</p>
+    </section>
+
+    <section id="next">
+      <h2>Other providers</h2>
+      <p class="section-sub">Same server, same key set, one page each.</p>
+      <table>
+        <thead><tr><th>Provider</th><th>Prefix</th><th>Reference</th></tr></thead>
+        <tbody>
+          <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><a href="api-openai.html">Read →</a></td></tr>
+          <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><a href="api-anthropic.html">Read →</a></td></tr>
+          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><a href="api-gemini.html">Read →</a></td></tr>
+          <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><a href="api-gemini-enterprise.html">Read →</a></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="api.html">API reference</a>
+      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
+      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
+      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
