@@ -11,6 +11,13 @@ const MODEL_DIMENSIONS: Record<string, number> = {
 
 const DEFAULT_DIMENSIONS = 1536;
 
+// How many dimensions a model emits when the request does not say. The OpenAI
+// catalog is the default, but Gemini's OpenAI-compatibility layer runs Gemini
+// models through this same service and supplies its own answer.
+export type NativeDimensions = (model: string) => number | undefined;
+
+const openaiDimensions: NativeDimensions = (model) => MODEL_DIMENSIONS[model];
+
 // The official SDK requests base64 by default and decodes it client-side.
 function encodeBase64(vector: number[]): string {
   return Buffer.from(new Float32Array(vector).buffer).toString("base64");
@@ -29,9 +36,9 @@ function normalizeInputs(input: EmbeddingRequest["input"]): string[] {
   throw new ApiError(400, "'input' must be a string, an array of strings, or an array of tokens.", null, "input");
 }
 
-export function createEmbeddings(body: EmbeddingRequest) {
+export function createEmbeddings(body: EmbeddingRequest, nativeDimensions: NativeDimensions = openaiDimensions) {
   const inputs = normalizeInputs(body.input);
-  const dimensions = body.dimensions ?? MODEL_DIMENSIONS[body.model] ?? DEFAULT_DIMENSIONS;
+  const dimensions = body.dimensions ?? nativeDimensions(body.model) ?? DEFAULT_DIMENSIONS;
   if (!Number.isInteger(dimensions) || dimensions < 1) {
     throw new ApiError(400, "'dimensions' must be a positive integer.", null, "dimensions");
   }

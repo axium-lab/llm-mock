@@ -15,7 +15,7 @@
 
 > **⚡ Zero install** — a free hosted instance runs at **[`api.llm-mock.dev`](https://api.llm-mock.dev)**. Point your SDK's `baseURL` there and start testing in seconds; no download, no signup. [Details ↓](#hosted-instance)
 
-Testing an app built on an LLM SDK usually means one of two things: paying for real API calls in CI, or leaking an API key into a place it should never be (a public repo, a contributor's laptop, a CI log). llm-mock removes that choice. It is a tiny local server that speaks each provider's API contract — same endpoints, same response shapes, same error format, same SSE streaming — but with deterministic, configurable responses and no real key required. OpenAI is supported today, Gemini (AI Studio) is landing now, and Anthropic and more are planned.
+Testing an app built on an LLM SDK usually means one of two things: paying for real API calls in CI, or leaking an API key into a place it should never be (a public repo, a contributor's laptop, a CI log). llm-mock removes that choice. It is a tiny local server that speaks each provider's API contract — same endpoints, same response shapes, same error format, same SSE streaming — but with deterministic, configurable responses and no real key required. OpenAI and Gemini (AI Studio) are supported today; Anthropic and more are planned.
 
 ```ts
 import OpenAI from "openai";
@@ -126,7 +126,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | Provider | Prefix | Status |
 | --- | --- | --- |
 | OpenAI | `/openai/v1` | ✅ Supported |
-| Gemini (AI Studio) | `/gemini` | 🚧 In progress — `generateContent`, Interactions API, embeddings, files, streaming, tool calls, models |
+| Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
 | Anthropic | `/anthropic` | 🔜 Planned |
 | Gemini Enterprise (Vertex AI) | — | 🔜 Planned |
 | Azure OpenAI | — | 🔜 Planned |
@@ -167,7 +167,7 @@ Parameters the mock does not simulate (`temperature`, `top_p`, `response_format`
 
 ### Gemini (AI Studio)
 
-Work in progress. Both `v1beta` and `v1` serve the same mock, so either `apiVersion` works.
+Both `v1beta` and `v1` serve the same mock, so either `apiVersion` works.
 
 | Endpoint | Notes |
 | --- | --- |
@@ -187,6 +187,9 @@ Work in progress. Both `v1beta` and `v1` serve the same mock, so either `apiVers
 | `GET /gemini/v1beta/files` | Simulated catalog with `pageSize`/`pageToken` pagination |
 | `GET /gemini/v1beta/files/{name}` | Stateless: the name carries the file's metadata, so an upload round-trips exactly |
 | `DELETE /gemini/v1beta/files/{name}` | Idempotent; returns `{}` |
+| `POST /gemini/v1beta/openai/chat/completions` | OpenAI-compatibility layer, streaming and tool calls included |
+| `POST /gemini/v1beta/openai/embeddings` | Same layer, at Gemini's dimensions |
+| `GET /gemini/v1beta/openai/models` | Gemini's catalog in OpenAI's list envelope |
 
 Custom methods are addressed the Google way, as `{resource}:{method}` — `models/gemini-3.6-flash:generateContent`. Those that are not implemented yet answer with the same `404` the real API returns for a method a model does not support.
 
@@ -233,6 +236,28 @@ const same = await ai.files.get({ name: file.name });  // round-trips exactly
 Both halves stay stateless. The upload session has no server-side table behind it: the metadata declared at `start` travels back to the client inside the `x-goog-upload-url` it is told to use, and returns with the bytes. The file's own metadata then rides inside the name it is given, so a later `get` answers accurately on any instance. `sha256Hash` is the genuine digest of the bytes received, so a client that verifies it succeeds.
 
 That makes minted names longer than the 40 characters Google documents. The cap applies to names a *client* supplies, not to ones the server returns — verified against `@google/genai`, which reads a 90-character name back without complaint. Reserve the `files/missing…` prefix to exercise the not-found path, which the real API reports as a `403 PERMISSION_DENIED` rather than a `404`.
+
+#### OpenAI-compatibility layer
+
+Google runs an OpenAI-shaped surface at `/v1beta/openai`, so an app built on the `openai` SDK can talk to Gemini by changing only its `baseURL`. The mock serves it too:
+
+```ts
+const client = new OpenAI({
+  baseURL: "http://localhost:3000/gemini/v1beta/openai",
+  apiKey: "sk-mock-key-01",
+});
+
+const completion = await client.chat.completions.create({
+  model: "gemini-3.6-flash",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+```
+
+It is a genuine translation layer, not a second API, so responses come back in OpenAI's shapes — `chat.completion` objects, `[DONE]`-terminated streams, tool call arguments as a JSON string rather than the decoded object the native surface sends. What it serves underneath is still Gemini: `/models` lists Gemini models with `owned_by: "google"`, and embeddings come out at Gemini's dimensions rather than OpenAI's 1536.
+
+Only what Google actually exposes is mounted. **The Responses API and the Files endpoints are absent from the real compatibility layer**, so calling them here `404`s exactly as it would against Google — use `/openai/v1` for the former and Gemini's native `/gemini/v1beta/files` for the latter.
+
+One split worth knowing: a validation error comes back in OpenAI's envelope, because an OpenAI SDK is reading it, but an authentication failure comes back in Google's. That mirrors where each check happens — Google's API frontend rejects an unknown key before the compatibility layer ever runs.
 
 ### Mock-only
 

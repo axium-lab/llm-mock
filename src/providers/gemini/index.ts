@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from "./errors";
 import { filesRouter, uploadRouter } from "./routes/files";
 import { interactionsRouter } from "./routes/interactions";
 import { modelsRouter, tunedModelsRouter } from "./routes/models";
+import { openaiCompatRouter } from "./routes/openai-compat";
 
 // Generous enough for the media this API is meant to carry, without letting a
 // runaway request buffer without bound.
@@ -26,6 +27,8 @@ export const geminiProvider: Provider = {
     api.use("/tunedModels", tunedModelsRouter);
     api.use("/interactions", interactionsRouter);
     api.use("/files", filesRouter);
+    // Registered last so the native surface always wins a path collision.
+    api.use("/openai", openaiCompatRouter);
 
     const router = Router();
 

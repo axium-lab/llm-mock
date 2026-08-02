@@ -16,6 +16,12 @@ const MODEL_DIMENSIONS: Record<string, number> = {
 const DEFAULT_DIMENSIONS = 3072;
 const MAX_DIMENSIONS = 3072;
 
+// Exposed for the OpenAI-compatibility layer, which serves these same models
+// through OpenAI's embeddings service and must not fall back to its 1536.
+export function nativeDimensions(model: string): number | undefined {
+  return MODEL_DIMENSIONS[model];
+}
+
 function contentText(content: Content | undefined): string {
   return (content?.parts ?? []).map((part) => part.text ?? "").join("");
 }
