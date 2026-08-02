@@ -19,7 +19,7 @@
 <meta property="og:image" content="https://llm-mock.dev/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Anthropic, Gemini and Azure APIs." />
+<meta property="og:image:alt" content="llm-mock — test your LLM integrations without exposing your API key. A self-hosted, multi-provider mock server: OpenAI, Anthropic, Gemini, Gemini Enterprise and Azure. Zero install, deterministic, SSE streaming." />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="llm-mock — API reference" />
 <meta name="twitter:description" content="API reference for llm-mock: base URLs, authentication and response-control headers shared by every provider, with one page each for OpenAI, Anthropic, Gemini, Gemini Enterprise and Azure OpenAI." />
@@ -201,6 +201,12 @@
             <td><span class="badge soon">403</span> <code>PERMISSION_DENIED</code></td>
           </tr>
           <tr>
+            <td>Gemini · <code>/interactions</code></td>
+            <td><code>x-goog-api-key</code></td>
+            <td><span class="badge soon">400</span> <code>INVALID_ARGUMENT</code>, <strong>classic</strong> envelope</td>
+            <td><span class="badge soon">403</span> <code>PERMISSION_DENIED</code>, classic</td>
+          </tr>
+          <tr>
             <td>Gemini · <code>/openai</code> layer</td>
             <td><code>Authorization: Bearer</code></td>
             <td><span class="badge soon">400</span> <code>Please pass a valid API key</code></td>
@@ -226,6 +232,11 @@
         <code>details</code> only in that one case. Every other error — missing credential, unknown model,
         unknown file — carries <code>code</code>, <code>message</code> and <code>status</code> and nothing else.
         These shapes were checked against the live API.
+      </div>
+      <div class="callout">
+        The <code>/interactions</code> row is the surprising one: that surface uses the flatter next-generation
+        envelope for its own errors, but a credential is rejected by Google's frontend <em>before</em> the service
+        ever runs &mdash; so an auth failure there comes back as <code>google.rpc.Status</code> like everywhere else.
       </div>
     </section>
 

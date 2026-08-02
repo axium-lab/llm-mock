@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The README is down from 778 lines to 175: it now covers what the project is, why you would use it, how to start it and how to control its replies, and points at [llm-mock.dev](https://llm-mock.dev/api.html) for the rest. The per-endpoint detail it used to carry — 433 lines of it — lives on the documentation site, one page per provider, which is where it stays current.
 - The documentation site's API reference is now one page per provider — `api-openai.html`, `api-anthropic.html`, `api-gemini.html`, `api-gemini-enterprise.html`, `api-azure.html` — with `api.html` keeping what they share (base URLs, authentication, response-control headers, provider support) and linking out to each. The stylesheet moved to `docs/styles.css` rather than being copied inline into six pages; `sitemap.xml` lists all seven URLs. Every section id was preserved, so existing deep links still resolve.
 - The Responses API now echoes the `tools` and `tool_choice` it received instead of always reporting `[]` and `"auto"`.
 - Tests are now grouped by provider under `tests/openai/` and `tests/gemini/`, sharing the server harness in `tests/server.ts`.

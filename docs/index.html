@@ -19,7 +19,7 @@
 <meta property="og:image" content="https://llm-mock.dev/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="llm-mock — a self-hosted mock of the OpenAI, Anthropic, Azure and Gemini APIs. baseURL: https://api.llm-mock.dev/openai/v1" />
+<meta property="og:image:alt" content="llm-mock — test your LLM integrations without exposing your API key. A self-hosted, multi-provider mock server: OpenAI, Anthropic, Gemini, Gemini Enterprise and Azure. Zero install, deterministic, SSE streaming." />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="llm-mock — Test LLM integrations without exposing your API key" />
 <meta name="twitter:description" content="Self-hosted mock of the OpenAI, Anthropic, Azure and Gemini APIs. Change the baseURL, keep your code. Free hosted instance, open source." />
@@ -220,8 +220,8 @@
     <span class="eyebrow">open source · MIT</span>
     <h1>Test your LLM integrations<br /><span class="hl">without exposing your API key</span></h1>
     <p class="sub">
-      A self-hosted mock of the OpenAI, Azure and Gemini APIs. Same endpoints, same response shapes,
-      same streaming — with deterministic replies and no real key required. Change the
+      A self-hosted mock of the OpenAI, Anthropic, Azure and Gemini APIs. Same endpoints, same response
+      shapes, same streaming — with deterministic replies and no real key required. Change the
       <code>baseURL</code>, keep your code.
     </p>
     <div class="cta-row">
@@ -248,7 +248,7 @@
         <code><span class="prompt">baseURL</span>https://api.llm-mock.dev/openai/v1</code>
         <button class="copy-btn" data-cmd="https://api.llm-mock.dev/openai/v1">Copy</button>
       </div>
-      <p style="margin: 14px 0 0;">Gemini lives at <code>/gemini</code>, Gemini Enterprise at <code>/gemini-enterprise</code> and Azure at <code>/azure/openai</code> on the same host.</p>
+      <p style="margin: 14px 0 0;">Anthropic lives at <code>/anthropic</code>, Gemini at <code>/gemini</code>, Gemini Enterprise at <code>/gemini-enterprise</code> and Azure at <code>/azure/openai</code> on the same host.</p>
     </div>
 
     <h3 class="selfhost">Prefer to self-host?</h3>
@@ -270,7 +270,7 @@ bun start</code></pre>
 <section id="how">
   <div class="wrap">
     <h2>Change one line, keep your code</h2>
-    <p class="section-sub">The official <code>openai</code> and <code>@google/genai</code> SDKs talk to llm-mock exactly as they talk to the real APIs. No mocking libraries, no request interception.</p>
+    <p class="section-sub">The official <code>openai</code>, <code>@anthropic-ai/sdk</code> and <code>@google/genai</code> SDKs talk to llm-mock exactly as they talk to the real APIs. No mocking libraries, no request interception.</p>
 <pre><code><span class="tok-key">import</span> OpenAI <span class="tok-key">from</span> <span class="tok-str">"openai"</span>;
 
 <span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">OpenAI</span>({
@@ -284,7 +284,22 @@ bun start</code></pre>
 });
 
 console.<span class="tok-fn">log</span>(completion.choices[<span class="tok-str">0</span>].message.content); <span class="tok-com">// "Echo: Hello!"</span></code></pre>
-    <p class="section-sub" style="margin: 22px 0 0;">Same idea for Gemini — note that <code>@google/genai</code> appends the version segment itself, so its <code>baseUrl</code> stops at the prefix:</p>
+    <p class="section-sub" style="margin: 22px 0 0;">Same idea for Anthropic — its client appends only the request path, so the version segment belongs in the <code>baseURL</code>:</p>
+<pre><code><span class="tok-key">import</span> Anthropic <span class="tok-key">from</span> <span class="tok-str">"@anthropic-ai/sdk"</span>;
+
+<span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">Anthropic</span>({
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+  baseURL: <span class="tok-str">"http://localhost:3000/anthropic"</span>,
+});
+
+<span class="tok-key">const</span> message = <span class="tok-key">await</span> client.messages.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"claude-opus-5"</span>,
+  max_tokens: <span class="tok-str">1024</span>,
+  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
+});
+
+console.<span class="tok-fn">log</span>(message.content[<span class="tok-str">0</span>].text); <span class="tok-com">// "Echo: Hello!"</span></code></pre>
+    <p class="section-sub" style="margin: 22px 0 0;">And for Gemini — note that <code>@google/genai</code> appends the version segment itself, so its <code>baseUrl</code> stops at the prefix:</p>
 <pre><code><span class="tok-key">import</span> { GoogleGenAI } <span class="tok-key">from</span> <span class="tok-str">"@google/genai"</span>;
 
 <span class="tok-key">const</span> ai = <span class="tok-key">new</span> <span class="tok-fn">GoogleGenAI</span>({
@@ -304,7 +319,7 @@ console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">//
 <section id="features">
   <div class="wrap">
     <h2>Built for real integration tests</h2>
-    <p class="section-sub">Not a stub — a faithful contract, verified in CI against the official SDK.</p>
+    <p class="section-sub">Not a stub — a faithful contract, verified in CI against each provider's official SDK.</p>
     <div class="features">
       <div class="feature">
         <h3>Faithful contracts</h3>
@@ -316,7 +331,7 @@ console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">//
       </div>
       <div class="feature">
         <h3>Streaming (SSE)</h3>
-        <p><code>stream: true</code> works on chat completions and the Responses API, with the real typed event stream.</p>
+        <p><code>stream: true</code> works everywhere, in all three conventions the five providers use — including Anthropic's named <code>event:</code> frames.</p>
       </div>
       <div class="feature">
         <h3>Deterministic &amp; stateless</h3>
@@ -332,7 +347,7 @@ console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">//
       </div>
       <div class="feature">
         <h3>Real error flows</h3>
-        <p>Invalid keys, unknown models and validation errors return the exact OpenAI error envelope — test your error handling too.</p>
+        <p>Invalid keys, unknown models, validation errors and content filters return each provider's exact error envelope — test your error handling too.</p>
       </div>
       <div class="feature">
         <h3>Controllable replies</h3>
@@ -356,10 +371,10 @@ console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">//
       </thead>
       <tbody>
         <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+        <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
         <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
         <tr><td>Gemini Enterprise (ex-Vertex AI)</td><td><code>/gemini-enterprise</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
         <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
-        <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
       </tbody>
     </table>
   </div>
