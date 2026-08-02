@@ -127,7 +127,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | --- | --- | --- |
 | OpenAI | `/openai/v1` | ✅ Supported |
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
-| Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, streaming, tool calls, embeddings, models |
+| Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, Interactions API, streaming, tool calls, embeddings |
 | Anthropic | `/anthropic` | 🔜 Planned |
 | Azure OpenAI | — | 🔜 Planned |
 
@@ -278,6 +278,8 @@ Google renamed Vertex AI to the Gemini Enterprise Agent Platform; it serves the 
 | `POST /gemini-enterprise/v1beta1/publishers/google/models/{model}:streamGenerateContent` | SSE with `?alt=sse`, streamed JSON array without it |
 | `POST /gemini-enterprise/v1beta1/publishers/google/models/{model}:predict` | Embeddings — this platform has no `:embedContent` |
 | `POST /gemini-enterprise/v1beta1/publishers/google/models/{model}:countTokens` | Reports `totalTokens` only |
+| `POST /gemini-enterprise/v1beta1/interactions` | Interactions API, same contract as AI Studio's. Also reachable on the encoded regional path |
+| `GET`/`DELETE` `…/interactions/{id}`, `POST …/interactions/{id}/cancel` | Stateless, exactly as on the AI Studio surface |
 | `GET /gemini-enterprise/v1beta1/publishers/google/models` | Publisher catalog, nested under `publisherModels` |
 | `GET /gemini-enterprise/v1beta1/publishers/google/models/{model}` | `versionId` rather than `version`, and no token limits |
 | `…/v1beta1/projects/{project}/locations/{location}/publishers/google/models/…` | The same router answers the regional path shape |
@@ -324,6 +326,15 @@ Embeddings are where the two Google surfaces diverge most. There is no `:embedCo
 ```
 
 Note `task_type` and `token_count` in snake_case inside an otherwise camelCase API — that is the platform's own inconsistency, faithfully reproduced. `countTokens` here reports `totalTokens` and nothing else, where AI Studio's also breaks the count down by modality.
+
+The Interactions API is served here too, on the same contract as AI Studio's — but reached through a path this platform builds oddly. In regional mode the SDK folds the entire version component, project and location included, into one percent-encoded path segment:
+
+```
+express    /gemini-enterprise/v1beta1/interactions
+regional   /gemini-enterprise/v1beta1%2Fprojects%2F{project}%2Flocations%2F{location}/interactions
+```
+
+Express routes on the still-encoded path, so a literal `/v1beta1` mount never sees the second form; a route parameter does, and receives it decoded. Both shapes reach the same handler.
 
 There is no Files API here, and that is the platform's doing rather than a gap in the mock: `@google/genai` refuses the upload client-side with *"Gemini Enterprise Agent Platform (previously known as Vertex AI) does not support uploading files. You can share files through a GCS bucket."*
 

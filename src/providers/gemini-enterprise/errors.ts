@@ -1,26 +1,37 @@
 import type { NextFunction, Request, Response } from "express";
 import { ApiError } from "../../core/errors";
-import { classicEnvelope } from "../google-shared/errors";
+import { classicEnvelope, isFrontendFailure, nextGenEnvelope } from "../google-shared/errors";
 
-// Everything this provider serves today answers in the classic
-// google.rpc.Status envelope. The Interactions API is the one surface that
-// would bring the next-gen one along, and it is not mounted yet; when it is,
-// this is where the split goes — see ../gemini/errors for the shape it takes.
 const SERVICE = "aiplatform.googleapis.com";
 
-export function notFoundHandler(req: Request, res: Response): void {
-  res
-    .status(404)
-    .json(
-      classicEnvelope(404, `Unknown request URL: ${req.method} ${req.baseUrl}${req.path}`, null, SERVICE),
-    );
+// As on AI Studio, /interactions is the one next-gen surface and everything
+// else answers in google.rpc.Status. Matching on the literal segment rather
+// than on a version prefix is deliberate: the regional form arrives with its
+// version component percent-encoded, so "/v1beta1" never appears as a segment,
+// while "/interactions" always does.
+const NEXT_GEN_PATH = /\/interactions(\/|$)/;
+
+export function isNextGenSurface(req: Request): boolean {
+  return NEXT_GEN_PATH.test(req.path);
 }
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
+function serialize(req: Request, status: number, message: string, reason: string | null) {
+  // A credential is rejected before the service runs, so an auth failure keeps
+  // the classic envelope even on the next-gen surface.
+  return isNextGenSurface(req) && !isFrontendFailure(reason)
+    ? nextGenEnvelope(status, message)
+    : classicEnvelope(status, message, reason, SERVICE);
+}
+
+export function notFoundHandler(req: Request, res: Response): void {
+  res.status(404).json(serialize(req, 404, `Unknown request URL: ${req.method} ${req.baseUrl}${req.path}`, null));
+}
+
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof ApiError) {
-    res.status(err.status).json(classicEnvelope(err.status, err.message, err.code, SERVICE));
+    res.status(err.status).json(serialize(req, err.status, err.message, err.code));
     return;
   }
   const message = err instanceof Error ? err.message : "Internal server error";
-  res.status(500).json(classicEnvelope(500, message, null, SERVICE));
+  res.status(500).json(serialize(req, 500, message, null));
 }

@@ -4,7 +4,7 @@ import type { Provider, ProviderDeps } from "../types";
 import { geminiAuthScheme, geminiCompatAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
 import { filesRouter, uploadRouter } from "./routes/files";
-import { interactionsRouter } from "./routes/interactions";
+import { interactionsRouter } from "../google-shared/routes/interactions";
 import { modelsRouter, tunedModelsRouter } from "./routes/models";
 import { openaiCompatRouter } from "./routes/openai-compat";
 

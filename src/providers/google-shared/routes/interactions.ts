@@ -6,8 +6,8 @@ import {
   buildInteraction,
   buildInteractionEvents,
   buildSyntheticInteraction,
-} from "../../google-shared/interactions";
-import type { CreateInteractionRequest } from "../../google-shared/types";
+} from "../interactions";
+import type { CreateInteractionRequest } from "../types";
 
 export const interactionsRouter = Router();
 

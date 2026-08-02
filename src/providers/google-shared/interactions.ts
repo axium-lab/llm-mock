@@ -17,8 +17,8 @@ import type {
 } from "./types";
 
 // Only ever surfaces on a synthesized retrieval, where no request named a
-// model. Gemini Enterprise will want its own value here when it grows an
-// Interactions surface; parameterize it then rather than now.
+// model. Both surfaces serve the same model family and both catalogs list this
+// one, so it stays a constant rather than a knob neither provider would turn.
 const DEFAULT_MODEL = "gemini-3.6-flash";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
