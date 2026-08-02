@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { ApiError } from "../../../core/errors";
 import { assertDeployment } from "../deployments";
+import { inferenceRouter } from "./inference";
 
 // Everything addressed as /openai/deployments/{deployment}/… lands here. Only
 // a fixed set of endpoints is deployment-scoped on Azure — chat/completions,
@@ -18,12 +19,9 @@ deploymentsRouter.use((req, _res, next) => {
   next();
 });
 
-// Filled in by the next phase. Until then the answer names the path that was
-// attempted, rather than a bare 404.
+deploymentsRouter.use(inferenceRouter);
+
+// A deployment-scoped path this mock does not serve — audio, images, batches.
 deploymentsRouter.use((req, _res) => {
-  throw new ApiError(
-    404,
-    `Resource not found: ${req.method} ${req.baseUrl}${req.path}`,
-    "404",
-  );
+  throw new ApiError(404, `Resource not found: ${req.method} ${req.baseUrl}${req.path}`, "404");
 });

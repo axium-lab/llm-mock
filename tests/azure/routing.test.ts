@@ -54,20 +54,27 @@ describe("azure routing", () => {
     expect(body.error.code).toBe("404");
   });
 
-  it("routes a deployment path, taking the name from the body's model", async () => {
+  it("routes any deployment name to the inference handlers", async () => {
     // The SDK turns `model` into the deployment segment when no fixed
-    // deployment is configured on the client.
-    const res = await raw(`/deployments/my-deployment/chat/completions?api-version=${API_VERSION}`, {
+    // deployment is configured on the client, so the two need not agree.
+    const res = await raw(`/deployments/whatever-i-called-it/chat/completions?api-version=${API_VERSION}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ model: "gpt-4o", messages: [] }),
+      body: JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content: "hi" }] }),
     });
+    expect(res.status).toBe(200);
+  });
 
-    // Not implemented until the next phase, but it reached the deployment
-    // router rather than 400ing or matching nothing.
-    const body = (await res.json()) as ErrorBody;
+  it("404s a deployment-scoped path this mock does not serve", async () => {
+    const res = await raw(`/deployments/my-deployment/audio/speech?api-version=${API_VERSION}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
     expect(res.status).toBe(404);
-    expect(body.error.message).toContain("/deployments/my-deployment/chat/completions");
+
+    const body = (await res.json()) as ErrorBody;
+    expect(body.error.message).toContain("/deployments/my-deployment/audio/speech");
   });
 
   it("reports a reserved deployment name as DeploymentNotFound", async () => {

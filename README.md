@@ -128,7 +128,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | OpenAI | `/openai/v1` | ✅ Supported |
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
 | Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, Interactions API, streaming, tool calls, embeddings |
-| Azure OpenAI | `/azure/openai` | 🚧 In progress — auth, routing, models |
+| Azure OpenAI | `/azure/openai` | 🚧 In progress — chat completions, streaming, tool calls, embeddings |
 | Anthropic | `/anthropic` | 🔜 Planned |
 
 Note that where the version segment lives depends on the SDK, not on us. The OpenAI client appends only the request path, so its `baseURL` carries the version; `@google/genai` appends the version itself, so its `baseUrl` stops at the provider prefix:
@@ -344,6 +344,8 @@ Work in progress. Azure serves the same models as OpenAI through a different fro
 
 | Endpoint | Notes |
 | --- | --- |
+| `POST …/openai/deployments/{deployment}/chat/completions` | Full `chat.completion` object, SSE streaming with `[DONE]`, tool calls |
+| `POST …/openai/deployments/{deployment}/embeddings` | Deterministic unit vectors, correct dimension per model |
 | `…/openai/deployments/{deployment}/…?api-version=` | The classic surface. A **deployment name replaces the model** in the path, and `api-version` is required on every call |
 | `…/openai/v1/…` | The newer surface: OpenAI's contract verbatim, no `api-version`, no deployments |
 | `GET /azure/openai/models?api-version=` | Model catalog, outside the deployment path |
@@ -362,7 +364,7 @@ const client = new AzureOpenAI({
 
 Use `baseURL` rather than `endpoint`: the SDK reads `OPENAI_BASE_URL` from the environment and then refuses to combine it with `endpoint`, so a stray env var would break the client before it sends anything.
 
-**Deployments.** Any name works, the way every provider here accepts any model id — except names starting with `missing-`, which return the real `404 DeploymentNotFound`. That is the error Azure users hit most, and the one their code most needs to handle.
+**Deployments.** Any name works, the way every provider here accepts any model id — except names starting with `missing-`, which return the real `404 DeploymentNotFound`. That is the error Azure users hit most, and the one their code most needs to handle. The deployment routes the call; the `model` echoed back is the one the client asked for, since the two need not agree.
 
 **Authentication** takes the key in an `api-key` header rather than a bearer token, which is the single most common reason an OpenAI-shaped client fails against Azure. `Authorization: Bearer` is accepted too, as Entra ID callers use it. The two failures answer differently, and that is Azure's own doing: a missing key is rejected by the API gateway in a flatter shape with no `error` wrapper, while an invalid one gets the wrapped envelope.
 
