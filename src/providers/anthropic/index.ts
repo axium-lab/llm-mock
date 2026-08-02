@@ -5,6 +5,7 @@ import { anthropicAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
 import { batchesRouter } from "./routes/batches";
 import { countTokensRouter } from "./routes/count-tokens";
+import { filesRouter } from "./routes/files";
 import { messagesRouter } from "./routes/messages";
 import { modelsRouter } from "./routes/models";
 import { requireVersion } from "./version";
@@ -24,6 +25,7 @@ export const anthropicProvider: Provider = {
     v1.use("/messages/count_tokens", countTokensRouter);
     v1.use("/messages", messagesRouter);
     v1.use("/models", modelsRouter);
+    v1.use("/files", filesRouter);
 
     const router = Router();
     router.use(express.json({ limit: "32mb" }));

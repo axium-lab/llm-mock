@@ -32,6 +32,44 @@ export interface ModelListQuery {
 }
 
 // ---------------------------------------------------------------------------
+// Files (beta)
+
+// A file created inside a session carries the session that made it.
+export interface FileScope {
+  id: string;
+  type: "session";
+}
+
+export interface FileMetadata {
+  id: string;
+  type: "file";
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string;
+  // Only files the API produced itself can be read back. An uploaded one
+  // cannot, which the API states here rather than by failing late.
+  downloadable: boolean;
+  scope?: FileScope | null;
+}
+
+export interface FileList {
+  data: FileMetadata[];
+  has_more: boolean;
+  first_id: string | null;
+  last_id: string | null;
+}
+
+export interface FileListQuery extends ModelListQuery {
+  scope_id?: string;
+}
+
+export interface FileDeleted {
+  id: string;
+  type: "file_deleted";
+}
+
+// ---------------------------------------------------------------------------
 // Messages
 
 export interface TextBlock {
@@ -69,6 +107,9 @@ export interface RequestBlock {
   content?: unknown;
   tool_use_id?: string;
   is_error?: boolean;
+  // How a `document` or `image` block points at its bytes: inline base64, a
+  // URL, or a file uploaded earlier.
+  source?: { type?: string; file_id?: string; url?: string; media_type?: string; data?: string };
 }
 
 export interface RequestMessage {

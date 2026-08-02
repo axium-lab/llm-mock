@@ -27,11 +27,24 @@ function blockText(content: string | RequestBlock[] | undefined): string {
   return content.map((block) => (block?.type === "text" ? (block.text ?? "") : "")).join("");
 }
 
+// Attaching a file to a turn with no prose is a real shape — upload a PDF and
+// let the question be implicit. Naming the attachment keeps the echo useful:
+// without it, that turn would fall through to the generic greeting and a test
+// could not tell whether the reference even arrived.
+function attachmentText(content: string | RequestBlock[] | undefined): string {
+  if (!Array.isArray(content)) return "";
+  const files = content
+    .filter((block) => block?.type === "document" || block?.type === "image")
+    .map((block) => block.source?.file_id)
+    .filter((fileId): fileId is string => typeof fileId === "string" && fileId.length > 0);
+  return files.length === 0 ? "" : `[${files.join(", ")}]`;
+}
+
 export function lastUserText(messages: RequestMessage[]): string | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index]!;
     if (message.role !== "user") continue;
-    const text = blockText(message.content);
+    const text = blockText(message.content) || attachmentText(message.content);
     if (text) return text;
   }
   return undefined;

@@ -4,6 +4,10 @@ import { ApiError } from "./errors";
 export interface MultipartFile {
   filename: string;
   content: Buffer;
+  // The part's own Content-Type. Empty when the client did not declare one,
+  // which is why a provider that reports a MIME type has to fall back to the
+  // extension.
+  contentType: string;
 }
 
 export interface MultipartBody {
@@ -55,7 +59,11 @@ export function multipartFile(field: string): RequestHandler {
           if (typeof value === "string") {
             fields[key] = value;
           } else if (key === field && !file) {
-            file = { filename: value.name, content: Buffer.from(await value.arrayBuffer()) };
+            file = {
+              filename: value.name,
+              content: Buffer.from(await value.arrayBuffer()),
+              contentType: value.type,
+            };
           }
         }
 

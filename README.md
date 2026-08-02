@@ -15,7 +15,7 @@
 
 > **⚡ Zero install** — a free hosted instance runs at **[`api.llm-mock.dev`](https://api.llm-mock.dev)**. Point your SDK's `baseURL` there and start testing in seconds; no download, no signup. [Details ↓](#hosted-instance)
 
-Testing an app built on an LLM SDK usually means one of two things: paying for real API calls in CI, or leaking an API key into a place it should never be (a public repo, a contributor's laptop, a CI log). llm-mock removes that choice. It is a tiny local server that speaks each provider's API contract — same endpoints, same response shapes, same error format, same SSE streaming — but with deterministic, configurable responses and no real key required. OpenAI and Gemini (AI Studio) are supported today; Anthropic and more are planned.
+Testing an app built on an LLM SDK usually means one of two things: paying for real API calls in CI, or leaking an API key into a place it should never be (a public repo, a contributor's laptop, a CI log). llm-mock removes that choice. It is a tiny local server that speaks each provider's API contract — same endpoints, same response shapes, same error format, same SSE streaming — but with deterministic, configurable responses and no real key required. OpenAI, Anthropic, Gemini (AI Studio), Gemini Enterprise and Azure OpenAI are supported today.
 
 ```ts
 import OpenAI from "openai";
@@ -129,7 +129,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
 | Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, Interactions API, streaming, tool calls, embeddings |
 | Azure OpenAI | `/azure/openai` | ✅ Supported — chat completions, streaming, tool calls, embeddings, content filtering |
-| Anthropic | `/anthropic` | 🚧 In progress — messages, streaming, tool use, thinking, models, token counting, batches |
+| Anthropic | `/anthropic` | ✅ Supported — messages, streaming, tool use, thinking, models, token counting, batches, files |
 
 Note that where the version segment lives depends on the SDK, not on us. The OpenAI client appends only the request path, so its `baseURL` carries the version; `@google/genai` appends the version itself, so its `baseUrl` stops at the provider prefix:
 
@@ -420,7 +420,7 @@ None of this provider's shapes could be checked against a live Azure resource. I
 
 ### Anthropic
 
-Work in progress. This is the one provider here that shares nothing structural with OpenAI: everything goes through a single `POST /v1/messages`, responses are lists of typed content blocks, and the system prompt is a top-level field rather than a message.
+This is the one provider here that shares nothing structural with OpenAI: everything goes through a single `POST /v1/messages`, responses are lists of typed content blocks, and the system prompt is a top-level field rather than a message.
 
 | Endpoint | Notes |
 | --- | --- |
@@ -434,6 +434,11 @@ Work in progress. This is the one provider here that shares nothing structural w
 | `DELETE /anthropic/v1/messages/batches/{id}` | Returns `message_batch_deleted` |
 | `GET /anthropic/v1/models` | Simulated catalog, cursor-paginated by `after_id`/`before_id` |
 | `GET /anthropic/v1/models/{id}` | `max_input_tokens` is the context window; `capabilities` is a nested tree of supported flags |
+| `POST /anthropic/v1/files` | Multipart upload, beta-gated |
+| `GET /anthropic/v1/files` | Simulated catalog, same id cursor, filterable by `scope_id` |
+| `GET /anthropic/v1/files/{id}` | Metadata: `filename`, `mime_type`, `size_bytes`, `downloadable` |
+| `GET /anthropic/v1/files/{id}/content` | Only for files the API produced itself |
+| `DELETE /anthropic/v1/files/{id}` | Returns `file_deleted` |
 
 ```ts
 import Anthropic from "@anthropic-ai/sdk";
@@ -539,6 +544,29 @@ A batch is created by one request and read back by several others, which normall
 That has one visible consequence, and it is deliberate that you see it rather than not: an id travels in a URL, so it cannot grow forever. Past roughly 1600 characters — a few dozen short requests — creating the batch fails with a `400` that says exactly that, instead of quietly dropping requests. The real API takes 100,000 of them; if you need that shape, you are testing the API, not your code.
 
 **Batches complete instantly.** With no clock to advance and no state to advance it in, a new batch is already `ended` and its results are already there. When you need to exercise the polling branch — the one that reads `processing_status` and waits — pin the status with `x-llm-mock-batch-status: in_progress` (or `canceling`, or `ended`). A batch that has not ended has a null `results_url` and its results endpoint answers `400`, the same as the real one.
+
+#### Files
+
+```ts
+const file = await client.beta.files.upload({
+  file: await toFile(Buffer.from("hello"), "notes.txt", { type: "text/plain" }),
+});
+
+await client.beta.messages.create({
+  model: "claude-opus-5",
+  max_tokens: 1024,
+  betas: ["files-api-2025-04-14"],
+  messages: [{ role: "user", content: [{ type: "document", source: { type: "file", file_id: file.id } }] }],
+});
+```
+
+Uploaded files carry their metadata **inside the id they are minted**, so an upload round-trips to a retrieve with nothing stored — the same trick used for OpenAI files, Gemini files and Anthropic batches. Same bytes and same name give the same id, so a test can assert on it. `file_missing…` is reserved and always `404`s; a foreign-looking id resolves to a plausible synthetic file rather than an error, so ids copied out of production logs still behave.
+
+**The beta flag is part of the contract.** Every call has to carry `anthropic-beta: files-api-2025-04-14`, and a call without it is a `400` that says so. The header may list several betas comma-separated, or be repeated — both are accepted. The SDK also appends `?beta=true` to the path, which is its own routing artefact; the mock does not require it.
+
+**A file you uploaded cannot be downloaded**, on the real API and here: `GET /content` on one answers `403`. Only files the API produced itself — code execution output — can be read back, so the simulated catalog carries two of those to make the download path testable at all. Their bytes are a deterministic placeholder, and `x-llm-mock-response` pins them.
+
+A message whose only content is a file attachment echoes the attachment: `Echo: [file_mock_report_pdf]`. Without that, a prose-less turn would fall through to the generic greeting and there would be no way to assert that the reference reached the server.
 
 **Managed Agents is out of scope** — the `/v1/agents`, `/v1/sessions`, `/v1/environments`, `/v1/vaults` and `/v1/memory_stores` surface is not mocked. That is a deliberate decision, not an oversight: it is larger than everything else on this provider combined.
 
