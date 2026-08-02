@@ -54,7 +54,9 @@ export interface ChatCompletionChoice {
     tool_calls?: ToolCall[];
   };
   logprobs: null;
-  finish_reason: "stop" | "tool_calls";
+  // "content_filter" is part of the contract but never produced by this
+  // provider, which has no filter. Azure's does, and shares these types.
+  finish_reason: "stop" | "tool_calls" | "content_filter";
 }
 
 export interface ChatCompletion {
@@ -77,7 +79,7 @@ export interface ChatCompletionChunk {
     index: number;
     delta: { role?: "assistant"; content?: string | null; tool_calls?: ToolCallDelta[] };
     logprobs: null;
-    finish_reason: "stop" | "tool_calls" | null;
+    finish_reason: "stop" | "tool_calls" | "content_filter" | null;
   }>;
   usage?: CompletionUsage;
 }

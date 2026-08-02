@@ -128,7 +128,7 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | OpenAI | `/openai/v1` | ✅ Supported |
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
 | Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, Interactions API, streaming, tool calls, embeddings |
-| Azure OpenAI | `/azure/openai` | 🚧 In progress — chat completions, streaming, tool calls, embeddings |
+| Azure OpenAI | `/azure/openai` | ✅ Supported — chat completions, streaming, tool calls, embeddings, content filtering |
 | Anthropic | `/anthropic` | 🔜 Planned |
 
 Note that where the version segment lives depends on the SDK, not on us. The OpenAI client appends only the request path, so its `baseURL` carries the version; `@google/genai` appends the version itself, so its `baseUrl` stops at the provider prefix:
@@ -340,7 +340,7 @@ There is no Files API here, and that is the platform's doing rather than a gap i
 
 ### Azure OpenAI
 
-Work in progress. Azure serves the same models as OpenAI through a different front door, and the differences are all in the routing rather than in the payloads.
+Azure serves the same models as OpenAI through a different front door. Most of the differences are in the routing rather than the payloads — the exception being content filtering, which Azure adds to every response.
 
 | Endpoint | Notes |
 | --- | --- |
@@ -380,7 +380,43 @@ Both surfaces run the same handlers, so the same request returns the same body o
 
 **Authentication** takes the key in an `api-key` header rather than a bearer token, which is the single most common reason an OpenAI-shaped client fails against Azure. `Authorization: Bearer` is accepted too, as Entra ID callers use it. The two failures answer differently, and that is Azure's own doing: a missing key is rejected by the API gateway in a flatter shape with no `error` wrapper, while an invalid one gets the wrapped envelope.
 
-None of this provider's shapes could be checked against a live Azure resource. Its routes come from observing what `AzureOpenAI` puts on the wire, and its error messages from Microsoft's documentation — but they are not observed responses.
+#### Content filtering
+
+The most Azure-specific thing about the service, and the reason an OpenAI-shaped client can meet a response it did not expect. Every chat completion carries the filter's verdict — on the prompt at the top level, on each choice individually:
+
+```jsonc
+{
+  "choices": [{
+    "message": { "content": "Echo: hello" },
+    "finish_reason": "stop",
+    "content_filter_results": {
+      "hate":      { "filtered": false, "severity": "safe" },
+      "self_harm": { "filtered": false, "severity": "safe" },
+      "sexual":    { "filtered": false, "severity": "safe" },
+      "violence":  { "filtered": false, "severity": "safe" }
+    }
+  }],
+  "prompt_filter_results": [{
+    "prompt_index": 0,
+    "content_filter_results": { /* the four above, plus binary detectors */
+      "jailbreak": { "filtered": false, "detected": false } }
+  }]
+}
+```
+
+To exercise the failure paths, pin the verdict with `x-llm-mock-content-filter`, as `<target>` or `<target>:<category>:<severity>`:
+
+| Value | Result |
+| --- | --- |
+| `prompt` | `400` with `code: "content_filter"`, and the verdict nested in `innererror` |
+| `completion` | `200` with `content: null` and `finish_reason: "content_filter"` |
+| `unavailable` | `200`, with an `error` object where the verdict would be — the documented "filter did not run" case |
+
+Categories are `hate`, `self_harm`, `sexual`, `violence` and `jailbreak`; severities `safe`, `low`, `medium`, `high`. So `completion:violence:high` filters the reply and says which category did it.
+
+Two quirks are reproduced deliberately, because code written against OpenAI trips on both. A **streamed response opens with a chunk carrying no choices at all**, just the prompt's verdict — a client reaching straight for `chunk.choices[0]` breaks there. And the blocked-prompt error nests its verdict under `content_filter_result`, **singular**, against the plural used everywhere else.
+
+None of this provider's shapes could be checked against a live Azure resource. Its routes come from observing what `AzureOpenAI` puts on the wire, and its payloads from Microsoft's documentation and published examples — but they are not observed responses. The empty first streaming chunk in particular is reconstructed from reported behaviour rather than seen.
 
 ### Mock-only
 

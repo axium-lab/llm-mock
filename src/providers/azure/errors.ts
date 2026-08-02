@@ -14,11 +14,36 @@ import { ApiError } from "../../core/errors";
 export interface AzureErrorExtra {
   type?: string | null;
   status?: number;
+  // Azure nests the filter's verdict here when it blocks a prompt. Note the
+  // singular `content_filter_result` inside, against the plural used
+  // everywhere else — the service's own inconsistency.
+  innererror?: { code: string; content_filter_result: unknown };
 }
 
 // Requests rejected by Azure's gateway, ahead of the service, answer in a
 // flatter shape with no `error` wrapper at all.
 export class AzureGatewayError extends ApiError {}
+
+// A prompt blocked by the content filter is the documented case that carries
+// `type`, a redundant `status`, and the verdict that caused the block.
+export class AzureContentFilterError extends ApiError {
+  readonly azure: AzureErrorExtra;
+
+  constructor(contentFilterResult: unknown) {
+    super(
+      400,
+      "The response was filtered due to the prompt triggering Azure OpenAI's content management policy. " +
+        "Please modify your prompt and retry.",
+      "content_filter",
+      "prompt",
+    );
+    this.azure = {
+      type: null,
+      status: 400,
+      innererror: { code: "ResponsibleAIPolicyViolation", content_filter_result: contentFilterResult },
+    };
+  }
+}
 
 function envelope(err: ApiError) {
   const extra = (err as ApiError & { azure?: AzureErrorExtra }).azure ?? {};
@@ -29,6 +54,7 @@ function envelope(err: ApiError) {
       ...(err.param === null ? {} : { param: err.param }),
       ...("type" in extra ? { type: extra.type } : {}),
       ...(extra.status === undefined ? {} : { status: extra.status }),
+      ...(extra.innererror === undefined ? {} : { innererror: extra.innererror }),
     },
   };
 }
