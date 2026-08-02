@@ -66,6 +66,59 @@ describe("azure routing", () => {
     expect(res.status).toBe(200);
   });
 
+  it("lists the deployments of the resource", async () => {
+    const res = await raw(`/deployments?api-version=${API_VERSION}`);
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as { object: string; data: { id: string; model: string; object: string }[] };
+    expect(body.object).toBe("list");
+    // One per catalog model, named after the model it points at.
+    expect(body.data.map((entry) => entry.id)).toContain("gpt-4o");
+    const entry = body.data.find((item) => item.id === "gpt-4o");
+    expect(entry).toMatchObject({ model: "gpt-4o", object: "deployment", status: "succeeded" });
+  });
+
+  it("requires api-version to list deployments", async () => {
+    const res = await raw("/deployments");
+    expect(res.status).toBe(400);
+
+    const body = (await res.json()) as ErrorBody;
+    expect(body.error.code).toBe("MissingApiVersionParameter");
+  });
+
+  it("describes a single deployment, catalog model or not", async () => {
+    const known = await raw(`/deployments/gpt-4o?api-version=${API_VERSION}`);
+    expect(known.status).toBe(200);
+    expect(await known.json()).toMatchObject({ id: "gpt-4o", model: "gpt-4o", object: "deployment" });
+
+    // Any name is a valid deployment here, so describing one must not 404.
+    const invented = await raw(`/deployments/whatever-i-called-it?api-version=${API_VERSION}`);
+    expect(invented.status).toBe(200);
+    expect(await invented.json()).toMatchObject({
+      id: "whatever-i-called-it",
+      model: "whatever-i-called-it",
+    });
+  });
+
+  it("reports a reserved name as DeploymentNotFound when described", async () => {
+    const res = await raw(`/deployments/missing-one?api-version=${API_VERSION}`);
+    expect(res.status).toBe(404);
+
+    const body = (await res.json()) as ErrorBody;
+    expect(body.error.code).toBe("DeploymentNotFound");
+  });
+
+  it("keeps inference reachable under a deployment name", async () => {
+    // The catalog router is mounted on the same prefix, so a deeper path must
+    // still fall through to the deployment-scoped tree.
+    const res = await raw(`/deployments/gpt-4o/chat/completions?api-version=${API_VERSION}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ model: "gpt-4o", messages: [{ role: "user", content: "hi" }] }),
+    });
+    expect(res.status).toBe(200);
+  });
+
   it("404s a deployment-scoped path this mock does not serve", async () => {
     const res = await raw(`/deployments/my-deployment/audio/speech?api-version=${API_VERSION}`, {
       method: "POST",

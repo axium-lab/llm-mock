@@ -4,7 +4,7 @@ import type { Provider, ProviderDeps } from "../types";
 import { azureAuthScheme } from "./auth";
 import { assertApiVersion } from "./deployments";
 import { errorHandler, notFoundHandler } from "./errors";
-import { deploymentsRouter } from "./routes/deployments";
+import { deploymentCatalogRouter, deploymentsRouter } from "./routes/deployments";
 import { inferenceRouter } from "./routes/inference";
 import { modelsRouter } from "./routes/models";
 
@@ -38,6 +38,10 @@ export const azureProvider: Provider = {
       assertApiVersion(req.query["api-version"]);
       next();
     });
+    // Reading deployments comes first: `/deployments` and `/deployments/{name}`
+    // are the collection, and the mount below requires a name plus a path under
+    // it. Anything it does not answer falls through to the inference tree.
+    classic.use("/deployments", deploymentCatalogRouter);
     classic.use("/deployments/:deployment", deploymentsRouter);
     classic.use("/models", modelsRouter);
     api.use(classic);

@@ -132,6 +132,8 @@
           <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/chat/completions</code></td><td>The newer surface: no <code>api-version</code>, no deployments</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/embeddings</code></td><td>Same handlers, addressed by model</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/models?api-version=</code></td><td>Model catalog, outside the deployment path</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/deployments?api-version=</code></td><td>Deployment listing, one per catalog model</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>…/deployments/{deployment}?api-version=</code></td><td>A single deployment, any name</td></tr>
         </tbody>
       </table>
       <p>The classic surface addresses a <strong>deployment</strong> rather than a model and requires <code>api-version</code> on every call. The v1 surface drops both:</p>
@@ -178,6 +180,23 @@
     <span class="tok-key">"message"</span>: <span class="tok-str">"The API deployment for this resource does not exist. If you created the deployment within the last 5 minutes, please wait a moment and try again."</span>
   }
 }</code></pre>
+      <p>Because a name cannot be looked up anywhere, the listing is served too — one deployment per catalog model, named after the model it points at, so a client configured with <code>deployment: "gpt-4o"</code> works with no further setup. Any other name is described as well, since the mock accepts all of them for inference.</p>
+<pre><code>GET /azure/openai/deployments?api-version=2024-10-21
+
+{
+  <span class="tok-key">"object"</span>: <span class="tok-str">"list"</span>,
+  <span class="tok-key">"data"</span>: [{
+    <span class="tok-key">"id"</span>: <span class="tok-str">"gpt-4o"</span>,
+    <span class="tok-key">"model"</span>: <span class="tok-str">"gpt-4o"</span>,
+    <span class="tok-key">"owner"</span>: <span class="tok-str">"organization-owner"</span>,
+    <span class="tok-key">"status"</span>: <span class="tok-str">"succeeded"</span>,
+    <span class="tok-key">"scale_settings"</span>: { <span class="tok-key">"scale_type"</span>: <span class="tok-str">"standard"</span> },
+    <span class="tok-key">"created_at"</span>: <span class="tok-str">1715367049</span>,
+    <span class="tok-key">"updated_at"</span>: <span class="tok-str">1715367049</span>,
+    <span class="tok-key">"object"</span>: <span class="tok-str">"deployment"</span>
+  }]
+}</code></pre>
+      <p>That is the <em>legacy</em> data-plane shape — the one that lives under the same prefix as inference. On the real service, managing deployments moved to ARM (<code>management.azure.com</code>), a separate host a mock behind a single base URL cannot represent, so this endpoint exists to let a client discover names without leaving the endpoint it is already pointed at.</p>
       <div class="callout">
         The deployment routes the call; the <code>model</code> echoed back is the one the client asked for, since
         the two need not agree — the SDK only uses <code>model</code> as the deployment segment when no fixed

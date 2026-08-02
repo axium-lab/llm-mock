@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `GET /azure/openai/deployments?api-version=` and `GET /azure/openai/deployments/{deployment}`, the legacy data-plane listing, so a client can discover deployment names without leaving the endpoint it is pointed at — managing deployments on the real service moved to ARM, which a mock behind a single base URL cannot represent. One deployment per catalog model, named after the model it points at; any other name is described too, since the mock accepts any of them for inference. The reserved `missing-` prefix still answers `DeploymentNotFound`.
+
 ## [0.6.1] - 2026-08-02
 
 ### Added

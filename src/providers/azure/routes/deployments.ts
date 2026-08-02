@@ -1,7 +1,21 @@
 import { Router } from "express";
 import { ApiError } from "../../../core/errors";
-import { assertDeployment } from "../deployments";
+import { assertDeployment, getDeployment, listDeployments } from "../deployments";
 import { inferenceRouter } from "./inference";
+
+// The collection itself: `/openai/deployments` with no name after it, which the
+// deployment-scoped mount below cannot serve because its `:deployment` param is
+// required. Mounted ahead of that one so the two GETs here win over it; every
+// other method and any deeper path falls through to inference.
+export const deploymentCatalogRouter = Router();
+
+deploymentCatalogRouter.get("/", (_req, res) => {
+  res.json(listDeployments());
+});
+
+deploymentCatalogRouter.get("/:deployment", (req, res) => {
+  res.json(getDeployment(req.params.deployment));
+});
 
 // Everything addressed as /openai/deployments/{deployment}/… lands here. Only
 // a fixed set of endpoints is deployment-scoped on Azure — chat/completions,
