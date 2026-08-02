@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-02
+
 ### Added
 
 - `GET /azure/openai/deployments?api-version=` and `GET /azure/openai/deployments/{deployment}`, the legacy data-plane listing, so a client can discover deployment names without leaving the endpoint it is pointed at — managing deployments on the real service moved to ARM, which a mock behind a single base URL cannot represent. One deployment per catalog model, named after the model it points at; any other name is described too, since the mock accepts any of them for inference. The reserved `missing-` prefix still answers `DeploymentNotFound`.
@@ -120,6 +122,7 @@ The Gemini provider was verified end to end against the live `generativelanguage
 - `GET /health` healthcheck.
 - CI running the integration suite against the official `openai` SDK, and a release workflow publishing a multi-arch Docker image to GHCR.
 
+[0.7.0]: https://github.com/axium-lab/llm-mock/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/axium-lab/llm-mock/compare/v0.5.0...v0.6.1
 [0.3.0]: https://github.com/axium-lab/llm-mock/compare/v0.2...v0.3.0
 [0.2]: https://github.com/axium-lab/llm-mock/compare/v0.1.0...v0.2

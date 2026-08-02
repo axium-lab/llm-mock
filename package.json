@@ -1,6 +1,6 @@
 {
   "name": "llm-mock",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Mock server for LLM provider APIs: point your SDK baseURL at it, no real API key needed",
   "type": "module",
   "license": "MIT",
