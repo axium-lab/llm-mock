@@ -1,12 +1,18 @@
 import { randomUUID } from "node:crypto";
 import express, { type Express } from "express";
 import { errorHandler, notFoundHandler } from "./core/errors";
+import { azureProvider } from "./providers/azure";
 import { geminiProvider } from "./providers/gemini";
 import { geminiEnterpriseProvider } from "./providers/gemini-enterprise";
 import { openaiProvider } from "./providers/openai";
 import type { Provider } from "./providers/types";
 
-export const providers: Provider[] = [openaiProvider, geminiProvider, geminiEnterpriseProvider];
+export const providers: Provider[] = [
+  openaiProvider,
+  geminiProvider,
+  geminiEnterpriseProvider,
+  azureProvider,
+];
 
 export interface AppOptions {
   apiKeys: Set<string>;

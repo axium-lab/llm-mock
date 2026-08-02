@@ -128,8 +128,8 @@ llm-mock is designed to be multi-provider: each provider mounts under its own UR
 | OpenAI | `/openai/v1` | ✅ Supported |
 | Gemini (AI Studio) | `/gemini` | ✅ Supported — `generateContent`, Interactions API, embeddings, files, OpenAI-compat layer |
 | Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | ✅ Supported — `generateContent`, Interactions API, streaming, tool calls, embeddings |
+| Azure OpenAI | `/azure/openai` | 🚧 In progress — auth, routing, models |
 | Anthropic | `/anthropic` | 🔜 Planned |
-| Azure OpenAI | — | 🔜 Planned |
 
 Note that where the version segment lives depends on the SDK, not on us. The OpenAI client appends only the request path, so its `baseURL` carries the version; `@google/genai` appends the version itself, so its `baseUrl` stops at the provider prefix:
 
@@ -337,6 +337,36 @@ regional   /gemini-enterprise/v1beta1%2Fprojects%2F{project}%2Flocations%2F{loca
 Express routes on the still-encoded path, so a literal `/v1beta1` mount never sees the second form; a route parameter does, and receives it decoded. Both shapes reach the same handler.
 
 There is no Files API here, and that is the platform's doing rather than a gap in the mock: `@google/genai` refuses the upload client-side with *"Gemini Enterprise Agent Platform (previously known as Vertex AI) does not support uploading files. You can share files through a GCS bucket."*
+
+### Azure OpenAI
+
+Work in progress. Azure serves the same models as OpenAI through a different front door, and the differences are all in the routing rather than in the payloads.
+
+| Endpoint | Notes |
+| --- | --- |
+| `…/openai/deployments/{deployment}/…?api-version=` | The classic surface. A **deployment name replaces the model** in the path, and `api-version` is required on every call |
+| `…/openai/v1/…` | The newer surface: OpenAI's contract verbatim, no `api-version`, no deployments |
+| `GET /azure/openai/models?api-version=` | Model catalog, outside the deployment path |
+
+Azure puts the resource name in the hostname (`{resource}.openai.azure.com`) and keeps `/openai` in the path. A mock cannot hand out subdomains, but it does not need to — the SDK takes an arbitrary URL:
+
+```ts
+import { AzureOpenAI } from "openai";
+
+const client = new AzureOpenAI({
+  baseURL: "http://localhost:3000/azure/openai",
+  apiKey: "sk-mock-key-01",
+  apiVersion: "2024-10-21",
+});
+```
+
+Use `baseURL` rather than `endpoint`: the SDK reads `OPENAI_BASE_URL` from the environment and then refuses to combine it with `endpoint`, so a stray env var would break the client before it sends anything.
+
+**Deployments.** Any name works, the way every provider here accepts any model id — except names starting with `missing-`, which return the real `404 DeploymentNotFound`. That is the error Azure users hit most, and the one their code most needs to handle.
+
+**Authentication** takes the key in an `api-key` header rather than a bearer token, which is the single most common reason an OpenAI-shaped client fails against Azure. `Authorization: Bearer` is accepted too, as Entra ID callers use it. The two failures answer differently, and that is Azure's own doing: a missing key is rejected by the API gateway in a flatter shape with no `error` wrapper, while an invalid one gets the wrapped envelope.
+
+None of this provider's shapes could be checked against a live Azure resource. Its routes come from observing what `AzureOpenAI` puts on the wire, and its error messages from Microsoft's documentation — but they are not observed responses.
 
 ### Mock-only
 
