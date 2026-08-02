@@ -1,9 +1,9 @@
-import { echoFallback } from "../../../core/fallback";
-import { deterministicId } from "../../../core/ids";
-import type { Overrides } from "../../../core/override";
-import { chunkText } from "../../../core/sse";
-import { resolveToolCalls, type ResolvedToolCall } from "../../../core/tools";
-import { approxTokens } from "../../../core/usage";
+import { echoFallback } from "../../core/fallback";
+import { deterministicId } from "../../core/ids";
+import type { Overrides } from "../../core/override";
+import { chunkText } from "../../core/sse";
+import { resolveToolCalls, type ResolvedToolCall } from "../../core/tools";
+import { approxTokens } from "../../core/usage";
 import type {
   Candidate,
   Content,
@@ -11,7 +11,7 @@ import type {
   GenerateContentResponse,
   Part,
   UsageMetadata,
-} from "../types";
+} from "./types";
 
 // `contents` is an array of turns, but the SDK also lets callers pass a single
 // turn or a bare string, and the mock accepts the same.

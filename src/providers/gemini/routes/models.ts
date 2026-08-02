@@ -2,16 +2,20 @@ import { Router } from "express";
 import { ApiError } from "../../../core/errors";
 import { requestOverrides } from "../../../core/override";
 import { openSSE, sendEvent } from "../../../core/sse";
-import { parseRpcTarget } from "../rpc-path";
-import { countTokens } from "../services/count-tokens";
-import { batchEmbedContents, embedContent } from "../services/embeddings";
+import { parseRpcTarget } from "../../google-shared/rpc-path";
+import { countTokens } from "../../google-shared/count-tokens";
 import {
   buildGenerateContentChunks,
   buildGenerateContentResponse,
   normalizeContents,
-} from "../services/generate-content";
+} from "../../google-shared/generate-content";
+import type {
+  CountTokensRequest,
+  GenerateContentRequest,
+} from "../../google-shared/types";
+import { batchEmbedContents, embedContent } from "../services/embeddings";
 import { getModel, listModels, modelNotFound } from "../services/models";
-import type { CountTokensRequest, EmbedContentRequest, GenerateContentRequest } from "../types";
+import type { EmbedContentRequest } from "../types";
 
 export const modelsRouter = Router();
 

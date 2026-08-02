@@ -1,6 +1,6 @@
-import { ApiError } from "../../../core/errors";
-import { approxTokens } from "../../../core/usage";
-import type { CountTokensRequest, CountTokensResponse, GenerateContentRequest } from "../types";
+import { ApiError } from "../../core/errors";
+import { approxTokens } from "../../core/usage";
+import type { CountTokensRequest, CountTokensResponse, GenerateContentRequest } from "./types";
 import { normalizeContents } from "./generate-content";
 
 // countTokens takes either a bare `contents` list or a whole

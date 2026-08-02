@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { parseRpcTarget } from "../../src/providers/gemini/rpc-path";
+import { parseRpcTarget } from "../../src/providers/google-shared/rpc-path";
 import { startTestServer, stopTestServer, VALID_API_KEY, type TestContext } from "./setup";
 
 describe("parseRpcTarget", () => {

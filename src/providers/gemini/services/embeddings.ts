@@ -1,7 +1,8 @@
 import { deterministicVector } from "../../../core/embeddings";
 import { ApiError } from "../../../core/errors";
-import type { Content, ContentEmbedding, EmbedContentRequest } from "../types";
-import { normalizeContents } from "./generate-content";
+import { normalizeContents } from "../../google-shared/generate-content";
+import type { Content } from "../../google-shared/types";
+import type { ContentEmbedding, EmbedContentRequest } from "../types";
 
 // gemini-embedding-001 emits 3072 dimensions and supports Matryoshka
 // truncation down to 1536 or 768 via outputDimensionality; the older models

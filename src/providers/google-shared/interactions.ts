@@ -1,9 +1,9 @@
-import { echoFallback } from "../../../core/fallback";
-import { deterministicCreated, deterministicId } from "../../../core/ids";
-import type { Overrides } from "../../../core/override";
-import { chunkText } from "../../../core/sse";
-import { resolveToolCalls, type ResolvedToolCall } from "../../../core/tools";
-import { approxTokens } from "../../../core/usage";
+import { echoFallback } from "../../core/fallback";
+import { deterministicCreated, deterministicId } from "../../core/ids";
+import type { Overrides } from "../../core/override";
+import { chunkText } from "../../core/sse";
+import { resolveToolCalls, type ResolvedToolCall } from "../../core/tools";
+import { approxTokens } from "../../core/usage";
 import type {
   CreateInteractionRequest,
   FunctionCallStep,
@@ -14,8 +14,11 @@ import type {
   ModelOutputStep,
   Step,
   TextContent,
-} from "../types";
+} from "./types";
 
+// Only ever surfaces on a synthesized retrieval, where no request named a
+// model. Gemini Enterprise will want its own value here when it grows an
+// Interactions surface; parameterize it then rather than now.
 const DEFAULT_MODEL = "gemini-3.6-flash";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

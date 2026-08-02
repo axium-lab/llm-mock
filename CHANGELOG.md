@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tests are now grouped by provider under `tests/openai/` and `tests/gemini/`, sharing the server harness in `tests/server.ts`.
 - Tool-calling logic moved from `src/providers/openai/services/tools.ts` to `src/core/tools.ts`, now that a second provider uses it.
 - Deterministic embedding vectors moved to `src/core/embeddings.ts`, shared by both providers; what differs between them is the wire envelope and the default dimension count, not the vector.
+- Google's two Gemini surfaces now share a `src/providers/google-shared/` module holding the Content/Part model, `generateContent`, `countTokens`, the Interactions API and the `{resource}:{method}` path parser. The Gemini provider keeps what only AI Studio has — its model catalog, the Files API and `:embedContent` — ahead of a Gemini Enterprise provider that shares the generative core but embeds through `:predict` and has no Files API at all.
 
 ### Fixed
 
