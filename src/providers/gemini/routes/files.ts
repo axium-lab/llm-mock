@@ -28,9 +28,9 @@ filesRouter.delete("/:id", (req, res) => {
 });
 
 // The resumable upload endpoint. Google versions it under /upload, before the
-// version segment, so it is mounted outside the /v1beta router — and the
-// client always addresses it as upload/v1beta/files whatever apiVersion it is
-// otherwise configured with.
+// version segment, so it is mounted outside the version routers — as
+// upload/v1beta/files and upload/v1/files, matching whichever apiVersion the
+// client is configured with.
 export const uploadRouter = Router();
 
 const DEFAULT_MIME_TYPE = "application/octet-stream";

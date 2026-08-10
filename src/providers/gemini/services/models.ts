@@ -85,12 +85,13 @@ export function getModel(id: string): GeminiModel | undefined {
 }
 
 // The real API reports an unknown model and an unsupported method through the
-// same 404, naming the method that was attempted.
-export function modelNotFound(id: string, method: string): ApiError {
+// same 404, naming the method that was attempted and the version it was asked
+// on — which is not always v1beta, since /v1 serves the same surface.
+export function modelNotFound(id: string, method: string, version: string): ApiError {
   const name = id.startsWith("models/") ? id : `models/${id}`;
   return new ApiError(
     404,
-    `${name} is not found for API version v1beta, or is not supported for ${method}. ` +
+    `${name} is not found for API version ${version}, or is not supported for ${method}. ` +
       "Call ListModels to see the list of available models and their supported methods.",
     "MODEL_NOT_FOUND",
   );

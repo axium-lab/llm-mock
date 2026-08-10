@@ -128,6 +128,25 @@ describe("gemini-enterprise interactions", () => {
     expect(body.error.message).toContain("Unknown API version or location");
   });
 
+  it("serves the stable version on the same paths as v1beta1", async () => {
+    const payload = { model: MODEL, input: "hi" };
+    const [beta, stable] = await Promise.all([
+      post("/v1beta1/interactions", payload).then((res) => res.text()),
+      post("/v1/interactions", payload).then((res) => res.text()),
+    ]);
+
+    expect(stable).toBe(beta);
+  });
+
+  it("serves the stable version in regional mode, where it also carries the location", async () => {
+    const scope = encodeURIComponent(`v1/projects/${PROJECT}/locations/${LOCATION}`);
+    const res = await post(`/${scope}/interactions`, { model: MODEL, input: "hi" });
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as { steps: { content?: { text: string }[] }[] };
+    expect(body.steps[0]?.content?.[0]?.text).toBe("Echo: hi");
+  });
+
   it("leaves the publisher models surface untouched", async () => {
     const res = await fetch(`${ctx.baseUrl}/v1beta1/publishers/google/models`, {
       headers: { "x-goog-api-key": VALID_API_KEY },

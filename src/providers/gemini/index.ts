@@ -34,16 +34,19 @@ export const geminiProvider: Provider = {
 
     const router = Router();
 
-    // Uploads sit under /upload, ahead of the version segment, and the client
-    // addresses them as upload/v1beta/files whatever apiVersion it is
-    // otherwise using. Their bytes arrive under an application/json content
-    // type, so they must be read raw before the JSON parser sees them —
-    // otherwise the file's own contents get parsed as a JSON body.
+    // Uploads sit under /upload, ahead of the version segment, so they hang off
+    // the bare prefix rather than the version routers below — once per version
+    // the client might be configured with. Their bytes arrive under an
+    // application/json content type, so they must be read raw before the JSON
+    // parser sees them — otherwise the file's own contents get parsed as a JSON
+    // body.
     //
     // `type: () => true` rather than a content-type pattern: on this endpoint
     // the body is opaque bytes whatever the header claims, and matching by
     // pattern silently drops the ones it does not recognize.
-    router.use("/upload/v1beta/files", auth, express.raw({ type: () => true, limit: MAX_UPLOAD }), uploadRouter);
+    const upload = [auth, express.raw({ type: () => true, limit: MAX_UPLOAD }), uploadRouter];
+    router.use("/upload/v1beta/files", ...upload);
+    router.use("/upload/v1/files", ...upload);
 
     router.use(express.json({ limit: "10mb" }));
     // Both versions serve the same mock: which one a client talks to is a

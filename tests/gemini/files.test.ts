@@ -242,6 +242,28 @@ describe("gemini files", () => {
       expect(res.status).toBe(400);
     });
 
+    it("answers under upload/v1 too, for a client on the stable version", async () => {
+      const start = await raw("/upload/v1/files", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-upload-command": "start" },
+        body: JSON.stringify({ file: { displayName: "d.txt", mimeType: "text/plain" } }),
+      });
+
+      expect(start.status).toBe(200);
+      // The session URL stays on whichever prefix the client came in on.
+      expect(start.headers.get("x-goog-upload-url")).toContain("/gemini/upload/v1/files?upload_id=");
+
+      const finalize = await fetch(start.headers.get("x-goog-upload-url") ?? "", {
+        method: "POST",
+        headers: { "x-goog-api-key": VALID_API_KEY, "x-goog-upload-command": "upload, finalize" },
+        body: "12345",
+      });
+      const body = (await finalize.json()) as { file: { displayName: string; sizeBytes: string } };
+
+      expect(body.file.displayName).toBe("d.txt");
+      expect(body.file.sizeBytes).toBe("5");
+    });
+
     it("requires authentication, being outside the version router", async () => {
       const res = await fetch(`${ctx.baseUrl}/upload/v1beta/files`, {
         method: "POST",

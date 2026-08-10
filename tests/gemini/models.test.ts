@@ -64,6 +64,15 @@ describe("gemini models", () => {
     expect(body.error.details).toBeUndefined();
   });
 
+  it("names the version the request came in on, not the SDK default", async () => {
+    const res = await fetch(`${ctx.baseUrl}/v1/models/gemini-unknown`, {
+      headers: { "x-goog-api-key": VALID_API_KEY },
+    });
+
+    const body = (await res.json()) as ErrorBody;
+    expect(body.error.message).toContain("is not found for API version v1,");
+  });
+
   it("serves the same catalog on v1 and v1beta", async () => {
     const headers = { "x-goog-api-key": VALID_API_KEY };
     const [beta, stable] = await Promise.all([

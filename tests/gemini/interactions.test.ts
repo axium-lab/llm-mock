@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { GoogleGenAI } from "@google/genai";
 import { startTestServer, stopTestServer, VALID_API_KEY, type TestContext } from "./setup";
 
 const MODEL = "gemini-3.6-flash";
@@ -147,6 +148,59 @@ describe("gemini interactions", () => {
     const payload = { model: MODEL, input: "same" };
     const [first, second] = await Promise.all([post(payload).then((r) => r.text()), post(payload).then((r) => r.text())]);
     expect(first).toBe(second);
+  });
+
+  // The Interactions API is generally available on the stable version, and the
+  // SDK reaches it whenever apiVersion is set to "v1" — same four endpoints.
+  describe("on the stable v1 path", () => {
+    const v1 = (path: string, init?: RequestInit) =>
+      fetch(`${ctx.baseUrl}/v1${path}`, {
+        ...init,
+        headers: { "x-goog-api-key": VALID_API_KEY, "content-type": "application/json", ...init?.headers },
+      });
+
+    it("creates an interaction byte-identical to the v1beta one", async () => {
+      const payload = { model: MODEL, input: "hi" };
+      const [beta, stable] = await Promise.all([
+        post(payload).then((res) => res.text()),
+        v1("/interactions", { method: "POST", body: JSON.stringify(payload) }).then((res) => res.text()),
+      ]);
+
+      expect(stable).toBe(beta);
+    });
+
+    it("retrieves, cancels and deletes on the paths the v1 reference lists", async () => {
+      const fetched = (await v1("/interactions/abc123").then((res) => res.json())) as { id: string };
+      expect(fetched.id).toBe("abc123");
+
+      const cancelled = (await v1("/interactions/abc123/cancel", { method: "POST" }).then((res) =>
+        res.json(),
+      )) as { status: string };
+      expect(cancelled.status).toBe("cancelled");
+
+      const deleted = await v1("/interactions/abc123", { method: "DELETE" });
+      expect(deleted.status).toBe(200);
+      expect(await deleted.text()).toBe("");
+    });
+
+    it("keeps the next-gen error envelope, as v1beta does", async () => {
+      const res = await v1("/interactions", { method: "POST", body: JSON.stringify({ model: MODEL }) });
+      expect(res.status).toBe(400);
+
+      const body = (await res.json()) as { error: { code: unknown; status?: string } };
+      expect(body.error.code).toBe("invalid_request");
+      expect(body.error.status).toBeUndefined();
+    });
+
+    it("is reachable by an SDK client configured with apiVersion v1", async () => {
+      const client = new GoogleGenAI({
+        apiKey: VALID_API_KEY,
+        httpOptions: { baseUrl: ctx.baseUrl, apiVersion: "v1" },
+      });
+      const interaction = await client.interactions.create({ model: MODEL, input: "stable please" });
+
+      expect(interaction.output_text).toBe("Echo: stable please");
+    });
   });
 
   describe("tool calls", () => {

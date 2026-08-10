@@ -141,7 +141,7 @@
           <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/interactions/{id}</code></td><td>Stateless: synthesizes a deterministic interaction for any id</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/interactions/{id}/cancel</code></td><td>Returns the interaction as <code>cancelled</code></td></tr>
           <tr><td><span class="method delete">DELETE</span></td><td><code>/gemini/v1beta/interactions/{id}</code></td><td>Idempotent; <code>200</code> with an empty body</td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/gemini/upload/v1beta/files</code></td><td>Resumable upload, both steps. <code>upload/</code> sits <strong>before</strong> the version</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/gemini/upload/v1beta/files</code></td><td>Resumable upload, both steps. <code>upload/</code> sits <strong>before</strong> the version, and <code>upload/v1/files</code> answers the same</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/files</code></td><td>Simulated catalog with <code>pageSize</code>/<code>pageToken</code></td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/files/{name}</code></td><td>Stateless: the name carries the metadata, so an upload round-trips exactly</td></tr>
           <tr><td><span class="method delete">DELETE</span></td><td><code>/gemini/v1beta/files/{name}</code></td><td>Idempotent; returns <code>{}</code></td></tr>

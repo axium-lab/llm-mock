@@ -16,6 +16,7 @@ import type {
 import { batchEmbedContents, embedContent } from "../services/embeddings";
 import { getModel, listModels, modelNotFound } from "../services/models";
 import type { EmbedContentRequest } from "../types";
+import { apiVersion } from "../version";
 
 export const modelsRouter = Router();
 
@@ -28,7 +29,7 @@ modelsRouter.get("/", (_req, res) => {
 modelsRouter.get("/:target", (req, res) => {
   const { resource, method } = parseRpcTarget(req.params.target);
   const model = getModel(resource);
-  if (!model) throw modelNotFound(resource, method ?? "GET");
+  if (!model) throw modelNotFound(resource, method ?? "GET", apiVersion(req));
   res.json(model);
 });
 
@@ -84,7 +85,7 @@ modelsRouter.post("/:target", (req, res) => {
       return;
 
     default:
-      throw modelNotFound(resource, method ?? "POST");
+      throw modelNotFound(resource, method ?? "POST", apiVersion(req));
   }
 });
 

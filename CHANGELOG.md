@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.7.0] - 2026-08-02
+## [0.7.1] - 2026-08-10
+
+### Fixed
+
+- The Gemini resumable upload endpoint now also answers at `/gemini/upload/v1/files`. Everything under the version segment was already served on both `v1beta` and `v1`, but `upload/` sits ahead of that segment and was mounted on the preview version alone, so a client configured with `apiVersion: "v1"` — a supported setting now that the Interactions API and the rest of the surface are generally available on the stable version — got a `404` on file uploads only. The resumable session URL stays on whichever prefix the request came in on.
+- The `404` for an unknown model names the version the request was made on instead of always claiming `v1beta`, matching what the real API reports to a caller on `/v1`.
 
 ### Added
 
@@ -122,6 +127,7 @@ The Gemini provider was verified end to end against the live `generativelanguage
 - `GET /health` healthcheck.
 - CI running the integration suite against the official `openai` SDK, and a release workflow publishing a multi-arch Docker image to GHCR.
 
+[0.7.1]: https://github.com/axium-lab/llm-mock/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/axium-lab/llm-mock/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/axium-lab/llm-mock/compare/v0.5.0...v0.6.1
 [0.3.0]: https://github.com/axium-lab/llm-mock/compare/v0.2...v0.3.0

@@ -28,35 +28,41 @@ describe("gemini routing", () => {
 
   const headers = { "x-goog-api-key": VALID_API_KEY };
 
-  it("parses the :method suffix out of the model segment", async () => {
-    const res = await fetch(`${ctx.baseUrl}/v1beta/models/gemini-3.6-flash:notAMethod`, {
-      method: "POST",
-      headers,
+  // The preview and stable segments are two mounts of one router, so every
+  // routing rule has to hold identically on each.
+  for (const version of ["v1beta", "v1"]) {
+    describe(`on /${version}`, () => {
+      it("parses the :method suffix out of the model segment", async () => {
+        const res = await fetch(`${ctx.baseUrl}/${version}/models/gemini-3.6-flash:notAMethod`, {
+          method: "POST",
+          headers,
+        });
+        expect(res.status).toBe(404);
+
+        const body = (await res.json()) as { error: { message: string } };
+        // Both halves of the segment come back named, which only happens if the
+        // colon was split rather than swallowed by the route pattern.
+        expect(body.error.message).toContain("models/gemini-3.6-flash is not found");
+        expect(body.error.message).toContain("is not supported for notAMethod");
+      });
+
+      it("uses the google.rpc.Status envelope on the classic surface", async () => {
+        const res = await fetch(`${ctx.baseUrl}/${version}/nope`, { headers });
+        const body = (await res.json()) as { error: { code: unknown; status: string } };
+
+        expect(body.error.code).toBe(404);
+        expect(body.error.status).toBe("NOT_FOUND");
+      });
+
+      it("uses the next-gen envelope under /interactions", async () => {
+        const res = await fetch(`${ctx.baseUrl}/${version}/interactions/abc/nope`, { headers });
+        const body = (await res.json()) as { error: { code: unknown; status?: string } };
+
+        expect(res.status).toBe(404);
+        // A string code and no `status` field is what tells the two envelopes apart.
+        expect(body.error.code).toBe("not_found");
+        expect(body.error.status).toBeUndefined();
+      });
     });
-    expect(res.status).toBe(404);
-
-    const body = (await res.json()) as { error: { message: string } };
-    // Both halves of the segment come back named, which only happens if the
-    // colon was split rather than swallowed by the route pattern.
-    expect(body.error.message).toContain("models/gemini-3.6-flash is not found");
-    expect(body.error.message).toContain("is not supported for notAMethod");
-  });
-
-  it("uses the google.rpc.Status envelope on the classic surface", async () => {
-    const res = await fetch(`${ctx.baseUrl}/v1beta/nope`, { headers });
-    const body = (await res.json()) as { error: { code: unknown; status: string } };
-
-    expect(body.error.code).toBe(404);
-    expect(body.error.status).toBe("NOT_FOUND");
-  });
-
-  it("uses the next-gen envelope under /interactions", async () => {
-    const res = await fetch(`${ctx.baseUrl}/v1beta/interactions/abc/nope`, { headers });
-    const body = (await res.json()) as { error: { code: unknown; status?: string } };
-
-    expect(res.status).toBe(404);
-    // A string code and no `status` field is what tells the two envelopes apart.
-    expect(body.error.code).toBe("not_found");
-    expect(body.error.status).toBeUndefined();
-  });
+  }
 });
