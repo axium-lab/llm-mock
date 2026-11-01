@@ -2,7 +2,12 @@ import { Router } from "express";
 import { ApiError } from "../../../core/errors";
 import { requestOverrides } from "../../../core/override";
 import { openSSE, sendEvent } from "../../../core/sse";
-import { buildResponse, buildResponseEvents, buildSyntheticResponse } from "../services/responses";
+import {
+  buildCancelledResponse,
+  buildResponse,
+  buildResponseEvents,
+  buildSyntheticResponse,
+} from "../services/responses";
 import type { ResponseRequest } from "../types";
 
 export const responsesRouter = Router();
@@ -37,4 +42,10 @@ responsesRouter.get("/:id", (req, res) => {
 
 responsesRouter.delete("/:id", (req, res) => {
   res.json({ id: req.params.id, object: "response", deleted: true });
+});
+
+// Cancelling is stateless too: any id comes back as a cancelled background
+// response, since those are the only ones the real API lets a client cancel.
+responsesRouter.post("/:id/cancel", (req, res) => {
+  res.json(buildCancelledResponse(req.params.id));
 });

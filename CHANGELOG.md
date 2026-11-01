@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `POST /openai/v1/responses/{id}/cancel`, the last of the Responses API's per-id operations. Stateless like retrieval: any id comes back as a `cancelled` response with `background: true` — the only kind the real API lets a client cancel — and an empty `output`. Idempotent, never `404`.
+
 ## [0.7.1] - 2026-08-10
 
 ### Fixed

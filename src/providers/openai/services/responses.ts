@@ -112,6 +112,24 @@ export function buildSyntheticResponse(id: string): ResponseObject {
   });
 }
 
+// Stand-in for POST /responses/:id/cancel. The real API only cancels a
+// response created with `background: true`, so the cancelled object is by
+// construction a background one, and a cancelled run carries no output.
+export function buildCancelledResponse(id: string): ResponseObject {
+  return assembleResponse({
+    id,
+    model: "gpt-4o",
+    inputText: undefined,
+    outputText: null,
+    instructions: null,
+    toolCalls: [],
+    tools: [],
+    toolChoice: "auto",
+    status: "cancelled",
+    background: true,
+  });
+}
+
 interface AssembleParams {
   id: string;
   model: string;
@@ -121,10 +139,13 @@ interface AssembleParams {
   toolCalls: ResolvedToolCall[];
   tools: unknown[];
   toolChoice: unknown;
+  status?: ResponseObject["status"];
+  background?: boolean;
 }
 
 function assembleResponse(params: AssembleParams): ResponseObject {
   const { id, model, inputText, outputText, instructions, toolCalls, tools, toolChoice } = params;
+  const { status = "completed", background = false } = params;
   const inputTokens = approxTokens(inputText ?? "");
   const outputTokens = approxTokens(
     (outputText ?? "") + toolCalls.map((call) => call.name + call.arguments).join(""),
@@ -138,8 +159,8 @@ function assembleResponse(params: AssembleParams): ResponseObject {
     id,
     object: "response",
     created_at: deterministicCreated(id),
-    status: "completed",
-    background: false,
+    status,
+    background,
     error: null,
     incomplete_details: null,
     instructions,

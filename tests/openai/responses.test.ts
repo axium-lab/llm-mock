@@ -49,6 +49,18 @@ describe("responses API", () => {
     expect(((await second.json()) as { deleted: boolean }).deleted).toBe(true);
   });
 
+  it("cancellation is stateless: any id comes back cancelled, as a background response", async () => {
+    const cancelled = await ctx.client.responses.cancel("resp_abc123");
+    expect(cancelled.id).toBe("resp_abc123");
+    expect(cancelled.object).toBe("response");
+    expect(cancelled.status).toBe("cancelled");
+    expect(cancelled.background).toBe(true);
+    expect(cancelled.output).toEqual([]);
+
+    const again = await ctx.client.responses.cancel("resp_abc123");
+    expect(again).toEqual(cancelled);
+  });
+
   it("streams typed events ending with response.completed", async () => {
     const stream = await ctx.client.responses.create({
       model: "gpt-4.1",

@@ -137,6 +137,7 @@
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Full <code>response</code> object, typed SSE event stream</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Stateless: synthesizes a deterministic response for any id</td></tr>
           <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the OpenAI deletion object</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses/{id}/cancel</code></td><td>Stateless: any id comes back as a <code>cancelled</code> background response</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models</code></td><td>Simulated catalog (<code>gpt-4.1</code>, <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>text-embedding-3-*</code>, …)</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models/{model}</code></td><td><code>404</code> in OpenAI error format for unknown models</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/embeddings</code></td><td>Deterministic unit vectors, correct dimension per model, <code>dimensions</code> param, <code>float</code> and <code>base64</code> encoding</td></tr>
@@ -178,6 +179,7 @@
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Returns a full <code>response</code> object; with <code>stream: true</code> emits typed events (<code>response.created</code>, <code>response.output_text.delta</code>, <code>response.completed</code>, …)</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Stateless — synthesizes a deterministic response for any id, no store required</td></tr>
           <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the standard OpenAI deletion object</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses/{id}/cancel</code></td><td>Stateless — any id comes back as a <code>cancelled</code> response with <code>background: true</code> and an empty <code>output</code>, since only background responses can be cancelled on the real API</td></tr>
         </tbody>
       </table>
     </section>

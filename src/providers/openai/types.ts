@@ -227,7 +227,7 @@ export interface ResponseObject {
   id: string;
   object: "response";
   created_at: number;
-  status: "completed" | "in_progress";
+  status: "completed" | "in_progress" | "cancelled";
   background: boolean;
   error: null;
   incomplete_details: null;
