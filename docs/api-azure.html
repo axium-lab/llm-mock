@@ -134,6 +134,17 @@
           <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/models?api-version=</code></td><td>Model catalog, outside the deployment path</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/deployments?api-version=</code></td><td>Deployment listing, one per catalog model</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>…/deployments/{deployment}?api-version=</code></td><td>A single deployment, any name</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/responses?api-version=</code></td><td>Responses API, OpenAI's router verbatim: full <code>response</code> object, typed SSE event stream. Not deployment-scoped, as on Azure</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/responses/{id}?api-version=</code></td><td>Stateless: synthesizes a deterministic response for any id</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/azure/openai/responses/{id}?api-version=</code></td><td>Idempotent; returns the OpenAI deletion object</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/responses/{id}/cancel?api-version=</code></td><td>Stateless: any id comes back as a <code>cancelled</code> background response</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/files?api-version=</code></td><td>Multipart upload; the file's metadata is carried in its id, so it round-trips without a store</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/files?api-version=</code></td><td>Simulated catalog, filterable by <code>purpose</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/files/{id}?api-version=</code></td><td><code>404</code> for the reserved <code>file-missing</code> prefix</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/files/{id}/content?api-version=</code></td><td>Placeholder bytes, or the <code>x-llm-mock-response</code> header</td></tr>
+          <tr><td><span class="method delete">DELETE</span></td><td><code>/azure/openai/files/{id}?api-version=</code></td><td>Idempotent</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/responses</code>, <code>…/{id}</code>, <code>…/{id}/cancel</code></td><td>The same Responses API on the v1 surface, no <code>api-version</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/files</code>, <code>…/{id}</code>, <code>…/{id}/content</code></td><td>The same Files API on the v1 surface, no <code>api-version</code></td></tr>
         </tbody>
       </table>
       <p>The classic surface addresses a <strong>deployment</strong> rather than a model and requires <code>api-version</code> on every call. The v1 surface drops both:</p>

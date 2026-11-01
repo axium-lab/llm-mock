@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `POST /openai/v1/responses/{id}/cancel`, the last of the Responses API's per-id operations. Stateless like retrieval: any id comes back as a `cancelled` response with `background: true` — the only kind the real API lets a client cancel — and an empty `output`. Idempotent, never `404`.
+- Azure now serves the Responses API and Files on both of its surfaces, as OpenAI's routers mounted verbatim: `/azure/openai/responses?api-version=` and `/azure/openai/files?api-version=` on the classic one — neither sits behind a deployment, and those are the paths the `AzureOpenAI` SDK sends them to — and `/azure/openai/v1/responses` and `/azure/openai/v1/files` on the other. Create, retrieve, delete and cancel for responses, with the typed SSE stream; upload, list, retrieve, content and delete for files, with the same stateless round-trip and the reserved `file-missing` prefix. Errors come out in Azure's envelope.
 
 ## [0.7.1] - 2026-08-10
 

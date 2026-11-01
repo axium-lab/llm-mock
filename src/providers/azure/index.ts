@@ -3,6 +3,8 @@ import { createAuthMiddleware } from "../../core/auth";
 import type { Provider, ProviderDeps } from "../types";
 import { azureAuthScheme } from "./auth";
 import { assertApiVersion } from "./deployments";
+import { filesRouter } from "../openai/routes/files";
+import { responsesRouter } from "../openai/routes/responses";
 import { errorHandler, notFoundHandler } from "./errors";
 import { deploymentCatalogRouter, deploymentsRouter } from "./routes/deployments";
 import { inferenceRouter } from "./routes/inference";
@@ -25,8 +27,15 @@ export const azureProvider: Provider = {
     //
     // Terminal, so an unimplemented path here 404s instead of falling through
     // to the classic tree and being told its api-version is missing.
+    // Responses and Files are OpenAI's routers mounted as they are: Azure
+    // proxies both to OpenAI without touching the payload, and neither sits
+    // behind a deployment on either surface — the SDK sends them to
+    // /openai/responses and /openai/files on the classic one, with the
+    // api-version it puts on everything, and to /openai/v1/… on the other.
     const v1 = Router();
     v1.use("/models", modelsRouter);
+    v1.use("/responses", responsesRouter);
+    v1.use("/files", filesRouter);
     v1.use(inferenceRouter);
     v1.use(notFoundHandler);
     api.use("/v1", v1);
@@ -44,6 +53,8 @@ export const azureProvider: Provider = {
     classic.use("/deployments", deploymentCatalogRouter);
     classic.use("/deployments/:deployment", deploymentsRouter);
     classic.use("/models", modelsRouter);
+    classic.use("/responses", responsesRouter);
+    classic.use("/files", filesRouter);
     api.use(classic);
 
     const router = Router();
