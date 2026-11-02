@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Gemini resumable upload endpoint now also answers at `/gemini/upload/v1/files`. Everything under the version segment was already served on both `v1beta` and `v1`, but `upload/` sits ahead of that segment and was mounted on the preview version alone, so a client configured with `apiVersion: "v1"` — a supported setting now that the Interactions API and the rest of the surface are generally available on the stable version — got a `404` on file uploads only. The resumable session URL stays on whichever prefix the request came in on.
 - The `404` for an unknown model names the version the request was made on instead of always claiming `v1beta`, matching what the real API reports to a caller on `/v1`.
 
+## [0.7.0] - 2026-08-02
+
 ### Added
 
 - `GET /azure/openai/deployments?api-version=` and `GET /azure/openai/deployments/{deployment}`, the legacy data-plane listing, so a client can discover deployment names without leaving the endpoint it is pointed at — managing deployments on the real service moved to ARM, which a mock behind a single base URL cannot represent. One deployment per catalog model, named after the model it points at; any other name is described too, since the mock accepts any of them for inference. The reserved `missing-` prefix still answers `DeploymentNotFound`.
@@ -32,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `GET /health` now also reports the running `version`, read from `package.json`, so a deployed container can be matched against the release and image tag it was built from.
+
+## [0.6.0] - 2026-08-02
+
+### Added
+
 - Gemini (AI Studio) provider mounted at `/gemini`, served on both `v1beta` and `v1`: model catalog (`GET /models`, `GET /models/{model}`, empty `GET /tunedModels`), validated against the official `@google/genai` SDK.
 - `POST /gemini/v1beta/models/{model}:generateContent`, with `candidates`, `finishReason`, `usageMetadata` split by modality, `modelVersion` and `responseId`, honoring `candidateCount` and counting `systemInstruction` towards the prompt tokens.
 - `POST /gemini/v1beta/models/{model}:streamGenerateContent`: SSE with `?alt=sse` and a streamed JSON array without it. No `[DONE]` sentinel, which the Gemini SDK would reject as an incomplete JSON segment.
@@ -95,6 +102,16 @@ The Gemini provider was verified end to end against the live `generativelanguage
 - The Files `403` echoes the id as the caller wrote it, without the `files/` prefix.
 - Tool argument synthesis no longer yields `null` for every property of a Gemini schema: types are matched case-insensitively, so Gemini's uppercase `Type` enum (`STRING`, `OBJECT`, ...) resolves like lowercase JSON Schema types.
 
+## [0.5.0] - 2026-08-01
+
+### Added
+
+- Automated releases: when the version in `package.json` changes on `main` and CI passes, the tag and the GitHub release are created from the matching CHANGELOG section, and the multi-arch image is built and pushed to GHCR.
+
+## [0.4.0] - 2026-08-01
+
+No changes: `v0.4.0` tags the same commit as `v0.3.0`.
+
 ## [0.3.0] - 2026-08-01
 
 ### Added
@@ -139,7 +156,10 @@ The Gemini provider was verified end to end against the live `generativelanguage
 [0.8.0]: https://github.com/axium-lab/llm-mock/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/axium-lab/llm-mock/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/axium-lab/llm-mock/compare/v0.6.1...v0.7.0
-[0.6.1]: https://github.com/axium-lab/llm-mock/compare/v0.5.0...v0.6.1
+[0.6.1]: https://github.com/axium-lab/llm-mock/compare/v0.6.0...v0.6.1
+[0.6.0]: https://github.com/axium-lab/llm-mock/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/axium-lab/llm-mock/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/axium-lab/llm-mock/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/axium-lab/llm-mock/compare/v0.2...v0.3.0
 [0.2]: https://github.com/axium-lab/llm-mock/compare/v0.1.0...v0.2
 [0.1.0]: https://github.com/axium-lab/llm-mock/releases/tag/v0.1.0

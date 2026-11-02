@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Azure OpenAI API reference — llm-mock</title>
-<meta name="description" content="Azure OpenAI endpoints on llm-mock: deployment paths, api-version, Entra ID auth, the v1 surface and content filtering with prompt_filter_results." />
+<meta name="description" content="Azure endpoints on llm-mock: Azure OpenAI with deployment paths, api-version, Entra ID auth, the v1 surface and content filtering, plus Claude in Microsoft Foundry and the Azure AI Model Inference API." />
 <link rel="canonical" href="https://llm-mock.dev/api-azure.html" />
 <meta name="theme-color" content="#0b0e14" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
@@ -14,7 +14,7 @@
 <meta property="og:site_name" content="llm-mock" />
 <meta property="og:locale" content="en_US" />
 <meta property="og:title" content="llm-mock — Azure OpenAI API reference" />
-<meta property="og:description" content="Azure OpenAI endpoints on llm-mock: deployment paths, api-version, Entra ID auth, the v1 surface and content filtering with prompt_filter_results." />
+<meta property="og:description" content="Azure endpoints on llm-mock: Azure OpenAI with deployment paths, api-version, Entra ID auth, the v1 surface and content filtering, plus Claude in Microsoft Foundry and the Azure AI Model Inference API." />
 <meta property="og:url" content="https://llm-mock.dev/api-azure.html" />
 <meta property="og:image" content="https://llm-mock.dev/og-image.png" />
 <meta property="og:image:width" content="1200" />
@@ -22,7 +22,7 @@
 <meta property="og:image:alt" content="llm-mock — test your LLM integrations without exposing your API key. A self-hosted, multi-provider mock server: OpenAI, Anthropic, Gemini, Gemini Enterprise and Azure. Zero install, deterministic, SSE streaming." />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="llm-mock — Azure OpenAI API reference" />
-<meta name="twitter:description" content="Azure OpenAI endpoints on llm-mock: deployment paths, api-version, Entra ID auth, the v1 surface and content filtering with prompt_filter_results." />
+<meta name="twitter:description" content="Azure endpoints on llm-mock: Azure OpenAI with deployment paths, api-version, Entra ID auth, the v1 surface and content filtering, plus Claude in Microsoft Foundry and the Azure AI Model Inference API." />
 <meta name="twitter:image" content="https://llm-mock.dev/og-image.png" />
 
 <!-- Structured data -->
@@ -31,7 +31,7 @@
   "@context": "https://schema.org",
   "@type": "TechArticle",
   "headline": "llm-mock \u2014 Azure OpenAI API reference",
-  "description": "Azure OpenAI endpoints on llm-mock: deployment paths, api-version, Entra ID auth, the v1 surface and content filtering with prompt_filter_results.",
+  "description": "Azure endpoints on llm-mock: Azure OpenAI with deployment paths, api-version, Entra ID auth, the v1 surface and content filtering, plus Claude in Microsoft Foundry and the Azure AI Model Inference API.",
   "url": "https://llm-mock.dev/api-azure.html",
   "author": {
     "@type": "Organization",
@@ -281,7 +281,7 @@
 });
 
 <span class="tok-key">const</span> message = <span class="tok-key">await</span> client.messages.<span class="tok-fn">create</span>({
-  model: <span class="tok-str">"claude-opus-5-5"</span>, <span class="tok-com">// the deployment name, which defaults to the model id</span>
+  model: <span class="tok-str">"claude-opus-5"</span>, <span class="tok-com">// the deployment name, which defaults to the model id</span>
   max_tokens: <span class="tok-str">1024</span>,
   messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
 });</code></pre>

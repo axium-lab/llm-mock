@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import AnthropicFoundry from "@anthropic-ai/foundry-sdk";
 import { INVALID_API_KEY, startTestServer, stopTestServer, VALID_API_KEY, type TestContext } from "./setup";
 
-const MODEL = "claude-opus-5-5";
+const MODEL = "claude-opus-5";
 const ANTHROPIC_VERSION = "2023-06-01";
 
 interface AnthropicErrorBody {

@@ -102,6 +102,7 @@
     <ul>
       <li><a href="#endpoints">Endpoints</a></li>
       <li><a href="#chat">Chat completions</a></li>
+      <li><a href="#completions">Completions</a></li>
       <li><a href="#responses">Responses API</a></li>
       <li><a href="#tools">Tool calls</a></li>
       <li><a href="#models">Models</a></li>
@@ -169,6 +170,12 @@
   -H <span class="tok-str">"Content-Type: application/json"</span> \
   -d <span class="tok-str">'{"model": "gpt-4o", "messages": [{"role": "user", "content": "ping"}]}'</span></code></pre>
       <p>Supports multiple choices via <code>n</code>, streaming via <code>stream: true</code>, and usage on the final stream chunk via <code>stream_options.include_usage</code>.</p>
+    </section>
+
+    <section id="completions">
+      <h2>OpenAI · Completions</h2>
+      <p class="section-sub"><code>POST /openai/v1/completions</code> — the legacy endpoint, for code that predates chat. Returns a <code>text_completion</code> object whose <code>choices[].text</code> echoes the prompt.</p>
+      <p>A <code>prompt</code> may be a string, a list of strings or a list of token arrays, and each one yields <code>n</code> choices, indexed straight through. <code>echo: true</code> prepends the prompt to the reply. With <code>stream: true</code> the same object arrives in pieces, with a trailing usage chunk under <code>stream_options.include_usage</code> and the <code>data: [DONE]</code> sentinel. <code>x-llm-mock-response</code> pins the text as it does on chat completions.</p>
     </section>
 
     <section id="responses">
@@ -272,9 +279,10 @@
 
     <section id="streaming">
       <h2>OpenAI · Streaming (SSE)</h2>
-      <p class="section-sub"><code>stream: true</code> works on both chat completions and the Responses API, emitting the real Server-Sent Events stream your SDK already knows how to consume.</p>
+      <p class="section-sub"><code>stream: true</code> works on chat completions, the legacy completions endpoint and the Responses API, emitting the real Server-Sent Events stream your SDK already knows how to consume.</p>
       <ul>
         <li><strong>Chat completions</strong> — delta chunks terminated by <code>data: [DONE]</code>. Add <code>stream_options.include_usage</code> for a final usage chunk.</li>
+        <li><strong>Completions</strong> — the same <code>text_completion</code> object in pieces, terminated by <code>data: [DONE]</code>; <code>stream_options.include_usage</code> adds the trailing usage chunk here too.</li>
         <li><strong>Responses API</strong> — typed events: <code>response.created</code>, <code>response.output_text.delta</code>, <code>response.completed</code>, …</li>
       </ul>
 <pre><code><span class="tok-key">const</span> stream = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>({

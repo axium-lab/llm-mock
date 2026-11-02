@@ -270,7 +270,7 @@ bun start</code></pre>
 <section id="how">
   <div class="wrap">
     <h2>Change one line, keep your code</h2>
-    <p class="section-sub">The official <code>openai</code>, <code>@anthropic-ai/sdk</code> and <code>@google/genai</code> SDKs talk to llm-mock exactly as they talk to the real APIs. No mocking libraries, no request interception.</p>
+    <p class="section-sub">The official <code>openai</code>, <code>@anthropic-ai/sdk</code>, <code>@anthropic-ai/foundry-sdk</code>, <code>@google/genai</code> and <code>@azure-rest/ai-inference</code> SDKs talk to llm-mock exactly as they talk to the real APIs. No mocking libraries, no request interception.</p>
 <pre><code><span class="tok-key">import</span> OpenAI <span class="tok-key">from</span> <span class="tok-str">"openai"</span>;
 
 <span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">OpenAI</span>({
@@ -323,7 +323,7 @@ console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">//
     <div class="features">
       <div class="feature">
         <h3>Faithful contracts</h3>
-        <p>Responses match each provider's real shapes, validated in CI with the official <code>openai</code>, <code>@anthropic-ai/sdk</code> and <code>@google/genai</code> SDKs as the clients.</p>
+        <p>Responses match each provider's real shapes, validated in CI with the official <code>openai</code>, <code>@anthropic-ai/sdk</code>, <code>@anthropic-ai/foundry-sdk</code>, <code>@google/genai</code> and <code>@azure-rest/ai-inference</code> SDKs as the clients.</p>
       </div>
       <div class="feature">
         <h3>Five providers, one server</h3>

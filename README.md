@@ -39,7 +39,7 @@ No mocking libraries, no request interception, no changes to your application co
 
 ## Why
 
-- **Faithful, not a stub.** Responses match each provider's real shapes, validated in CI against the official `openai`, `@anthropic-ai/sdk` and `@google/genai` SDKs.
+- **Faithful, not a stub.** Responses match each provider's real shapes, validated in CI against the official `openai`, `@anthropic-ai/sdk`, `@anthropic-ai/foundry-sdk`, `@google/genai` and `@azure-rest/ai-inference` SDKs.
 - **Deterministic.** Same request, same bytes: ids are content hashes, timestamps derive from them, embeddings are hash-seeded unit vectors. Snapshot-test friendly.
 - **Stateless, always.** No store, no cleanup, no ordering between tests. It behaves identically on a laptop, in CI, or behind a load balancer — even for files and batches, whose ids carry their own metadata.
 - **Controllable.** Need a specific reply? Send it in a request header. Nothing to register beforehand, nothing to tear down after.
@@ -64,18 +64,18 @@ Between them: chat completions and the Responses API, Anthropic's Messages API w
 
 ### Endpoint coverage
 
-What each door answers today, and what it does not yet. ✅ served · ⚠️ served with a caveat · ❌ not served · ✦ in the repo, not yet on the hosted instance.
+What each door answers today, and what it does not yet. ✅ served · ⚠️ served with a caveat · ❌ not served.
 
 **OpenAI** — `/openai/v1`
 
 | Endpoint | Status | Notes |
 | --- | --- | --- |
 | `POST /chat/completions` | ✅ | SSE with `[DONE]`, tool calls |
-| `POST /completions` | ✅ ✦ | the legacy endpoint: `text_completion`, `n` choices per prompt, `echo`, SSE with `[DONE]` |
+| `POST /completions` | ✅ | the legacy endpoint: `text_completion`, `n` choices per prompt, `echo`, SSE with `[DONE]` |
 | `POST /responses` | ✅ | typed SSE event stream; `previous_response_id` and `background` are ignored |
 | `GET /responses/{id}` | ⚠️ | stateless: any id yields a deterministic response, never `404` |
 | `DELETE /responses/{id}` | ⚠️ | idempotent, never `404` |
-| `POST /responses/{id}/cancel` | ✅ ✦ | any id comes back `cancelled` with `background: true` |
+| `POST /responses/{id}/cancel` | ✅ | any id comes back `cancelled` with `background: true` |
 | `POST /files` · `GET /files` · `GET /files/{id}` · `GET /files/{id}/content` · `DELETE /files/{id}` | ✅ | metadata travels in the id; the listing is a simulated catalog, not your uploads; `file-missing*` is `404` |
 | `POST /uploads` | ✅ | |
 | `GET /models` · `GET /models/{id}` | ✅ | `404` outside the catalog |
@@ -87,12 +87,12 @@ What each door answers today, and what it does not yet. ✅ served · ⚠️ ser
 | --- | --- | --- |
 | `POST /deployments/{d}/chat/completions` | ✅ | content filtering simulated; `missing-*` deployments are `404 DeploymentNotFound` |
 | `POST /deployments/{d}/embeddings` | ✅ | |
-| `GET /deployments` · `GET /deployments/{d}` | ✅ ✦ | one deployment per catalog model |
+| `GET /deployments` · `GET /deployments/{d}` | ✅ | one deployment per catalog model |
 | `GET /models` · `GET /models/{id}` | ✅ | |
-| `POST /responses` · `GET` / `DELETE` / `POST …/cancel` on `/responses/{id}` | ✅ ✦ | OpenAI's router verbatim, not deployment-scoped |
-| `POST /files` · `GET /files` · `GET /files/{id}` · `GET /files/{id}/content` · `DELETE /files/{id}` | ✅ ✦ | OpenAI's router verbatim |
-| `POST /deployments/{d}/completions` | ✅ ✦ | legacy completions, the filter's verdict attached as on chat |
-| `POST /uploads` · `…/{id}/parts` · `…/{id}/complete` · `…/{id}/cancel` | ✅ ✦ | OpenAI's router verbatim |
+| `POST /responses` · `GET` / `DELETE` / `POST …/cancel` on `/responses/{id}` | ✅ | OpenAI's router verbatim, not deployment-scoped |
+| `POST /files` · `GET /files` · `GET /files/{id}` · `GET /files/{id}/content` · `DELETE /files/{id}` | ✅ | OpenAI's router verbatim |
+| `POST /deployments/{d}/completions` | ✅ | legacy completions, the filter's verdict attached as on chat |
+| `POST /uploads` · `…/{id}/parts` · `…/{id}/complete` · `…/{id}/cancel` | ✅ | OpenAI's router verbatim |
 | `audio/*` · `images/*` · `batches` | ❌ | |
 | Auth: `api-key` header | ✅ | |
 | Auth: Entra ID bearer token | ⚠️ | any bearer from the key list passes; tokens are not validated |
@@ -102,11 +102,11 @@ What each door answers today, and what it does not yet. ✅ served · ⚠️ ser
 | Endpoint | Status | Notes |
 | --- | --- | --- |
 | `POST /chat/completions` · `POST /embeddings` | ✅ | same handlers as the deployments API |
-| `POST /completions` | ✅ ✦ | |
+| `POST /completions` | ✅ | |
 | `GET /models` · `GET /models/{id}` | ✅ | |
-| `POST /responses` · `GET` / `DELETE` / `POST …/cancel` on `/responses/{id}` | ✅ ✦ | |
-| `POST /files` · `GET /files` · `GET /files/{id}` · `GET /files/{id}/content` · `DELETE /files/{id}` | ✅ ✦ | |
-| `POST /uploads` · `…/{id}/parts` · `…/{id}/complete` · `…/{id}/cancel` | ✅ ✦ | |
+| `POST /responses` · `GET` / `DELETE` / `POST …/cancel` on `/responses/{id}` | ✅ | |
+| `POST /files` · `GET /files` · `GET /files/{id}` · `GET /files/{id}/content` · `DELETE /files/{id}` | ✅ | |
+| `POST /uploads` · `…/{id}/parts` · `…/{id}/complete` · `…/{id}/cancel` | ✅ | |
 | Auth: key as `Authorization: Bearer` | ✅ | |
 | Auth: Entra ID bearer token | ⚠️ | not validated |
 
@@ -114,23 +114,23 @@ What each door answers today, and what it does not yet. ✅ served · ⚠️ ser
 
 | Endpoint | Status | Notes |
 | --- | --- | --- |
-| `POST /v1/messages` | ✅ ✦ | Anthropic's service behind Azure's front door: same content blocks, named SSE events, `tool_use`, `thinking` |
-| `POST /v1/messages/count_tokens` | ✅ ✦ | |
+| `POST /v1/messages` | ✅ | Anthropic's service behind Azure's front door: same content blocks, named SSE events, `tool_use`, `thinking` |
+| `POST /v1/messages/count_tokens` | ✅ | |
 | `GET /v1/models` · `/v1/messages/batches` · `/v1/files` | ❌ | not offered by Foundry either: `404` in Anthropic's envelope, and the Foundry SDK leaves them out of its client |
-| Auth: `api-key` or `x-api-key` header | ✅ ✦ | `x-api-key` is what the Foundry SDK sends; rejections come in Azure's shapes, from the gateway |
-| Auth: Entra ID bearer token | ⚠️ ✦ | not validated |
-| `request-id` and `apim-request-id` response headers | ✅ ✦ | |
+| Auth: `api-key` or `x-api-key` header | ✅ | `x-api-key` is what the Foundry SDK sends; rejections come in Azure's shapes, from the gateway |
+| Auth: Entra ID bearer token | ⚠️ | not validated |
+| `request-id` and `apim-request-id` response headers | ✅ | |
 
 **Azure AI Model Inference API** — `/azure/models`, `?api-version=` on every call; the route for Foundry's non-OpenAI models
 
 | Endpoint | Status | Notes |
 | --- | --- | --- |
-| `POST /chat/completions` | ✅ ✦ | OpenAI's shapes pared down to the API's own subset; `model` optional; a blocked prompt is the flat `content_filter` error |
-| `POST /embeddings` | ✅ ✦ | |
-| `GET /info` | ✅ ✦ | a fixed deployed model: `Phi-4`, `chat_completion`, `Microsoft` |
-| `extra-parameters` header | ✅ ✦ | `error` (the default) answers `422 parameter_not_supported` for a field outside the API; `drop` and `pass-through` accept it |
+| `POST /chat/completions` | ✅ | OpenAI's shapes pared down to the API's own subset; `model` optional; a blocked prompt is the flat `content_filter` error |
+| `POST /embeddings` | ✅ | |
+| `GET /info` | ✅ | a fixed deployed model: `Phi-4`, `chat_completion`, `Microsoft` |
+| `extra-parameters` header | ✅ | `error` (the default) answers `422 parameter_not_supported` for a field outside the API; `drop` and `pass-through` accept it |
 | `POST /images/embeddings` | ❌ | |
-| Auth: `api-key` header · Entra ID bearer | ✅ ✦ · ⚠️ ✦ | |
+| Auth: `api-key` header · Entra ID bearer | ✅ · ⚠️ | |
 
 Microsoft now routes Foundry Models through `/openai/v1` and has retired the `azure-ai-inference` SDKs; this door is for code still written against them.
 
@@ -259,6 +259,8 @@ bun run dev        # start with file watching
 bun test           # integration tests, with the official SDKs as the clients
 bun run typecheck  # tsc --noEmit
 ```
+
+[`tests/_manual/`](tests/_manual/) holds one `.http` file per door for the VS Code REST Client, to poke at a running server by hand; `bun test` does not run them.
 
 Stack: [Bun](https://bun.sh) + TypeScript + [Express](https://expressjs.com). Each provider is a self-contained router under `src/providers/`, sharing `src/core/`. The server holds no state — identical requests produce identical responses across restarts and replicas.
 
