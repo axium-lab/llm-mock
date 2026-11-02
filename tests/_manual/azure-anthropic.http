@@ -1,0 +1,189 @@
+### llm-mock — Claude in Microsoft Foundry (/azure/anthropic)
+#
+# Anthropic's Messages API behind Azure's front door. On the real service:
+# https://{resource}.services.ai.azure.com/anthropic/v1/*. The key travels in
+# api-key (Azure's header) or x-api-key (what @anthropic-ai/foundry-sdk sends);
+# Entra ID callers use a bearer token. anthropic-version is still required.
+# Every response carries request-id and apim-request-id.
+
+@baseUrl = http://localhost:3000/azure/anthropic
+@apiKey = sk-mock-key-01
+@version = 2023-06-01
+@contentType = application/json
+@model = claude-opus-5-5
+
+###############################################################################
+# Messages
+###############################################################################
+
+### Basic message (api-key header)
+POST {{baseUrl}}/v1/messages
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Hello, who are you?" }]
+}
+
+### Same, with the x-api-key header the Foundry SDK sends
+POST {{baseUrl}}/v1/messages
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Hello through x-api-key." }]
+}
+
+### Message with a canned response
+POST {{baseUrl}}/v1/messages
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+x-llm-mock-response: This is a forced deterministic answer.
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Say anything." }]
+}
+
+### Message streaming (named SSE events, ends on message_stop)
+POST {{baseUrl}}/v1/messages
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Stream a short greeting." }],
+  "stream": true
+}
+
+### Tool use forced by tool_choice
+POST {{baseUrl}}/v1/messages
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "What's the weather in Valencia?" }],
+  "tools": [{ "name": "get_weather", "input_schema": { "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] } }],
+  "tool_choice": { "type": "any" }
+}
+
+### Extended thinking
+POST {{baseUrl}}/v1/messages
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 2048,
+  "thinking": { "type": "adaptive", "display": "summarized" },
+  "messages": [{ "role": "user", "content": "Think about it." }]
+}
+
+### Count tokens
+POST {{baseUrl}}/v1/messages/count_tokens
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "messages": [{ "role": "user", "content": "How many tokens is this?" }]
+}
+
+### Missing max_tokens -> 400 in Anthropic's envelope (past the gateway)
+POST {{baseUrl}}/v1/messages
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "messages": [{ "role": "user", "content": "hi" }]
+}
+
+###############################################################################
+# Not offered by Foundry -> 404 (the Foundry SDK leaves them out of the client)
+###############################################################################
+
+### Models API
+GET {{baseUrl}}/v1/models
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+### Message Batches
+POST {{baseUrl}}/v1/messages/batches
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{ "requests": [] }
+
+### Files
+GET {{baseUrl}}/v1/files
+api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+
+###############################################################################
+# Auth errors — the gateway answers, in Azure's shapes
+###############################################################################
+
+### Missing credential -> 401 flat, no `error` wrapper
+POST {{baseUrl}}/v1/messages
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 16,
+  "messages": [{ "role": "user", "content": "hi" }]
+}
+
+### Invalid credential -> 401 wrapped, Azure's envelope rather than Anthropic's
+POST {{baseUrl}}/v1/messages
+api-key: sk-mock-invalid
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 16,
+  "messages": [{ "role": "user", "content": "hi" }]
+}
+
+### Entra ID style bearer token (not validated)
+POST {{baseUrl}}/v1/messages
+Authorization: Bearer {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 16,
+  "messages": [{ "role": "user", "content": "hi" }]
+}
+
+### Missing anthropic-version -> 400, Anthropic's envelope
+POST {{baseUrl}}/v1/messages
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 16,
+  "messages": [{ "role": "user", "content": "hi" }]
+}

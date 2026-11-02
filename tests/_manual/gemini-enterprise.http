@@ -1,0 +1,187 @@
+### llm-mock — Gemini Enterprise, ex-Vertex AI (/gemini-enterprise)
+#
+# Two ways in, both served by the same handlers:
+#   regional — a bearer token (OAuth / ADC in production) and URLs carrying
+#              projects/{p}/locations/{l}
+#   express  — an API key in x-goog-api-key, publisher models addressed directly
+# v1beta1 is the SDK's default version here; v1 answers the same.
+
+@baseUrl = http://localhost:3000/gemini-enterprise/v1beta1
+@apiKey = sk-mock-key-01
+@contentType = application/json
+@model = gemini-3.6-flash
+@project = my-project
+@location = europe-west1
+@regional = {{baseUrl}}/projects/{{project}}/locations/{{location}}/publishers/google/models
+@express = {{baseUrl}}/publishers/google/models
+
+###############################################################################
+# Regional mode (bearer token)
+###############################################################################
+
+### List publisher models (global: no project or location, even in regional mode)
+GET {{express}}
+Authorization: Bearer {{apiKey}}
+
+### Retrieve a publisher model
+GET {{regional}}/{{model}}
+Authorization: Bearer {{apiKey}}
+
+### generateContent
+POST {{regional}}/{{model}}:generateContent
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "systemInstruction": { "parts": [{ "text": "You are a helpful assistant." }] },
+  "contents": [{ "role": "user", "parts": [{ "text": "Hello, who are you?" }] }]
+}
+
+### generateContent with a canned response
+POST {{regional}}/{{model}}:generateContent
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-response: This is a forced deterministic answer.
+
+{
+  "contents": [{ "parts": [{ "text": "Say anything." }] }]
+}
+
+### Function call forced by toolConfig
+POST {{regional}}/{{model}}:generateContent
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "What's the weather in Valencia?" }] }],
+  "tools": [{
+    "functionDeclarations": [{
+      "name": "get_weather",
+      "parameters": { "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }
+    }]
+  }],
+  "toolConfig": { "functionCallingConfig": { "mode": "ANY" } }
+}
+
+### Streaming as SSE (?alt=sse; no [DONE] sentinel)
+POST {{regional}}/{{model}}:streamGenerateContent?alt=sse
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "Stream a short greeting." }] }]
+}
+
+### countTokens (only the total on this platform)
+POST {{regional}}/{{model}}:countTokens
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "How many tokens is this?" }] }]
+}
+
+### Embeddings ride the generic prediction endpoint
+POST {{regional}}/gemini-embedding-001:predict
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "instances": [
+    { "content": "First piece of text." },
+    { "content": "Second piece of text." }
+  ]
+}
+
+### Missing contents -> 400 INVALID_ARGUMENT
+POST {{regional}}/{{model}}:generateContent
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{}
+
+###############################################################################
+# Interactions API, regional — the SDK folds version, project and location
+# into ONE percent-encoded path segment
+###############################################################################
+
+### Create an interaction (regional scope)
+POST http://localhost:3000/gemini-enterprise/v1beta1%2Fprojects%2F{{project}}%2Flocations%2F{{location}}/interactions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "input": "Write a one-sentence bedtime story about a unicorn."
+}
+
+### Retrieve an interaction (regional scope)
+GET http://localhost:3000/gemini-enterprise/v1beta1%2Fprojects%2F{{project}}%2Flocations%2F{{location}}/interactions/inter_abc123
+Authorization: Bearer {{apiKey}}
+
+###############################################################################
+# Express mode (API key, no project or location)
+###############################################################################
+
+### Retrieve a publisher model
+GET {{express}}/{{model}}
+x-goog-api-key: {{apiKey}}
+
+### generateContent
+POST {{express}}/{{model}}:generateContent
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "Hello through express mode." }] }]
+}
+
+### Streaming as SSE
+POST {{express}}/{{model}}:streamGenerateContent?alt=sse
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "Stream a short greeting." }] }]
+}
+
+### Create an interaction (express scope: a plain version segment)
+POST {{baseUrl}}/interactions
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "input": "Stream something short.",
+  "stream": true
+}
+
+### Cancel and delete an interaction
+POST {{baseUrl}}/interactions/inter_abc123/cancel
+x-goog-api-key: {{apiKey}}
+
+###
+DELETE {{baseUrl}}/interactions/inter_abc123
+x-goog-api-key: {{apiKey}}
+
+###############################################################################
+# Auth errors — the rejection depends on the transport
+###############################################################################
+
+### Missing credential -> 401 UNAUTHENTICATED
+GET {{express}}/{{model}}
+
+### Invalid bearer token -> 401 UNAUTHENTICATED
+GET {{express}}/{{model}}
+Authorization: Bearer sk-mock-invalid
+
+### Invalid API key -> 400 API_KEY_INVALID, as on AI Studio
+GET {{express}}/{{model}}
+x-goog-api-key: sk-mock-invalid
+
+### Unknown version or scope for interactions -> 404
+POST http://localhost:3000/gemini-enterprise/v9/interactions
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{ "model": "{{model}}", "input": "hi" }

@@ -1,0 +1,299 @@
+### llm-mock — Anthropic (/anthropic)
+#
+# The SDK appends only the request path, so the version segment is part of
+# every URL below (/v1/...). Two headers on every call: x-api-key and
+# anthropic-version (any value is accepted, but it must be present).
+
+@baseUrl = http://localhost:3000/anthropic
+@apiKey = sk-mock-key-01
+@version = 2023-06-01
+@contentType = application/json
+@model = claude-opus-5
+
+###############################################################################
+# Models
+###############################################################################
+
+### List models (cursor pagination)
+GET {{baseUrl}}/v1/models?limit=3
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+### Next page, after an id
+GET {{baseUrl}}/v1/models?limit=3&after_id=claude-opus-4-8
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+### Retrieve a single model
+GET {{baseUrl}}/v1/models/{{model}}
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+### Unknown model -> 404 not_found_error
+GET {{baseUrl}}/v1/models/claude-does-not-exist
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+###############################################################################
+# Messages
+###############################################################################
+
+### Basic message (max_tokens is required here)
+POST {{baseUrl}}/v1/messages
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "system": "You are a helpful assistant.",
+  "messages": [{ "role": "user", "content": "Hello, who are you?" }]
+}
+
+### Message with a canned response
+POST {{baseUrl}}/v1/messages
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+x-llm-mock-response: This is a forced deterministic answer.
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Say anything." }]
+}
+
+### Message streaming (named SSE events, ends on message_stop, no [DONE])
+POST {{baseUrl}}/v1/messages
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Stream a short greeting." }],
+  "stream": true
+}
+
+### Extended thinking (summarized): a thinking block ahead of the text
+POST {{baseUrl}}/v1/messages
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 2048,
+  "thinking": { "type": "adaptive", "display": "summarized" },
+  "messages": [{ "role": "user", "content": "Think about it." }]
+}
+
+### Tool use forced by tool_choice
+POST {{baseUrl}}/v1/messages
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "What's the weather in Valencia?" }],
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Get the weather for a city",
+      "input_schema": { "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }
+    }
+  ],
+  "tool_choice": { "type": "any" }
+}
+
+### Tool result fed back: the next turn answers with prose
+POST {{baseUrl}}/v1/messages
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 1024,
+  "messages": [
+    { "role": "user", "content": "What's the weather in Valencia?" },
+    { "role": "assistant", "content": [{ "type": "tool_use", "id": "toolu_01", "name": "get_weather", "input": { "city": "Valencia" } }] },
+    { "role": "user", "content": [{ "type": "tool_result", "tool_use_id": "toolu_01", "content": "Sunny, 24°C" }] }
+  ],
+  "tools": [{ "name": "get_weather", "input_schema": { "type": "object" } }]
+}
+
+### Missing max_tokens -> 400 invalid_request_error
+POST {{baseUrl}}/v1/messages
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "messages": [{ "role": "user", "content": "hi" }]
+}
+
+### First message not from the user -> 400
+POST {{baseUrl}}/v1/messages
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "max_tokens": 16,
+  "messages": [{ "role": "assistant", "content": "hi" }]
+}
+
+###############################################################################
+# Count tokens
+###############################################################################
+
+### Count the tokens of a prompt (same number /v1/messages reports as input_tokens)
+POST {{baseUrl}}/v1/messages/count_tokens
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "system": "You are a helpful assistant.",
+  "messages": [{ "role": "user", "content": "How many tokens is this?" }]
+}
+
+###############################################################################
+# Message Batches
+###############################################################################
+
+### Create a batch (ended on arrival; the id carries the whole batch)
+POST {{baseUrl}}/v1/messages/batches
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+
+{
+  "requests": [
+    { "custom_id": "first", "params": { "model": "{{model}}", "max_tokens": 64, "messages": [{ "role": "user", "content": "one" }] } },
+    { "custom_id": "second", "params": { "model": "{{model}}", "max_tokens": 64, "messages": [{ "role": "user", "content": "two" }] } }
+  ]
+}
+
+### Create a batch pinned as still in progress
+POST {{baseUrl}}/v1/messages/batches
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+Content-Type: {{contentType}}
+x-llm-mock-batch-status: in_progress
+
+{
+  "requests": [
+    { "custom_id": "first", "params": { "model": "{{model}}", "max_tokens": 64, "messages": [{ "role": "user", "content": "one" }] } }
+  ]
+}
+
+### Retrieve, results (JSONL), cancel and delete — paste the id returned above
+@batchId = msgbatch_REPLACE_ME
+
+GET {{baseUrl}}/v1/messages/batches/{{batchId}}
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+###
+GET {{baseUrl}}/v1/messages/batches/{{batchId}}/results
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+###
+POST {{baseUrl}}/v1/messages/batches/{{batchId}}/cancel
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+###
+DELETE {{baseUrl}}/v1/messages/batches/{{batchId}}
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+### List batches (always empty: the mock keeps no store)
+GET {{baseUrl}}/v1/messages/batches
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+###############################################################################
+# Files (beta) — every call needs the anthropic-beta flag
+###############################################################################
+
+### Upload a file (the id carries its metadata; uploads are not downloadable)
+POST {{baseUrl}}/v1/files
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+Content-Type: multipart/form-data; boundary=----LlmMockBoundary
+
+------LlmMockBoundary
+Content-Disposition: form-data; name="file"; filename="notes.txt"
+Content-Type: text/plain
+
+Some notes to attach to a message.
+------LlmMockBoundary--
+
+### List files (simulated catalog)
+GET {{baseUrl}}/v1/files
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+
+### Retrieve a catalog file
+GET {{baseUrl}}/v1/files/file_mock_report_pdf
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+
+### Download an API-produced file (the catalog's container output is downloadable)
+GET {{baseUrl}}/v1/files/file_mock_container_output_txt/content
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+
+### Delete a file
+DELETE {{baseUrl}}/v1/files/file_mock_diagram_png
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+
+### Reserved missing id -> 404
+GET {{baseUrl}}/v1/files/file_missing_123
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+anthropic-beta: files-api-2025-04-14
+
+### Without the beta flag -> 400
+GET {{baseUrl}}/v1/files
+x-api-key: {{apiKey}}
+anthropic-version: {{version}}
+
+###############################################################################
+# Auth errors (envelope: { type: "error", error: {...}, request_id })
+###############################################################################
+
+### Missing API key -> 401 authentication_error
+GET {{baseUrl}}/v1/models
+anthropic-version: {{version}}
+
+### Invalid API key -> 401 authentication_error
+GET {{baseUrl}}/v1/models
+x-api-key: sk-mock-invalid
+anthropic-version: {{version}}
+
+### Bearer token (OAuth callers) is accepted too
+GET {{baseUrl}}/v1/models
+Authorization: Bearer {{apiKey}}
+anthropic-version: {{version}}
+
+### Missing anthropic-version -> 400
+GET {{baseUrl}}/v1/models
+x-api-key: {{apiKey}}

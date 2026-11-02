@@ -1,0 +1,192 @@
+### llm-mock — Azure OpenAI / Microsoft Foundry, v1 route (/azure/openai/v1)
+#
+# The newer surface: no api-version, no deployments — the model (or deployment
+# name) goes in the body and a plain OpenAI client works with a baseURL change.
+# The key travels as Authorization: Bearer (api-key is accepted too). Same
+# handlers as the classic surface, so the same request returns the same body.
+
+@baseUrl = http://localhost:3000/azure/openai/v1
+@apiKey = sk-mock-key-01
+@contentType = application/json
+
+###############################################################################
+# Models
+###############################################################################
+
+### List models
+GET {{baseUrl}}/models
+Authorization: Bearer {{apiKey}}
+
+### Retrieve a model
+GET {{baseUrl}}/models/gpt-4o
+Authorization: Bearer {{apiKey}}
+
+###############################################################################
+# Chat Completions (filter verdict attached, as on the classic surface)
+###############################################################################
+
+### Basic chat completion — `missing-one` is just a model name here, no deployment to be missing
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "Hello, who are you?" }]
+}
+
+### Chat completion with a canned response
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-response: This is a forced deterministic answer.
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "Say anything." }]
+}
+
+### Streaming
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "Stream a short greeting." }],
+  "stream": true
+}
+
+### Blocked prompt -> 400 content_filter
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-content-filter: prompt
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "something the filter dislikes" }]
+}
+
+###############################################################################
+# Completions (legacy) and Embeddings
+###############################################################################
+
+### Basic completion
+POST {{baseUrl}}/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-35-turbo-instruct",
+  "prompt": "Say hi"
+}
+
+### Create embeddings
+POST {{baseUrl}}/embeddings
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "text-embedding-3-small",
+  "input": "The quick brown fox jumps over the lazy dog."
+}
+
+###############################################################################
+# Responses API
+###############################################################################
+
+### Create a response
+POST {{baseUrl}}/responses
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "input": "Write a one-sentence bedtime story about a unicorn."
+}
+
+### Create a response streaming
+POST {{baseUrl}}/responses
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "input": "Stream something short.",
+  "stream": true
+}
+
+### Retrieve, cancel, delete
+GET {{baseUrl}}/responses/resp_abc123
+Authorization: Bearer {{apiKey}}
+
+###
+POST {{baseUrl}}/responses/resp_abc123/cancel
+Authorization: Bearer {{apiKey}}
+
+###
+DELETE {{baseUrl}}/responses/resp_abc123
+Authorization: Bearer {{apiKey}}
+
+###############################################################################
+# Files and Uploads
+###############################################################################
+
+### Upload a file
+POST {{baseUrl}}/files
+Authorization: Bearer {{apiKey}}
+Content-Type: multipart/form-data; boundary=----LlmMockBoundary
+
+------LlmMockBoundary
+Content-Disposition: form-data; name="purpose"
+
+fine-tune
+------LlmMockBoundary
+Content-Disposition: form-data; name="file"; filename="training.jsonl"
+Content-Type: application/jsonl
+
+{"messages":[{"role":"user","content":"hi"},{"role":"assistant","content":"Echo: hi"}]}
+------LlmMockBoundary--
+
+### List files
+GET {{baseUrl}}/files
+Authorization: Bearer {{apiKey}}
+
+### Retrieve a catalog file
+GET {{baseUrl}}/files/file-mock-training-jsonl
+Authorization: Bearer {{apiKey}}
+
+### Create an upload
+POST {{baseUrl}}/uploads
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "filename": "training-examples.jsonl",
+  "bytes": 2048,
+  "mime_type": "text/jsonl",
+  "purpose": "fine-tune"
+}
+
+###############################################################################
+# Routing and auth
+###############################################################################
+
+### Unimplemented path -> 404 (the v1 tree is terminal: no api-version complaint)
+POST {{baseUrl}}/audio/speech
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{}
+
+### Missing credential -> 401, gateway shape
+GET {{baseUrl}}/models
+
+### Invalid credential -> 401, wrapped shape
+GET {{baseUrl}}/models
+Authorization: Bearer sk-mock-invalid
+
+### The api-key header works here as well
+GET {{baseUrl}}/models
+api-key: {{apiKey}}

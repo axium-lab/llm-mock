@@ -1,0 +1,285 @@
+### llm-mock — Gemini, AI Studio (/gemini)
+#
+# @google/genai appends the version itself, so the SDK's baseUrl stops at
+# /gemini; by hand, the version goes in the URL. v1beta and v1 serve the same
+# mock. The key travels in x-goog-api-key (also ?key= or a bearer token).
+
+@baseUrl = http://localhost:3000/gemini/v1beta
+@apiKey = sk-mock-key-01
+@contentType = application/json
+@model = gemini-3.6-flash
+
+###############################################################################
+# Models
+###############################################################################
+
+### List models
+GET {{baseUrl}}/models
+x-goog-api-key: {{apiKey}}
+
+### Retrieve a single model
+GET {{baseUrl}}/models/{{model}}
+x-goog-api-key: {{apiKey}}
+
+### Tuned models (always empty)
+GET {{baseUrl}}/tunedModels
+x-goog-api-key: {{apiKey}}
+
+### Unknown model -> 404 NOT_FOUND (google.rpc.Status envelope)
+GET {{baseUrl}}/models/gemini-does-not-exist
+x-goog-api-key: {{apiKey}}
+
+###############################################################################
+# generateContent
+###############################################################################
+
+### Basic generation
+POST {{baseUrl}}/models/{{model}}:generateContent
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "systemInstruction": { "parts": [{ "text": "You are a helpful assistant." }] },
+  "contents": [{ "role": "user", "parts": [{ "text": "Hello, who are you?" }] }]
+}
+
+### Generation with a canned response
+POST {{baseUrl}}/models/{{model}}:generateContent
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-response: This is a forced deterministic answer.
+
+{
+  "contents": [{ "parts": [{ "text": "Say anything." }] }]
+}
+
+### Two candidates
+POST {{baseUrl}}/models/{{model}}:generateContent
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "Give me options." }] }],
+  "generationConfig": { "candidateCount": 2 }
+}
+
+### Function call forced by toolConfig
+POST {{baseUrl}}/models/{{model}}:generateContent
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "What's the weather in Valencia?" }] }],
+  "tools": [{
+    "functionDeclarations": [{
+      "name": "get_weather",
+      "parameters": { "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }
+    }]
+  }],
+  "toolConfig": { "functionCallingConfig": { "mode": "ANY" } }
+}
+
+### Streaming as SSE (?alt=sse; no [DONE] sentinel)
+POST {{baseUrl}}/models/{{model}}:streamGenerateContent?alt=sse
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "Stream a short greeting." }] }]
+}
+
+### Streaming without alt=sse: a JSON array of chunks
+POST {{baseUrl}}/models/{{model}}:streamGenerateContent
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "Stream a short greeting." }] }]
+}
+
+### Missing contents -> 400
+POST {{baseUrl}}/models/{{model}}:generateContent
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{}
+
+###############################################################################
+# countTokens and embeddings
+###############################################################################
+
+### Count tokens
+POST {{baseUrl}}/models/{{model}}:countTokens
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "contents": [{ "parts": [{ "text": "How many tokens is this?" }] }]
+}
+
+### Embed one piece of content
+POST {{baseUrl}}/models/gemini-embedding-001:embedContent
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "content": { "parts": [{ "text": "The quick brown fox jumps over the lazy dog." }] }
+}
+
+### Batch embed (what the SDK actually calls, even for one input)
+POST {{baseUrl}}/models/gemini-embedding-001:batchEmbedContents
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "requests": [
+    { "model": "models/gemini-embedding-001", "content": { "parts": [{ "text": "First piece of text." }] } },
+    { "model": "models/gemini-embedding-001", "content": { "parts": [{ "text": "Second piece of text." }] } }
+  ]
+}
+
+###############################################################################
+# Interactions API
+###############################################################################
+
+### Create an interaction
+POST {{baseUrl}}/interactions
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "input": "Write a one-sentence bedtime story about a unicorn."
+}
+
+### Create an interaction streaming (SSE)
+POST {{baseUrl}}/interactions
+x-goog-api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "input": "Stream something short.",
+  "stream": true
+}
+
+### Retrieve an interaction (synthesized for any id), optionally replayed as events
+GET {{baseUrl}}/interactions/inter_abc123
+x-goog-api-key: {{apiKey}}
+
+###
+GET {{baseUrl}}/interactions/inter_abc123?stream=true
+x-goog-api-key: {{apiKey}}
+
+### Cancel and delete
+POST {{baseUrl}}/interactions/inter_abc123/cancel
+x-goog-api-key: {{apiKey}}
+
+###
+DELETE {{baseUrl}}/interactions/inter_abc123
+x-goog-api-key: {{apiKey}}
+
+###############################################################################
+# Files (resumable upload, two steps)
+###############################################################################
+
+### Step 1: start a session — the x-goog-upload-url response header is the
+### session URL for step 2. Note the /upload prefix ahead of the version.
+POST http://localhost:3000/gemini/upload/v1beta/files
+x-goog-api-key: {{apiKey}}
+x-goog-upload-protocol: resumable
+x-goog-upload-command: start
+x-goog-upload-header-content-length: 34
+x-goog-upload-header-content-type: text/plain
+Content-Type: {{contentType}}
+
+{ "file": { "displayName": "notes.txt", "mimeType": "text/plain" } }
+
+### Step 2: upload and finalize — paste the x-goog-upload-url from step 1
+POST http://localhost:3000/gemini/upload/v1beta/files?upload_id=REPLACE_ME&upload_protocol=resumable
+x-goog-api-key: {{apiKey}}
+x-goog-upload-command: upload, finalize
+x-goog-upload-offset: 0
+Content-Type: text/plain
+
+Some notes to attach to a prompt.
+
+### List files (simulated catalog)
+GET {{baseUrl}}/files
+x-goog-api-key: {{apiKey}}
+
+### Retrieve a catalog file
+GET {{baseUrl}}/files/mock-catalog-report
+x-goog-api-key: {{apiKey}}
+
+### Delete a file (google.protobuf.Empty)
+DELETE {{baseUrl}}/files/mock-catalog-notes
+x-goog-api-key: {{apiKey}}
+
+### Reserved missing id -> 404
+GET {{baseUrl}}/files/missing-123
+x-goog-api-key: {{apiKey}}
+
+###############################################################################
+# OpenAI-compatible layer (/openai, bearer auth, Google's error envelope)
+###############################################################################
+
+### Chat completion through the compatibility layer
+POST {{baseUrl}}/openai/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "messages": [{ "role": "user", "content": "Hello through the OpenAI layer." }]
+}
+
+### Streaming through the compatibility layer (here [DONE] is sent)
+POST {{baseUrl}}/openai/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "{{model}}",
+  "messages": [{ "role": "user", "content": "Stream a short greeting." }],
+  "stream": true
+}
+
+### Embeddings through the compatibility layer (Gemini's dimensions)
+POST {{baseUrl}}/openai/embeddings
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gemini-embedding-001",
+  "input": "The quick brown fox jumps over the lazy dog."
+}
+
+### Models through the compatibility layer
+GET {{baseUrl}}/openai/models
+Authorization: Bearer {{apiKey}}
+
+###
+GET {{baseUrl}}/openai/models/{{model}}
+Authorization: Bearer {{apiKey}}
+
+###############################################################################
+# Auth errors
+###############################################################################
+
+### Missing API key -> 403 PERMISSION_DENIED (the frontend, not the service)
+GET {{baseUrl}}/models
+
+### Invalid API key -> 400 INVALID_ARGUMENT, with details attached
+GET {{baseUrl}}/models
+x-goog-api-key: sk-mock-invalid
+
+### Key in the query string (older form, still accepted)
+GET {{baseUrl}}/models?key={{apiKey}}
+
+### Compatibility layer, missing credential -> 404 (confirmed against the live service)
+GET {{baseUrl}}/openai/models
+
+### Compatibility layer, invalid credential -> 400 with a shorter message
+GET {{baseUrl}}/openai/models
+Authorization: Bearer sk-mock-invalid

@@ -1,0 +1,299 @@
+### llm-mock — Azure OpenAI, deployments API (/azure/openai)
+#
+# The classic surface: every call carries ?api-version=, the generative
+# endpoints are addressed through a deployment, and the key travels in the
+# api-key header (an Entra ID bearer token is accepted too). On the real
+# service the resource is the hostname ({resource}.openai.azure.com); here it
+# is part of the prefix.
+
+@baseUrl = http://localhost:3000/azure/openai
+@apiKey = sk-mock-key-01
+@apiVersion = 2024-10-21
+@contentType = application/json
+@deployment = my-gpt4o-deployment
+
+###############################################################################
+# Models and deployments
+###############################################################################
+
+### List models
+GET {{baseUrl}}/models?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+### Retrieve a model
+GET {{baseUrl}}/models/gpt-4o?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+### List deployments (one per catalog model, legacy data-plane shape)
+GET {{baseUrl}}/deployments?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+### Describe a deployment (any name is valid)
+GET {{baseUrl}}/deployments/{{deployment}}?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+### Reserved `missing-` prefix -> 404 DeploymentNotFound
+GET {{baseUrl}}/deployments/missing-one?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+### Missing api-version -> 400 MissingApiVersionParameter
+GET {{baseUrl}}/models
+api-key: {{apiKey}}
+
+###############################################################################
+# Chat Completions (deployment-scoped, with the content filter's verdict)
+###############################################################################
+
+### Basic chat completion — note prompt_filter_results and content_filter_results
+POST {{baseUrl}}/deployments/{{deployment}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": "Hello, who are you?" }
+  ]
+}
+
+### Chat completion with a canned response
+POST {{baseUrl}}/deployments/{{deployment}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-response: This is a forced deterministic answer.
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "Say anything." }]
+}
+
+### Streaming — opens with an empty-choices chunk carrying the prompt's verdict, ends with [DONE]
+POST {{baseUrl}}/deployments/{{deployment}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "Stream a short greeting." }],
+  "stream": true
+}
+
+### Tool call forced by tool_choice
+POST {{baseUrl}}/deployments/{{deployment}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "What's the weather in Valencia?" }],
+  "tools": [{ "type": "function", "function": { "name": "get_weather", "parameters": { "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] } } }],
+  "tool_choice": "required"
+}
+
+### Blocked prompt -> 400 content_filter, verdict nested in innererror
+POST {{baseUrl}}/deployments/{{deployment}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-content-filter: prompt:violence:high
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "something the filter dislikes" }]
+}
+
+### Filtered reply -> 200 with content null and finish_reason content_filter
+POST {{baseUrl}}/deployments/{{deployment}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-content-filter: completion:sexual:medium
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "hello" }]
+}
+
+### Filter unavailable -> 200 with an error object where the verdict would be
+POST {{baseUrl}}/deployments/{{deployment}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-content-filter: unavailable
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "hello" }]
+}
+
+### Reserved deployment name -> 404 DeploymentNotFound
+POST {{baseUrl}}/deployments/missing-one/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "messages": [{ "role": "user", "content": "hi" }]
+}
+
+### Empty messages -> 400 BadRequest (Azure's envelope)
+POST {{baseUrl}}/deployments/{{deployment}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "messages": []
+}
+
+###############################################################################
+# Completions (legacy, deployment-scoped)
+###############################################################################
+
+### Basic completion, with the filter's verdict on each choice
+POST {{baseUrl}}/deployments/gpt-35-turbo-instruct/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-35-turbo-instruct",
+  "prompt": "Say hi"
+}
+
+### Completion streaming
+POST {{baseUrl}}/deployments/gpt-35-turbo-instruct/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-35-turbo-instruct",
+  "prompt": "Stream a short greeting.",
+  "stream": true
+}
+
+###############################################################################
+# Embeddings (deployment-scoped, no filter verdict)
+###############################################################################
+
+### Create embeddings
+POST {{baseUrl}}/deployments/text-embedding-3-small/embeddings?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "text-embedding-3-small",
+  "input": ["First piece of text.", "Second piece of text."]
+}
+
+###############################################################################
+# Responses API (not deployment-scoped: /openai/responses, as the SDK sends it)
+###############################################################################
+
+### Create a response
+POST {{baseUrl}}/responses?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "input": "Write a one-sentence bedtime story about a unicorn."
+}
+
+### Create a response streaming
+POST {{baseUrl}}/responses?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4o",
+  "input": "Stream something short.",
+  "stream": true
+}
+
+### Retrieve, cancel, delete
+GET {{baseUrl}}/responses/resp_abc123?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+###
+POST {{baseUrl}}/responses/resp_abc123/cancel?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+###
+DELETE {{baseUrl}}/responses/resp_abc123?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+###############################################################################
+# Files and Uploads (OpenAI's routers, not deployment-scoped)
+###############################################################################
+
+### Upload a file
+POST {{baseUrl}}/files?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: multipart/form-data; boundary=----LlmMockBoundary
+
+------LlmMockBoundary
+Content-Disposition: form-data; name="purpose"
+
+fine-tune
+------LlmMockBoundary
+Content-Disposition: form-data; name="file"; filename="training.jsonl"
+Content-Type: application/jsonl
+
+{"messages":[{"role":"user","content":"hi"},{"role":"assistant","content":"Echo: hi"}]}
+------LlmMockBoundary--
+
+### List files
+GET {{baseUrl}}/files?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+### Retrieve a catalog file and its content
+GET {{baseUrl}}/files/file-mock-training-jsonl?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+###
+GET {{baseUrl}}/files/file-mock-training-jsonl/content?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+### Delete a file
+DELETE {{baseUrl}}/files/file-mock-diagram-png?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+### Create an upload (then parts / complete / cancel as on /openai/v1)
+POST {{baseUrl}}/uploads?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "filename": "training-examples.jsonl",
+  "bytes": 2048,
+  "mime_type": "text/jsonl",
+  "purpose": "fine-tune"
+}
+
+### Cancel an upload (paste the id returned above)
+POST {{baseUrl}}/uploads/upload_REPLACE_ME/cancel?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+###############################################################################
+# Not served on this door -> 404
+###############################################################################
+
+### Audio under a deployment
+POST {{baseUrl}}/deployments/{{deployment}}/audio/speech?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{}
+
+###############################################################################
+# Auth errors
+###############################################################################
+
+### Missing key -> 401 in the gateway's flat shape (no `error` wrapper)
+GET {{baseUrl}}/models?api-version={{apiVersion}}
+
+### Invalid key -> 401 in the service's wrapped shape
+GET {{baseUrl}}/models?api-version={{apiVersion}}
+api-key: sk-mock-invalid
+
+### Entra ID style bearer token (not validated: any key from the list passes)
+GET {{baseUrl}}/models?api-version={{apiVersion}}
+Authorization: Bearer {{apiKey}}

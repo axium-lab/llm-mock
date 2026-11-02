@@ -1,0 +1,185 @@
+### llm-mock — Azure AI Model Inference API (/azure/models)
+#
+# The route a Foundry resource exposes for non-OpenAI models (Llama, Mistral,
+# DeepSeek, Phi): https://{resource}.services.ai.azure.com/models/*. Every
+# call carries ?api-version=; the key travels in api-key or as a bearer token.
+# Microsoft now steers Foundry Models through /openai/v1 (see
+# azure-openai-v1.http); this door exists for code written against the
+# retired azure-ai-inference SDKs.
+
+@baseUrl = http://localhost:3000/azure/models
+@apiKey = sk-mock-key-01
+@apiVersion = 2024-05-01-preview
+@contentType = application/json
+
+###############################################################################
+# Info
+###############################################################################
+
+### Describe the deployed model (fixed: Phi-4, chat_completion, Microsoft)
+GET {{baseUrl}}/info?api-version={{apiVersion}}
+api-key: {{apiKey}}
+
+###############################################################################
+# Chat Completions (the API's own subset: no `object`, no `system_fingerprint`)
+###############################################################################
+
+### Basic chat completion — `model` optional, the response names what ran
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": "Hello, who are you?" }
+  ]
+}
+
+### Addressed to a deployment by name
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "Mistral-large",
+  "messages": [{ "role": "user", "content": "Hello, Mistral." }],
+  "temperature": 0,
+  "max_tokens": 256
+}
+
+### Chat completion with a canned response
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-response: This is a forced deterministic answer.
+
+{
+  "messages": [{ "role": "user", "content": "Say anything." }]
+}
+
+### Streaming (SSE, ends with data: [DONE])
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "messages": [{ "role": "user", "content": "Stream a short greeting." }],
+  "stream": true
+}
+
+### Tool call forced by tool_choice
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "messages": [{ "role": "user", "content": "What's the weather in Valencia?" }],
+  "tools": [{ "type": "function", "function": { "name": "get_weather", "parameters": { "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] } } }],
+  "tool_choice": "required"
+}
+
+### A field outside the API -> 422 parameter_not_supported (default extra-parameters: error)
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "messages": [{ "role": "user", "content": "hi" }],
+  "safe_prompt": true
+}
+
+### The same field let through with extra-parameters: pass-through (or drop)
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+extra-parameters: pass-through
+
+{
+  "messages": [{ "role": "user", "content": "hi" }],
+  "safe_prompt": true
+}
+
+### Blocked prompt -> 400, the documented flat content_filter error
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-content-filter: prompt
+
+{
+  "messages": [{ "role": "user", "content": "something the filter dislikes" }]
+}
+
+### Filtered reply -> 200 with content null and finish_reason content_filter
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-content-filter: completion
+
+{
+  "messages": [{ "role": "user", "content": "hello" }]
+}
+
+### Missing messages -> 422 missing, detail.loc names the field
+POST {{baseUrl}}/chat/completions?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{}
+
+###############################################################################
+# Embeddings
+###############################################################################
+
+### Create embeddings
+POST {{baseUrl}}/embeddings?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "input": ["First piece of text.", "Second piece of text."]
+}
+
+### Addressed to an embedding deployment, with input_type
+POST {{baseUrl}}/embeddings?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "Cohere-embed-v3-english",
+  "input": "The quick brown fox jumps over the lazy dog.",
+  "input_type": "query"
+}
+
+### Missing input -> 422
+POST {{baseUrl}}/embeddings?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{}
+
+###############################################################################
+# Routing and auth
+###############################################################################
+
+### Missing api-version -> 400 MissingApiVersionParameter, flat envelope
+GET {{baseUrl}}/info
+api-key: {{apiKey}}
+
+### Not served (image embeddings) -> 404 in the gateway's shape
+POST {{baseUrl}}/images/embeddings?api-version={{apiVersion}}
+api-key: {{apiKey}}
+Content-Type: {{contentType}}
+
+{}
+
+### Missing credential -> 401 flat, the gateway's
+GET {{baseUrl}}/info?api-version={{apiVersion}}
+
+### Invalid credential -> 401 wrapped
+GET {{baseUrl}}/info?api-version={{apiVersion}}
+api-key: sk-mock-invalid
+
+### Entra ID style bearer token (not validated)
+GET {{baseUrl}}/info?api-version={{apiVersion}}
+Authorization: Bearer {{apiKey}}

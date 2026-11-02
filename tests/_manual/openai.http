@@ -1,0 +1,381 @@
+### llm-mock — OpenAI (/openai/v1)
+#
+# Requires the "REST Client" extension (humao.rest-client).
+# Start the server first (default port 3000): bun start
+# API keys come from api-keys.json (sk-mock-key-01 .. sk-mock-key-10).
+
+@baseUrl = http://localhost:3000/openai/v1
+@apiKey = sk-mock-key-01
+@contentType = application/json
+
+###############################################################################
+# Models
+###############################################################################
+
+### List models
+GET {{baseUrl}}/models
+Authorization: Bearer {{apiKey}}
+
+### Retrieve a single model
+GET {{baseUrl}}/models/gpt-4.1
+Authorization: Bearer {{apiKey}}
+
+### Retrieve an unknown model -> 404 (OpenAI-shaped error envelope)
+GET {{baseUrl}}/models/does-not-exist
+Authorization: Bearer {{apiKey}}
+
+###############################################################################
+# Chat Completions
+###############################################################################
+
+### Basic chat completion
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4.1",
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user", "content": "Hello, who are you?" }
+  ]
+}
+
+### Chat completion with a canned response (plain text override header)
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-response: This is a forced deterministic answer.
+
+{
+  "model": "gpt-4.1",
+  "messages": [{ "role": "user", "content": "Say anything." }]
+}
+
+### Chat completion with a UTF-8 canned response (base64 override header)
+# Decoded value: "¡Hola! Aquí va una respuesta con acentos y emojis 🚀"
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-response-base64: wqFIb2xhISBBcXXDrSB2YSB1bmEgcmVzcHVlc3RhIGNvbiBhY2VudG9zIHkgZW1vamlzIPCfmoA=
+
+{
+  "model": "gpt-4.1",
+  "messages": [{ "role": "user", "content": "Say anything." }]
+}
+
+### Chat completion streaming (SSE, ends with data: [DONE])
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4.1",
+  "messages": [{ "role": "user", "content": "Stream a short greeting." }],
+  "stream": true,
+  "stream_options": { "include_usage": true }
+}
+
+### Tool call forced by tool_choice
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4.1",
+  "messages": [{ "role": "user", "content": "What's the weather in Valencia?" }],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "parameters": { "type": "object", "properties": { "city": { "type": "string" } }, "required": ["city"] }
+      }
+    }
+  ],
+  "tool_choice": "required"
+}
+
+### Tool call pinned by header, arguments included
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-tool-calls: [{"name":"get_weather","arguments":{"city":"Valencia"}}]
+
+{
+  "model": "gpt-4.1",
+  "messages": [{ "role": "user", "content": "weather?" }],
+  "tools": [{ "type": "function", "function": { "name": "get_weather", "parameters": { "type": "object" } } }]
+}
+
+### Missing model -> 400
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "messages": [{ "role": "user", "content": "No model provided." }]
+}
+
+### Empty messages -> 400
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4.1",
+  "messages": []
+}
+
+###############################################################################
+# Completions (legacy)
+###############################################################################
+
+### Basic completion
+POST {{baseUrl}}/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-3.5-turbo-instruct",
+  "prompt": "Say hi"
+}
+
+### Two prompts, two choices each, prompt echoed back
+POST {{baseUrl}}/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-3.5-turbo-instruct",
+  "prompt": ["one", "two"],
+  "n": 2,
+  "echo": true
+}
+
+### Completion streaming (SSE, ends with data: [DONE])
+POST {{baseUrl}}/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-3.5-turbo-instruct",
+  "prompt": "Stream a short greeting.",
+  "stream": true
+}
+
+###############################################################################
+# Responses API
+###############################################################################
+
+### Create a response (string input)
+POST {{baseUrl}}/responses
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4.1",
+  "input": "Write a one-sentence bedtime story about a unicorn."
+}
+
+### Create a response with a canned override
+POST {{baseUrl}}/responses
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-response: Forced response for the Responses API.
+
+{
+  "model": "gpt-4.1",
+  "input": "Anything goes here."
+}
+
+### Create a response streaming (typed SSE events)
+POST {{baseUrl}}/responses
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4.1",
+  "input": "Stream something short.",
+  "stream": true
+}
+
+### Retrieve a response by id (synthesized deterministically)
+GET {{baseUrl}}/responses/resp_abc123
+Authorization: Bearer {{apiKey}}
+
+### Delete a response by id (always idempotent)
+DELETE {{baseUrl}}/responses/resp_abc123
+Authorization: Bearer {{apiKey}}
+
+### Cancel a response by id (stateless: comes back cancelled, as a background response)
+POST {{baseUrl}}/responses/resp_abc123/cancel
+Authorization: Bearer {{apiKey}}
+
+### Missing input -> 400
+POST {{baseUrl}}/responses
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "gpt-4.1"
+}
+
+###############################################################################
+# Embeddings
+###############################################################################
+
+### Create embeddings (single string input)
+POST {{baseUrl}}/embeddings
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "text-embedding-3-small",
+  "input": "The quick brown fox jumps over the lazy dog."
+}
+
+### Create embeddings (batch input, float encoding, custom dimensions)
+POST {{baseUrl}}/embeddings
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "text-embedding-3-large",
+  "input": ["First piece of text.", "Second piece of text."],
+  "encoding_format": "float",
+  "dimensions": 256
+}
+
+### Missing input -> 400
+POST {{baseUrl}}/embeddings
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "model": "text-embedding-3-small"
+}
+
+###############################################################################
+# Files
+###############################################################################
+
+### Upload a file (multipart/form-data)
+# The returned id encodes the filename, size and purpose, so the retrieve below
+# answers accurately without the server storing anything.
+POST {{baseUrl}}/files
+Authorization: Bearer {{apiKey}}
+Content-Type: multipart/form-data; boundary=----LlmMockBoundary
+
+------LlmMockBoundary
+Content-Disposition: form-data; name="purpose"
+
+fine-tune
+------LlmMockBoundary
+Content-Disposition: form-data; name="file"; filename="training.jsonl"
+Content-Type: application/jsonl
+
+{"messages":[{"role":"user","content":"hi"},{"role":"assistant","content":"Echo: hi"}]}
+------LlmMockBoundary--
+
+### List files (simulated catalog, newest first)
+GET {{baseUrl}}/files
+Authorization: Bearer {{apiKey}}
+
+### List files filtered by purpose, two per page
+GET {{baseUrl}}/files?purpose=fine-tune&limit=2&order=asc
+Authorization: Bearer {{apiKey}}
+
+### Retrieve a catalog file
+GET {{baseUrl}}/files/file-mock-training-jsonl
+Authorization: Bearer {{apiKey}}
+
+### Retrieve file content (deterministic placeholder bytes)
+GET {{baseUrl}}/files/file-mock-training-jsonl/content
+Authorization: Bearer {{apiKey}}
+
+### Retrieve file content pinned by the override header
+GET {{baseUrl}}/files/file-mock-manual-pdf/content
+Authorization: Bearer {{apiKey}}
+x-llm-mock-response: exactly these bytes
+
+### Delete a file (always idempotent)
+DELETE {{baseUrl}}/files/file-mock-diagram-png
+Authorization: Bearer {{apiKey}}
+
+### Reserved missing id -> 404
+GET {{baseUrl}}/files/file-missing-123
+Authorization: Bearer {{apiKey}}
+
+### Invalid purpose -> 400
+POST {{baseUrl}}/files
+Authorization: Bearer {{apiKey}}
+Content-Type: multipart/form-data; boundary=----LlmMockBoundary
+
+------LlmMockBoundary
+Content-Disposition: form-data; name="purpose"
+
+not-a-purpose
+------LlmMockBoundary
+Content-Disposition: form-data; name="file"; filename="x.txt"
+
+hello
+------LlmMockBoundary--
+
+###############################################################################
+# Uploads (chunked flow)
+###############################################################################
+
+### Create an upload
+POST {{baseUrl}}/uploads
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "filename": "training-examples.jsonl",
+  "bytes": 2048,
+  "mime_type": "text/jsonl",
+  "purpose": "fine-tune"
+}
+
+### Add a part (paste the id returned above)
+@uploadId = upload_REPLACE_ME
+
+POST {{baseUrl}}/uploads/{{uploadId}}/parts
+Authorization: Bearer {{apiKey}}
+Content-Type: multipart/form-data; boundary=----LlmMockBoundary
+
+------LlmMockBoundary
+Content-Disposition: form-data; name="data"; filename=""
+Content-Type: application/octet-stream
+
+{"messages":[{"role":"user","content":"chunk"}]}
+------LlmMockBoundary--
+
+### Complete the upload (paste the part id returned above)
+POST {{baseUrl}}/uploads/{{uploadId}}/complete
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+
+{
+  "part_ids": ["part_REPLACE_ME"]
+}
+
+### Cancel the upload
+POST {{baseUrl}}/uploads/{{uploadId}}/cancel
+Authorization: Bearer {{apiKey}}
+
+### Reserved missing upload id -> 404
+POST {{baseUrl}}/uploads/upload_missing_123/cancel
+Authorization: Bearer {{apiKey}}
+
+###############################################################################
+# Auth errors
+###############################################################################
+
+### Missing API key -> 401
+GET {{baseUrl}}/models
+
+### Invalid API key -> 401 (key is redacted in the message)
+GET {{baseUrl}}/models
+Authorization: Bearer sk-mock-invalid
