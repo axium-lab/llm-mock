@@ -134,6 +134,7 @@
         <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/chat/completions</code></td><td>Full <code>chat.completion</code> object, <code>n</code> choices, SSE streaming, <code>stream_options.include_usage</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/completions</code></td><td>The legacy endpoint: a <code>text_completion</code> object, <code>n</code> choices per prompt (string, list, or token lists), <code>echo</code>, SSE with <code>[DONE]</code></td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Full <code>response</code> object, typed SSE event stream</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Stateless: synthesizes a deterministic response for any id</td></tr>
           <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the OpenAI deletion object</td></tr>

@@ -84,6 +84,50 @@ export interface ChatCompletionChunk {
   usage?: CompletionUsage;
 }
 
+// The legacy completions endpoint: a bare prompt in, bare text out. Still on
+// the wire for the instruct models, and Azure keeps it deployment-scoped.
+export interface CompletionRequest {
+  model: string;
+  // A string, a list of strings, a list of tokens, or a list of lists of
+  // tokens; every entry is a separate prompt with its own choices.
+  prompt?: string | string[] | number[] | number[][] | null;
+  n?: number;
+  // Prepends the prompt to the completion.
+  echo?: boolean;
+  stream?: boolean;
+  stream_options?: { include_usage?: boolean };
+  [key: string]: unknown;
+}
+
+export interface CompletionChoice {
+  text: string;
+  index: number;
+  logprobs: null;
+  finish_reason: "stop" | "length" | "content_filter" | null;
+}
+
+export interface Completion {
+  id: string;
+  object: "text_completion";
+  created: number;
+  model: string;
+  choices: CompletionChoice[];
+  usage: CompletionUsage;
+  system_fingerprint: string;
+}
+
+// A streamed completion reuses the `text_completion` object rather than a
+// chunk type of its own; only `finish_reason` tells the last piece apart.
+export interface CompletionChunk {
+  id: string;
+  object: "text_completion";
+  created: number;
+  model: string;
+  system_fingerprint: string;
+  choices: CompletionChoice[];
+  usage?: CompletionUsage;
+}
+
 export interface Model {
   id: string;
   object: "model";

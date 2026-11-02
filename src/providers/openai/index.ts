@@ -4,6 +4,7 @@ import type { Provider, ProviderDeps } from "../types";
 import { openaiAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
 import { chatCompletionsRouter } from "./routes/chat-completions";
+import { completionsRouter } from "./routes/completions";
 import { embeddingsRouter } from "./routes/embeddings";
 import { filesRouter } from "./routes/files";
 import { modelsRouter } from "./routes/models";
@@ -17,6 +18,7 @@ export const openaiProvider: Provider = {
     const v1 = Router();
     v1.use(createAuthMiddleware(apiKeys, openaiAuthScheme));
     v1.use("/chat/completions", chatCompletionsRouter);
+    v1.use("/completions", completionsRouter);
     v1.use("/responses", responsesRouter);
     v1.use("/models", modelsRouter);
     v1.use("/embeddings", embeddingsRouter);

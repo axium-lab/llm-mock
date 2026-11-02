@@ -128,6 +128,8 @@
           <tr><td><a href="api-gemini.html"><strong>Gemini (AI Studio)</strong></a></td><td><code>/gemini</code></td><td>generateContent, Interactions API, files, OpenAI-compat layer</td></tr>
           <tr><td><a href="api-gemini-enterprise.html"><strong>Gemini Enterprise</strong></a></td><td><code>/gemini-enterprise</code></td><td>Two auth modes, regional paths, embeddings via <code>:predict</code></td></tr>
           <tr><td><a href="api-azure.html"><strong>Azure OpenAI</strong></a></td><td><code>/azure/openai</code></td><td>Deployments, <code>api-version</code>, Entra ID, content filtering</td></tr>
+          <tr><td><a href="api-azure.html#azure-anthropic"><strong>Claude in Microsoft Foundry</strong></a></td><td><code>/azure/anthropic</code></td><td>Anthropic's Messages API behind Azure's front door</td></tr>
+          <tr><td><a href="api-azure.html#azure-models"><strong>Azure AI Model Inference</strong></a></td><td><code>/azure/models</code></td><td>Foundry's non-OpenAI models, <code>extra-parameters</code>, flat errors</td></tr>
         </tbody>
       </table>
     </section>
@@ -144,6 +146,8 @@
           <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><code>@google/genai</code>, <code>vertexai: true</code></td></tr>
           <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><code>openai</code>, <code>AzureOpenAI</code></td></tr>
           <tr><td>Azure OpenAI · v1</td><td><code>/azure/openai/v1</code></td><td><code>openai</code></td></tr>
+          <tr><td>Claude in Microsoft Foundry</td><td><code>/azure/anthropic</code></td><td><code>@anthropic-ai/foundry-sdk</code></td></tr>
+          <tr><td>Azure AI Model Inference</td><td><code>/azure/models</code></td><td><code>@azure-rest/ai-inference</code></td></tr>
         </tbody>
       </table>
       <div class="callout">
@@ -224,6 +228,18 @@
             <td><span class="badge soon">401</span> wrapped envelope</td>
             <td><span class="badge soon">401</span> flat, no <code>error</code> wrapper</td>
           </tr>
+          <tr>
+            <td>Claude in Microsoft Foundry</td>
+            <td><code>api-key</code> or <code>x-api-key</code> (also Bearer)</td>
+            <td><span class="badge soon">401</span> Azure's wrapped envelope, not Anthropic's</td>
+            <td><span class="badge soon">401</span> flat, the gateway's</td>
+          </tr>
+          <tr>
+            <td>Azure AI Model Inference</td>
+            <td><code>api-key</code> (also Bearer)</td>
+            <td><span class="badge soon">401</span> wrapped envelope</td>
+            <td><span class="badge soon">401</span> flat, the gateway's</td>
+          </tr>
         </tbody>
       </table>
       <p>Use <code>sk-mock-invalid</code> as the documented known-bad key. Run your own instance for a custom key set — point <code>LLM_MOCK_API_KEYS_FILE</code> at your own JSON array of keys.</p>
@@ -274,6 +290,8 @@
           <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
           <tr><td>Gemini Enterprise (ex-Vertex AI)</td><td><code>/gemini-enterprise</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
           <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+          <tr><td>Claude in Microsoft Foundry</td><td><code>/azure/anthropic</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+          <tr><td>Azure AI Model Inference</td><td><code>/azure/models</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
           <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
         </tbody>
       </table>

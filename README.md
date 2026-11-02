@@ -57,8 +57,103 @@ Each provider mounts under its own prefix and implements its own contract — it
 | Gemini (AI Studio) | `/gemini` | [Docs →](https://llm-mock.dev/api-gemini.html) |
 | Gemini Enterprise (ex-Vertex AI) | `/gemini-enterprise` | [Docs →](https://llm-mock.dev/api-gemini-enterprise.html) |
 | Azure OpenAI | `/azure/openai` | [Docs →](https://llm-mock.dev/api-azure.html) |
+| Claude in Microsoft Foundry | `/azure/anthropic` | [Docs →](https://llm-mock.dev/api-azure.html#azure-anthropic) |
+| Azure AI Model Inference | `/azure/models` | [Docs →](https://llm-mock.dev/api-azure.html#azure-models) |
 
 Between them: chat completions and the Responses API, Anthropic's Messages API with content blocks and thinking, `generateContent` and the Interactions API, tool calls, embeddings, files and uploads, message batches, token counting, content filtering, and SSE streaming in all three conventions the five providers use.
+
+### Endpoint coverage
+
+What each door answers today, and what it does not yet. ✅ served · ⚠️ served with a caveat · ❌ not served · ✦ in the repo, not yet on the hosted instance.
+
+**OpenAI** — `/openai/v1`
+
+| Endpoint | Status | Notes |
+| --- | --- | --- |
+| `POST /chat/completions` | ✅ | SSE with `[DONE]`, tool calls |
+| `POST /completions` | ✅ ✦ | the legacy endpoint: `text_completion`, `n` choices per prompt, `echo`, SSE with `[DONE]` |
+| `POST /responses` | ✅ | typed SSE event stream; `previous_response_id` and `background` are ignored |
+| `GET /responses/{id}` | ⚠️ | stateless: any id yields a deterministic response, never `404` |
+| `DELETE /responses/{id}` | ⚠️ | idempotent, never `404` |
+| `POST /responses/{id}/cancel` | ✅ ✦ | any id comes back `cancelled` with `background: true` |
+| `POST /files` · `GET /files` · `GET /files/{id}` · `GET /files/{id}/content` · `DELETE /files/{id}` | ✅ | metadata travels in the id; the listing is a simulated catalog, not your uploads; `file-missing*` is `404` |
+| `POST /uploads` | ✅ | |
+| `GET /models` · `GET /models/{id}` | ✅ | `404` outside the catalog |
+| `POST /embeddings` | ✅ | hash-seeded unit vectors |
+
+**Azure OpenAI, deployments API** — `/azure/openai`, `?api-version=` on every call
+
+| Endpoint | Status | Notes |
+| --- | --- | --- |
+| `POST /deployments/{d}/chat/completions` | ✅ | content filtering simulated; `missing-*` deployments are `404 DeploymentNotFound` |
+| `POST /deployments/{d}/embeddings` | ✅ | |
+| `GET /deployments` · `GET /deployments/{d}` | ✅ ✦ | one deployment per catalog model |
+| `GET /models` · `GET /models/{id}` | ✅ | |
+| `POST /responses` · `GET` / `DELETE` / `POST …/cancel` on `/responses/{id}` | ✅ ✦ | OpenAI's router verbatim, not deployment-scoped |
+| `POST /files` · `GET /files` · `GET /files/{id}` · `GET /files/{id}/content` · `DELETE /files/{id}` | ✅ ✦ | OpenAI's router verbatim |
+| `POST /deployments/{d}/completions` | ✅ ✦ | legacy completions, the filter's verdict attached as on chat |
+| `POST /uploads` · `…/{id}/parts` · `…/{id}/complete` · `…/{id}/cancel` | ✅ ✦ | OpenAI's router verbatim |
+| `audio/*` · `images/*` · `batches` | ❌ | |
+| Auth: `api-key` header | ✅ | |
+| Auth: Entra ID bearer token | ⚠️ | any bearer from the key list passes; tokens are not validated |
+
+**Azure OpenAI / Microsoft Foundry, v1 route** — `/azure/openai/v1`, no `api-version`, no deployments
+
+| Endpoint | Status | Notes |
+| --- | --- | --- |
+| `POST /chat/completions` · `POST /embeddings` | ✅ | same handlers as the deployments API |
+| `POST /completions` | ✅ ✦ | |
+| `GET /models` · `GET /models/{id}` | ✅ | |
+| `POST /responses` · `GET` / `DELETE` / `POST …/cancel` on `/responses/{id}` | ✅ ✦ | |
+| `POST /files` · `GET /files` · `GET /files/{id}` · `GET /files/{id}/content` · `DELETE /files/{id}` | ✅ ✦ | |
+| `POST /uploads` · `…/{id}/parts` · `…/{id}/complete` · `…/{id}/cancel` | ✅ ✦ | |
+| Auth: key as `Authorization: Bearer` | ✅ | |
+| Auth: Entra ID bearer token | ⚠️ | not validated |
+
+**Claude in Microsoft Foundry** — `/azure/anthropic`, the `AnthropicFoundry` client pointed at it through `baseURL`
+
+| Endpoint | Status | Notes |
+| --- | --- | --- |
+| `POST /v1/messages` | ✅ ✦ | Anthropic's service behind Azure's front door: same content blocks, named SSE events, `tool_use`, `thinking` |
+| `POST /v1/messages/count_tokens` | ✅ ✦ | |
+| `GET /v1/models` · `/v1/messages/batches` · `/v1/files` | ❌ | not offered by Foundry either: `404` in Anthropic's envelope, and the Foundry SDK leaves them out of its client |
+| Auth: `api-key` or `x-api-key` header | ✅ ✦ | `x-api-key` is what the Foundry SDK sends; rejections come in Azure's shapes, from the gateway |
+| Auth: Entra ID bearer token | ⚠️ ✦ | not validated |
+| `request-id` and `apim-request-id` response headers | ✅ ✦ | |
+
+**Azure AI Model Inference API** — `/azure/models`, `?api-version=` on every call; the route for Foundry's non-OpenAI models
+
+| Endpoint | Status | Notes |
+| --- | --- | --- |
+| `POST /chat/completions` | ✅ ✦ | OpenAI's shapes pared down to the API's own subset; `model` optional; a blocked prompt is the flat `content_filter` error |
+| `POST /embeddings` | ✅ ✦ | |
+| `GET /info` | ✅ ✦ | a fixed deployed model: `Phi-4`, `chat_completion`, `Microsoft` |
+| `extra-parameters` header | ✅ ✦ | `error` (the default) answers `422 parameter_not_supported` for a field outside the API; `drop` and `pass-through` accept it |
+| `POST /images/embeddings` | ❌ | |
+| Auth: `api-key` header · Entra ID bearer | ✅ ✦ · ⚠️ ✦ | |
+
+Microsoft now routes Foundry Models through `/openai/v1` and has retired the `azure-ai-inference` SDKs; this door is for code still written against them.
+
+**Anthropic** — `/anthropic`
+
+| Endpoint | Status | Notes |
+| --- | --- | --- |
+| `POST /v1/messages` | ✅ | named SSE events, `tool_use`, `thinking` |
+| `POST /v1/messages/count_tokens` | ✅ | |
+| `GET /v1/models` · `GET /v1/models/{id}` | ✅ | cursor pagination |
+| `/v1/files` (beta) | ✅ | gated on `anthropic-beta: files-api-2025-04-14` |
+| `/v1/messages/batches` | ✅ | create, retrieve, results, cancel, delete; the list is always empty |
+
+**Claude on Vertex AI** — `/gemini-enterprise`, publisher fixed to `google`
+
+| Endpoint | Status | Notes |
+| --- | --- | --- |
+| `POST …/publishers/anthropic/models/{m}:rawPredict` | ❌ | model in the URL, `anthropic_version` in the body; the Anthropic Messages service is reusable |
+| `POST …/publishers/anthropic/models/{m}:streamRawPredict` | ❌ | |
+
+**Claude on Bedrock** — ❌ not served: `POST /model/{id}/invoke` (SigV4), `POST /model/{id}/invoke-with-response-stream` (binary event-stream).
+
+**Every door** — ❌ `429`, `500`/`503`/`529` and timeouts cannot be provoked; ⚠️ any `model` is accepted on a generation call.
 
 Where the version segment lives depends on the SDK, not on us — the OpenAI and Anthropic clients append only the request path, so their `baseURL` carries the version, while `@google/genai` appends the version itself:
 
@@ -66,6 +161,7 @@ Where the version segment lives depends on the SDK, not on us — the OpenAI and
 new OpenAI({ baseURL: "http://localhost:3000/openai/v1", apiKey: "sk-mock-key-01" });
 new Anthropic({ baseURL: "http://localhost:3000/anthropic", apiKey: "sk-mock-key-01" });
 new GoogleGenAI({ apiKey: "sk-mock-key-01", httpOptions: { baseUrl: "http://localhost:3000/gemini" } });
+new AnthropicFoundry({ baseURL: "http://localhost:3000/azure/anthropic", apiKey: "sk-mock-key-01" });
 ```
 
 Want a provider prioritized? [Open an issue](https://github.com/axium-lab/llm-mock/issues) — or a PR.

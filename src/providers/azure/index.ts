@@ -5,7 +5,10 @@ import { azureAuthScheme } from "./auth";
 import { assertApiVersion } from "./deployments";
 import { filesRouter } from "../openai/routes/files";
 import { responsesRouter } from "../openai/routes/responses";
+import { uploadsRouter } from "../openai/routes/uploads";
 import { errorHandler, notFoundHandler } from "./errors";
+import { createAnthropicRouter } from "./foundry/anthropic";
+import { createModelInferenceRouter } from "./foundry/model-inference";
 import { deploymentCatalogRouter, deploymentsRouter } from "./routes/deployments";
 import { inferenceRouter } from "./routes/inference";
 import { modelsRouter } from "./routes/models";
@@ -16,9 +19,14 @@ export const azureProvider: Provider = {
   // ({resource}.openai.azure.com) and keeps /openai in the path. A mock cannot
   // hand out subdomains, but it does not need to: the SDK takes an arbitrary
   // URL, so the resource simply becomes part of the prefix.
+  //
+  // Three doors share that resource, each under the path Azure gives it:
+  // /openai for Azure OpenAI on both of its surfaces, /anthropic for Claude in
+  // Microsoft Foundry, and /models for the Azure AI Model Inference API.
   baseURLPath: "/azure/openai",
   createRouter({ apiKeys }: ProviderDeps): Router {
     const api = Router();
+    api.use(express.json({ limit: "10mb" }));
     api.use(createAuthMiddleware(apiKeys, azureAuthScheme));
 
     // The v1 surface: OpenAI's contract verbatim, with no api-version and no
@@ -36,6 +44,7 @@ export const azureProvider: Provider = {
     v1.use("/models", modelsRouter);
     v1.use("/responses", responsesRouter);
     v1.use("/files", filesRouter);
+    v1.use("/uploads", uploadsRouter);
     v1.use(inferenceRouter);
     v1.use(notFoundHandler);
     api.use("/v1", v1);
@@ -55,11 +64,13 @@ export const azureProvider: Provider = {
     classic.use("/models", modelsRouter);
     classic.use("/responses", responsesRouter);
     classic.use("/files", filesRouter);
+    classic.use("/uploads", uploadsRouter);
     api.use(classic);
 
     const router = Router();
-    router.use(express.json({ limit: "10mb" }));
     router.use("/openai", api);
+    router.use("/anthropic", createAnthropicRouter({ apiKeys }));
+    router.use("/models", createModelInferenceRouter({ apiKeys }));
 
     router.use(notFoundHandler);
     router.use(errorHandler);

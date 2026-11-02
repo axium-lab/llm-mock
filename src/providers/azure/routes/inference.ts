@@ -3,9 +3,15 @@ import { ApiError } from "../../../core/errors";
 import { requestOverrides } from "../../../core/override";
 import { openSSE, sendDone, sendEvent } from "../../../core/sse";
 import { buildChatChunks, buildChatCompletion } from "../../openai/services/chat-completions";
+import { buildCompletion, buildCompletionChunks } from "../../openai/services/completions";
 import { createEmbeddings } from "../../openai/services/embeddings";
-import type { ChatCompletion, ChatCompletionChunk, EmbeddingRequest } from "../../openai/types";
-import type { ChatCompletionRequest } from "../../openai/types";
+import type {
+  ChatCompletion,
+  ChatCompletionRequest,
+  Completion,
+  CompletionRequest,
+  EmbeddingRequest,
+} from "../../openai/types";
 import {
   blocksCompletion,
   choiceFilterResults,
@@ -74,7 +80,7 @@ inferenceRouter.post("/chat/completions", (req, res) => {
       prompt_filter_results: promptFilterResults(filter),
     });
 
-    for (const chunk of streamed(chunks, filter)) {
+    for (const chunk of filteredChunks(chunks, filter)) {
       sendEvent(res, chunk);
     }
     // Azure terminates the stream with the same [DONE] sentinel as OpenAI.
@@ -85,17 +91,73 @@ inferenceRouter.post("/chat/completions", (req, res) => {
 });
 
 // A filtered generation stops mid-stream: the pieces already produced are kept
-// and the last chunk carries the reason.
-function streamed(chunks: ChatCompletionChunk[], override?: FilterOverride): ChatCompletionChunk[] {
+// and the last chunk carries the reason. Generic over the chunk shape, since
+// chat completions, legacy completions and the Model Inference API all stream
+// through here.
+export function filteredChunks<T extends { choices: { finish_reason: string | null }[] }>(
+  chunks: T[],
+  override?: FilterOverride,
+): T[] {
   if (!blocksCompletion(override)) return chunks;
 
   const truncated = chunks.slice(0, Math.max(1, Math.ceil(chunks.length / 2)));
   const last = truncated[truncated.length - 1]!;
   return [
     ...truncated.slice(0, -1),
-    { ...last, choices: [{ ...last.choices[0]!, finish_reason: "content_filter" }] },
+    { ...last, choices: [{ ...last.choices[0]!, finish_reason: "content_filter" }] } as T,
   ];
 }
+
+// The legacy completions endpoint. Deployment-scoped on the classic surface,
+// addressed by model on v1, and annotated with the filter's verdict the same
+// way chat completions are — a cut reply here is an empty `text` rather than a
+// null `content`.
+function withCompletionFilterResults(completion: Completion, override?: FilterOverride) {
+  const filtered = blocksCompletion(override);
+  return {
+    ...completion,
+    choices: completion.choices.map((choice) => ({
+      ...choice,
+      ...(filtered ? { text: "", finish_reason: "content_filter" as const } : {}),
+      content_filter_results: choiceFilterResults(override),
+    })),
+    prompt_filter_results: promptFilterResults(override),
+  };
+}
+
+inferenceRouter.post("/completions", (req, res) => {
+  const body = req.body as CompletionRequest;
+  if (typeof body?.model !== "string" || !body.model) {
+    throw new ApiError(400, "you must provide a model parameter", "BadRequest", "model");
+  }
+
+  const filter = contentFilterOverride(req);
+  if (filter?.target === "prompt") {
+    throw new AzureContentFilterError(promptFilterResults(filter)[0]!.content_filter_results);
+  }
+
+  const overrides = requestOverrides(req);
+  if (body.stream) {
+    openSSE(res);
+    const chunks = buildCompletionChunks(body, overrides);
+    const first = chunks[0]!;
+    // The same empty opening chunk as on chat completions.
+    sendEvent(res, {
+      id: first.id,
+      object: first.object,
+      created: first.created,
+      model: first.model,
+      choices: [],
+      prompt_filter_results: promptFilterResults(filter),
+    });
+    for (const chunk of filteredChunks(chunks, filter)) {
+      sendEvent(res, chunk);
+    }
+    sendDone(res);
+    return;
+  }
+  res.json(withCompletionFilterResults(buildCompletion(body, overrides), filter));
+});
 
 inferenceRouter.post("/embeddings", (req, res) => {
   const body = req.body as EmbeddingRequest;

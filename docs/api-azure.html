@@ -90,7 +90,7 @@
   <div class="wrap">
     <span class="eyebrow">Azure OpenAI</span>
     <h1>Azure OpenAI API reference</h1>
-    <p class="sub">The <code>/azure/openai</code> surface: both the deployment-based contract with its required <code>api-version</code> and the newer <code>/openai/v1</code> one, plus the content filter that has no counterpart anywhere else.</p>
+    <p class="sub">The three doors of an Azure resource: <code>/azure/openai</code> with both the deployment-based contract and the newer <code>/openai/v1</code> one, <code>/azure/anthropic</code> for Claude in Microsoft Foundry, and <code>/azure/models</code> for the Model Inference API — plus the content filter that has no counterpart anywhere else.</p>
   </div>
 </header>
 
@@ -104,6 +104,8 @@
       <li><a href="#azure-auth">Authentication</a></li>
       <li><a href="#azure-deployments">Deployments</a></li>
       <li><a href="#azure-filter">Content filtering</a></li>
+      <li><a href="#azure-anthropic">Claude in Foundry</a></li>
+      <li><a href="#azure-models">Model Inference API</a></li>
     </ul>
     <p class="toc-group">Common</p>
     <ul>
@@ -129,8 +131,10 @@
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>…/deployments/{deployment}/chat/completions</code></td><td>Full <code>chat.completion</code> object, SSE streaming with <code>[DONE]</code>, tool calls</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>…/deployments/{deployment}/embeddings</code></td><td>Deterministic unit vectors, correct dimension per model</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>…/deployments/{deployment}/completions</code></td><td>The legacy endpoint: a <code>text_completion</code> object, <code>n</code> choices per prompt, <code>echo</code>, the filter's verdict attached as on chat</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/chat/completions</code></td><td>The newer surface: no <code>api-version</code>, no deployments</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/embeddings</code></td><td>Same handlers, addressed by model</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/completions</code></td><td>Legacy completions on the v1 surface</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/models?api-version=</code></td><td>Model catalog, outside the deployment path</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/azure/openai/deployments?api-version=</code></td><td>Deployment listing, one per catalog model</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>…/deployments/{deployment}?api-version=</code></td><td>A single deployment, any name</td></tr>
@@ -145,6 +149,7 @@
           <tr><td><span class="method delete">DELETE</span></td><td><code>/azure/openai/files/{id}?api-version=</code></td><td>Idempotent</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/responses</code>, <code>…/{id}</code>, <code>…/{id}/cancel</code></td><td>The same Responses API on the v1 surface, no <code>api-version</code></td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/files</code>, <code>…/{id}</code>, <code>…/{id}/content</code></td><td>The same Files API on the v1 surface, no <code>api-version</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/uploads?api-version=</code>, <code>…/{id}/parts</code>, <code>…/{id}/complete</code>, <code>…/{id}/cancel</code></td><td>The Uploads API, OpenAI's router verbatim; also at <code>/azure/openai/v1/uploads</code></td></tr>
         </tbody>
       </table>
       <p>The classic surface addresses a <strong>deployment</strong> rather than a model and requires <code>api-version</code> on every call. The v1 surface drops both:</p>
@@ -254,6 +259,85 @@
         against the plural used everywhere else.
       </div>
       <p>None of this provider's shapes could be checked against a live Azure resource. Its routes come from observing what <code>AzureOpenAI</code> puts on the wire, and its payloads from Microsoft's documentation and published examples — but they are not observed responses. The empty first streaming chunk in particular is reconstructed from reported behaviour rather than seen.</p>
+    </section>
+
+    <section id="azure-anthropic">
+      <h2>Azure · Claude in Microsoft Foundry</h2>
+      <p class="section-sub">Anthropic's Messages API served from an Azure resource. On the real service the path is <code>https://{resource}.services.ai.azure.com/anthropic/v1/*</code>; here the resource becomes the prefix, so the door is <code>/azure/anthropic</code>. The service behind it is Anthropic's own, and so are the payloads, the named SSE events and the error envelope — what Azure changes is the front door.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/anthropic/v1/messages</code></td><td>The <a href="api-anthropic.html#anthropic-messages">Anthropic Messages</a> handler: content blocks, <code>tool_use</code>, <code>thinking</code>, named SSE events ending on <code>message_stop</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/anthropic/v1/messages/count_tokens</code></td><td>Same count as <code>usage.input_tokens</code> on the message</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/azure/anthropic/v1/models</code></td><td><span class="badge soon">404</span> — Foundry has no Models API, no Message Batches and no Files, and the Foundry SDK removes them from its client</td></tr>
+        </tbody>
+      </table>
+      <p>The Foundry SDK builds its base URL from a resource name; a <code>baseURL</code> stands in for it here. Everything else about the client is the Anthropic SDK:</p>
+<pre><code><span class="tok-key">import</span> AnthropicFoundry <span class="tok-key">from</span> <span class="tok-str">"@anthropic-ai/foundry-sdk"</span>;
+
+<span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">AnthropicFoundry</span>({
+  baseURL: <span class="tok-str">"http://localhost:3000/azure/anthropic"</span>, <span class="tok-com">// in place of `resource`</span>
+  apiKey: <span class="tok-str">"sk-mock-key-01"</span>,
+});
+
+<span class="tok-key">const</span> message = <span class="tok-key">await</span> client.messages.<span class="tok-fn">create</span>({
+  model: <span class="tok-str">"claude-opus-5-5"</span>, <span class="tok-com">// the deployment name, which defaults to the model id</span>
+  max_tokens: <span class="tok-str">1024</span>,
+  messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }],
+});</code></pre>
+      <p>The key travels in <code>api-key</code>, Azure's header, or in <code>x-api-key</code>, Anthropic's — the Foundry SDK sends the latter. An Entra ID token goes in <code>Authorization: Bearer</code> and is accepted unvalidated. A rejected credential is answered by Azure's gateway, ahead of the service, so it comes back in <a href="#azure-auth">Azure's two shapes</a> rather than Anthropic's envelope; everything past the gateway, including the <code>anthropic-version</code> header it still requires, is Anthropic's.</p>
+<pre><code><span class="tok-com">// past the gateway: Anthropic's envelope, with the request id echoed</span>
+{ <span class="tok-key">"type"</span>: <span class="tok-str">"error"</span>,
+  <span class="tok-key">"error"</span>: { <span class="tok-key">"type"</span>: <span class="tok-str">"invalid_request_error"</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"max_tokens: Field required"</span> },
+  <span class="tok-key">"request_id"</span>: <span class="tok-str">"req_…"</span> }</code></pre>
+      <div class="callout">
+        Every response carries the two correlation ids Foundry reports: <code>request-id</code>, Anthropic's,
+        which equals the <code>x-request-id</code> the mock stamps everywhere, and <code>apim-request-id</code>,
+        the one Azure API Management assigns on the way through.
+      </div>
+    </section>
+
+    <section id="azure-models">
+      <h2>Azure · Model Inference API</h2>
+      <p class="section-sub">The Azure AI Model Inference API, the route a Foundry resource exposes for models that are not OpenAI's — Llama, Mistral, DeepSeek, Phi — at <code>https://{resource}.services.ai.azure.com/models/*</code>, here <code>/azure/models</code>. OpenAI's chat completions and embeddings pared down to a common subset, with a flat error envelope and a header deciding the fate of anything outside that subset.</p>
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/models/chat/completions?api-version=</code></td><td>No <code>object</code>, no <code>system_fingerprint</code>; a message of <code>role</code>, <code>content</code> and <code>tool_calls</code>. SSE with <code>[DONE]</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/models/embeddings?api-version=</code></td><td><code>id</code>, <code>data</code>, <code>usage</code>, <code>model</code></td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/azure/models/info?api-version=</code></td><td>The deployed model, fixed: <code>Phi-4</code>, <code>chat_completion</code>, <code>Microsoft</code></td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/models/images/embeddings</code></td><td><span class="badge soon">404</span>, in the gateway's shape</td></tr>
+        </tbody>
+      </table>
+      <p><code>model</code> is optional, as on a single-model endpoint, and the response names what ran. <code>api-version</code> is required on every call, exactly as on the classic Azure OpenAI surface. The key travels in <code>api-key</code>, or as a bearer token.</p>
+<pre><code><span class="tok-key">import</span> createClient <span class="tok-key">from</span> <span class="tok-str">"@azure-rest/ai-inference"</span>;
+<span class="tok-key">import</span> { AzureKeyCredential } <span class="tok-key">from</span> <span class="tok-str">"@azure/core-auth"</span>;
+
+<span class="tok-key">const</span> client = <span class="tok-fn">createClient</span>(<span class="tok-str">"http://localhost:3000/azure/models"</span>, <span class="tok-key">new</span> <span class="tok-fn">AzureKeyCredential</span>(<span class="tok-str">"sk-mock-key-01"</span>), {
+  allowInsecureConnection: <span class="tok-key">true</span>, <span class="tok-com">// plain http</span>
+});
+
+<span class="tok-key">const</span> res = <span class="tok-key">await</span> client.<span class="tok-fn">path</span>(<span class="tok-str">"/chat/completions"</span>).<span class="tok-fn">post</span>({
+  body: { messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"Hello!"</span> }] },
+});</code></pre>
+      <p>The <code>extra-parameters</code> header decides what happens to a field the API does not specify. With <code>error</code>, the default, the request is refused and the field named; <code>drop</code> and <code>pass-through</code> let it through — there is no model here to pass it to, so the two are the same thing.</p>
+<pre><code><span class="tok-com">// `safe_prompt` is Mistral's, not the API's — 422 unless the header allows it</span>
+{
+  <span class="tok-key">"status"</span>: <span class="tok-str">422</span>,
+  <span class="tok-key">"code"</span>: <span class="tok-str">"parameter_not_supported"</span>,
+  <span class="tok-key">"message"</span>: <span class="tok-str">"One of the parameters contain invalid values."</span>,
+  <span class="tok-key">"detail"</span>: { <span class="tok-key">"loc"</span>: [<span class="tok-str">"body"</span>, <span class="tok-str">"safe_prompt"</span>], <span class="tok-key">"input"</span>: <span class="tok-key">true</span> }
+}
+
+<span class="tok-com">// x-llm-mock-content-filter: prompt — the documented content safety failure</span>
+{ <span class="tok-key">"status"</span>: <span class="tok-str">400</span>, <span class="tok-key">"code"</span>: <span class="tok-str">"content_filter"</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"The response was filtered"</span>, <span class="tok-key">"param"</span>: <span class="tok-str">"messages"</span>, <span class="tok-key">"type"</span>: <span class="tok-key">null</span> }</code></pre>
+      <p>A credential is checked by the gateway and rejected in <a href="#azure-auth">Azure's shapes</a>; an unknown path is the gateway's too, a flat <code>{ "statusCode": 404, "message": "Resource not found" }</code>. Everything else is the API's own envelope: flat, with the status repeated in the body.</p>
+      <div class="callout">
+        Microsoft now routes Foundry Models through <code>/openai/v1</code> — served here at
+        <code>/azure/openai/v1</code> — and has retired the <code>azure-ai-inference</code> SDKs. This door exists
+        for the code written against them. Its shapes come from the SDK's type definitions and the published
+        reference, not from a live resource.
+      </div>
     </section>
 
     <section id="next">

@@ -33,3 +33,20 @@ export const azureAuthScheme: AuthScheme = {
     );
   },
 };
+
+// Claude in Foundry takes the key in either of two headers: `api-key`, which
+// is Azure's, and `x-api-key`, which is Anthropic's and what the Foundry SDK
+// sends. Entra ID bearer tokens work as everywhere else on Azure. Rejections
+// are the gateway's: it sits in front of the service, so a bad credential is
+// answered in Azure's shapes, never in Anthropic's envelope.
+export const foundryAnthropicAuthScheme: AuthScheme = {
+  extractKey(req: Request): string | undefined {
+    for (const name of ["api-key", "x-api-key"]) {
+      const header = req.headers[name];
+      if (typeof header === "string" && header) return header;
+    }
+    return azureAuthScheme.extractKey(req);
+  },
+  missingKeyError: azureAuthScheme.missingKeyError,
+  invalidKeyError: azureAuthScheme.invalidKeyError,
+};
