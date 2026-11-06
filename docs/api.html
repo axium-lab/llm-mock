@@ -265,6 +265,7 @@
           <tr><td><code>x-llm-mock-response</code></td><td>ASCII reply to return verbatim as the assistant message</td></tr>
           <tr><td><code>x-llm-mock-response-base64</code></td><td>Base64-encoded reply for content beyond ASCII (UTF-8). Wins when both headers are present.</td></tr>
           <tr><td><code>x-llm-mock-tool-calls</code></td><td>JSON array of tool calls the reply must contain. See <a href="api-openai.html#tools">Tool calls</a>.</td></tr>
+          <tr><td><code>x-llm-mock-status</code></td><td>Forces an HTTP error status code (e.g. <code>500</code>, <code>503</code>, <code>529</code>, <code>429</code>) in the provider's native envelope</td></tr>
           <tr><td><code>x-llm-mock-content-filter</code></td><td>Azure only. Pins the content-filter verdict. See <a href="api-azure.html#azure-filter">Content filtering</a>.</td></tr>
           <tr><td><code>x-llm-mock-batch-status</code></td><td>Anthropic only. Pins a batch's <code>processing_status</code>. See <a href="api-anthropic.html#anthropic-batches">Batches</a>.</td></tr>
         </tbody>

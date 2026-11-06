@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 import { createAuthMiddleware } from "../../core/auth";
+import { chaosMiddleware } from "../../core/chaos";
 import type { Provider, ProviderDeps } from "../types";
 import { anthropicAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
@@ -19,6 +20,7 @@ export const anthropicProvider: Provider = {
     const v1 = Router();
     v1.use(createAuthMiddleware(apiKeys, anthropicAuthScheme));
     v1.use(requireVersion);
+    v1.use(chaosMiddleware);
     // The two sub-resources are registered first: Express matches in order, so
     // the literal paths have to win over the bare /messages mount.
     v1.use("/messages/batches", batchesRouter);

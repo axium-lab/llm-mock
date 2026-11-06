@@ -1,6 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
 import { ApiError } from "../../core/errors";
 
+function errorType(status: number): string {
+  if (status === 429) return "rate_limit_error";
+  return status < 500 ? "invalid_request_error" : "api_error";
+}
+
 // Serializes errors to the OpenAI envelope:
 // { "error": { "message", "type", "param", "code" } }
 // The `type` field is OpenAI vocabulary, so it is derived here from the
@@ -9,9 +14,9 @@ function envelope(status: number, message: string, param: string | null, code: s
   return {
     error: {
       message,
-      type: status < 500 ? "invalid_request_error" : "api_error",
+      type: errorType(status),
       param,
-      code,
+      code: status === 429 ? (code ?? "rate_limit_exceeded") : code,
     },
   };
 }

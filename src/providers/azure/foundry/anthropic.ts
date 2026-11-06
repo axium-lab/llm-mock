@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express, { Router, type NextFunction, type Request, type Response } from "express";
 import { createAuthMiddleware } from "../../../core/auth";
+import { chaosMiddleware } from "../../../core/chaos";
 import { ApiError } from "../../../core/errors";
 import {
   errorHandler as anthropicErrorHandler,
@@ -49,6 +50,7 @@ function errorHandler(err: unknown, req: Request, res: Response, next: NextFunct
 export function createAnthropicRouter({ apiKeys }: ProviderDeps): Router {
   const v1 = Router();
   v1.use(requireVersion);
+  v1.use(chaosMiddleware);
   // The literal path is registered first so it wins over the bare mount.
   v1.use("/messages/count_tokens", countTokensRouter);
   v1.use("/messages", messagesRouter);

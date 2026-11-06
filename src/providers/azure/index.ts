@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 import { createAuthMiddleware } from "../../core/auth";
+import { chaosMiddleware } from "../../core/chaos";
 import type { Provider, ProviderDeps } from "../types";
 import { azureAuthScheme } from "./auth";
 import { assertApiVersion } from "./deployments";
@@ -41,6 +42,7 @@ export const azureProvider: Provider = {
     // /openai/responses and /openai/files on the classic one, with the
     // api-version it puts on everything, and to /openai/v1/… on the other.
     const v1 = Router();
+    v1.use(chaosMiddleware);
     v1.use("/models", modelsRouter);
     v1.use("/responses", responsesRouter);
     v1.use("/files", filesRouter);
@@ -56,6 +58,7 @@ export const azureProvider: Provider = {
       assertApiVersion(req.query["api-version"]);
       next();
     });
+    classic.use(chaosMiddleware);
     // Reading deployments comes first: `/deployments` and `/deployments/{name}`
     // are the collection, and the mount below requires a name plus a path under
     // it. Anything it does not answer falls through to the inference tree.
