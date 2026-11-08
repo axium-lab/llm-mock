@@ -347,7 +347,7 @@ console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">//
       </div>
       <div class="feature">
         <h3>Real error flows</h3>
-        <p>Invalid keys, unknown models, validation errors and content filters return each provider's exact error envelope — test your error handling too.</p>
+        <p>Invalid keys, unknown models, validation errors and content filters return each provider's exact error envelope — and a request header provokes a <code>429</code> or <code>5xx</code> on demand, so retries and fallbacks get tested too.</p>
       </div>
       <div class="feature">
         <h3>Controllable replies</h3>

@@ -265,7 +265,7 @@
           <tr><td><code>x-llm-mock-response</code></td><td>ASCII reply to return verbatim as the assistant message</td></tr>
           <tr><td><code>x-llm-mock-response-base64</code></td><td>Base64-encoded reply for content beyond ASCII (UTF-8). Wins when both headers are present.</td></tr>
           <tr><td><code>x-llm-mock-tool-calls</code></td><td>JSON array of tool calls the reply must contain. See <a href="api-openai.html#tools">Tool calls</a>.</td></tr>
-          <tr><td><code>x-llm-mock-status</code></td><td>Forces an HTTP error status code (e.g. <code>500</code>, <code>503</code>, <code>529</code>, <code>429</code>) in the provider's native envelope</td></tr>
+          <tr><td><code>x-llm-mock-status</code></td><td>Forces an HTTP error status code (e.g. <code>500</code>, <code>503</code>, <code>529</code>, <code>429</code>) in the provider's native envelope. See <a href="#chaos">Provoking errors</a>.</td></tr>
           <tr><td><code>x-llm-mock-content-filter</code></td><td>Azure only. Pins the content-filter verdict. See <a href="api-azure.html#azure-filter">Content filtering</a>.</td></tr>
           <tr><td><code>x-llm-mock-batch-status</code></td><td>Anthropic only. Pins a batch's <code>processing_status</code>. See <a href="api-anthropic.html#anthropic-batches">Batches</a>.</td></tr>
         </tbody>
@@ -278,6 +278,34 @@
       <div class="callout">
         Because the canned response travels <strong>with the request</strong>, the server keeps no state at all:
         the same request always returns the same response, no matter which instance, replica or restart serves it.
+      </div>
+
+      <h3 id="chaos">Provoking errors</h3>
+      <p>A retry loop, a circuit breaker or a fallback to another model is only tested once the provider has actually failed. <code>x-llm-mock-status</code> makes it fail on demand: any status from <code>400</code> to <code>599</code>, on every door, in that provider's own envelope and vocabulary &mdash; so the SDK raises the class it would raise against the real service.</p>
+<pre><code><span class="tok-key">try</span> {
+  <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>(
+    { model: <span class="tok-str">"gpt-4o"</span>, messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"ping"</span> }] },
+    { headers: { <span class="tok-str">"x-llm-mock-status"</span>: <span class="tok-str">"429"</span> } },
+  );
+} <span class="tok-key">catch</span> (err) {
+  <span class="tok-com">// err instanceof OpenAI.RateLimitError, err.code === "rate_limit_exceeded",</span>
+  <span class="tok-com">// err.headers.get("retry-after") === "1"</span>
+}</code></pre>
+      <table>
+        <thead><tr><th>Provider</th><th>What a <code>429</code> / <code>5xx</code> looks like</th></tr></thead>
+        <tbody>
+          <tr><td>OpenAI</td><td><code>rate_limit_error</code> with code <code>rate_limit_exceeded</code> on <code>429</code>; <code>api_error</code> on <code>5xx</code></td></tr>
+          <tr><td>Anthropic, Claude in Foundry</td><td><code>rate_limit_error</code>, <code>api_error</code>, and <code>overloaded_error</code> on <code>529</code> &mdash; wrapped twice, with the <code>request_id</code></td></tr>
+          <tr><td>Gemini, Gemini Enterprise</td><td><code>google.rpc.Status</code> with <code>RESOURCE_EXHAUSTED</code>, <code>INTERNAL</code> or <code>UNAVAILABLE</code>; the flat next-gen envelope on <code>/interactions</code></td></tr>
+          <tr><td>Azure OpenAI (both surfaces), Model Inference</td><td>Azure's symbolic <code>code</code> carrying the status; the Model Inference API's flat envelope with <code>status</code> and <code>code</code></td></tr>
+        </tbody>
+      </table>
+      <p>A <code>429</code> also carries <code>retry-after: 1</code>, so a backoff that honours the header still completes in a test's lifetime. On a streaming call the error fires before the stream opens, so the SDK surfaces its normal error class rather than a broken SSE body. A value outside <code>400</code>&ndash;<code>599</code>, or more than one copy of the header, is a <code>400</code> with code <code>invalid_value</code> naming the header.</p>
+      <div class="callout">
+        The header is read <strong>after</strong> the credential and after each door's own preflight checks. A bad key with
+        <code>x-llm-mock-status: 500</code> is still a <code>401</code>; a missing <code>anthropic-version</code> or
+        <code>api-version</code> is still a <code>400</code>. Those failures come first on the real service too, and a mock
+        that let the simulated outage mask them would hide a bug. Timeouts remain the one failure that cannot be provoked.
       </div>
     </section>
 

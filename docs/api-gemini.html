@@ -272,6 +272,7 @@ console.<span class="tok-fn">log</span>(interaction.output_text); <span class="t
         frontend rejects the key before the service ever runs. Verified against the live API, along with
         everything else on this page marked as checked.
       </div>
+      <p>Both envelopes serve a provoked failure as well: <code>x-llm-mock-status: 429</code> is <code>RESOURCE_EXHAUSTED</code> with a <code>retry-after</code> header, <code>500</code> is <code>INTERNAL</code> and <code>503</code> is <code>UNAVAILABLE</code> in <code>google.rpc.Status</code>, while <code>/interactions</code> answers in its flat envelope with <code>rate_limit_exceeded</code> or <code>api_error</code>. The header works on the resumable upload endpoint and the OpenAI-compatibility layer too. See <a href="api.html#chaos">Provoking errors</a>.</p>
     </section>
 
     <section id="next">

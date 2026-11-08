@@ -317,6 +317,7 @@ data: {"type":"message_stop"}</code></pre>
   <span class="tok-key">"request_id"</span>: <span class="tok-str">"req_011CSHoEeqs5C35K2UUqR7Fy"</span>
 }</code></pre>
       <p>The <code>request_id</code> matches the <code>x-request-id</code> response header, as it does on the real API. Error types are <code>invalid_request_error</code>, <code>authentication_error</code>, <code>permission_error</code>, <code>not_found_error</code>, <code>request_too_large</code>, <code>rate_limit_error</code>, <code>api_error</code> and <code>overloaded_error</code> (<code>529</code>).</p>
+      <p>Any of them can be provoked with <code>x-llm-mock-status</code> &mdash; <code>529</code> for the overloaded case Anthropic alone reports, <code>429</code> with a <code>retry-after</code> header, <code>500</code> for a plain <code>api_error</code> &mdash; and the SDK raises the matching class. The header is read after <code>anthropic-version</code> is checked, so a missing version still wins. See <a href="api.html#chaos">Provoking errors</a>.</p>
       <div class="callout">
         Validating <code>anthropic-version</code> against a list of known versions would mean maintaining that list
         and guessing at versions that do not exist yet, so any value passes. A <em>missing</em> header still fails &mdash;

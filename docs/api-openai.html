@@ -306,6 +306,7 @@
     <span class="tok-key">"code"</span>: <span class="tok-str">"invalid_api_key"</span>
   }
 }</code></pre>
+      <p>Outages and throttling can be provoked too: <code>x-llm-mock-status: 429</code> answers with <code>rate_limit_error</code> and code <code>rate_limit_exceeded</code> plus a <code>retry-after</code> header, and a <code>5xx</code> with <code>api_error</code>, so the SDK raises <code>RateLimitError</code> or <code>InternalServerError</code> as it would against the real API. See <a href="api.html#chaos">Provoking errors</a>.</p>
     </section>
 
     <section id="next">

@@ -221,6 +221,8 @@ const completion = await client.chat.completions.create(
 
 Because the canned response travels **with the request**, the server keeps no state: the same request returns the same bytes, whichever instance or replica serves it. [More on response control →](https://llm-mock.dev/api.html#control)
 
+Failures travel the same way. `x-llm-mock-status: 429` makes any door throttle you in its own envelope — OpenAI's `rate_limit_error`, Anthropic's `rate_limit_error`, Google's `RESOURCE_EXHAUSTED` — with a `retry-after` header, and `500`, `503` or `529` do the same for an outage, so the SDK raises the class your retry logic is written against. The header is read after the credential and each door's own preflight checks, so a bad key is still a `401`. [More on provoking errors →](https://llm-mock.dev/api.html#chaos)
+
 ## Authentication
 
 Keys are validated against a closed set in [`api-keys.json`](api-keys.json), so both the happy path and the failure path are testable:
