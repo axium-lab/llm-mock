@@ -52,6 +52,17 @@ x-llm-mock-response: This is a forced deterministic answer.
   "messages": [{ "role": "user", "content": "Say anything." }]
 }
 
+### Chat completion with an injected 500 server error
+POST {{baseUrl}}/chat/completions
+Authorization: Bearer {{apiKey}}
+Content-Type: {{contentType}}
+x-llm-mock-status: 500
+
+{
+  "model": "gpt-4.1",
+  "messages": [{ "role": "user", "content": "Trigger 500" }]
+}
+
 ### Chat completion with a UTF-8 canned response (base64 override header)
 # Decoded value: "¡Hola! Aquí va una respuesta con acentos y emojis 🚀"
 POST {{baseUrl}}/chat/completions

@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 import { createAuthMiddleware } from "../../core/auth";
+import { chaosMiddleware } from "../../core/chaos";
 import type { Provider, ProviderDeps } from "../types";
 import { geminiAuthScheme, geminiCompatAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
@@ -24,9 +25,10 @@ export const geminiProvider: Provider = {
     const api = Router();
     // Registered ahead of the native auth: the compatibility layer answers a
     // bad or missing credential with its own codes and messages.
-    api.use("/openai", createAuthMiddleware(apiKeys, geminiCompatAuthScheme), openaiCompatRouter);
+    api.use("/openai", createAuthMiddleware(apiKeys, geminiCompatAuthScheme), chaosMiddleware, openaiCompatRouter);
 
     api.use(auth);
+    api.use(chaosMiddleware);
     api.use("/models", modelsRouter);
     api.use("/tunedModels", tunedModelsRouter);
     api.use("/interactions", interactionsRouter);
@@ -44,7 +46,7 @@ export const geminiProvider: Provider = {
     // `type: () => true` rather than a content-type pattern: on this endpoint
     // the body is opaque bytes whatever the header claims, and matching by
     // pattern silently drops the ones it does not recognize.
-    const upload = [auth, express.raw({ type: () => true, limit: MAX_UPLOAD }), uploadRouter];
+    const upload = [auth, chaosMiddleware, express.raw({ type: () => true, limit: MAX_UPLOAD }), uploadRouter];
     router.use("/upload/v1beta/files", ...upload);
     router.use("/upload/v1/files", ...upload);
 

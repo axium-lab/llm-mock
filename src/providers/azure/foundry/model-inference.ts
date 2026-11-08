@@ -1,5 +1,6 @@
 import express, { Router, type NextFunction, type Request, type Response } from "express";
 import { createAuthMiddleware } from "../../../core/auth";
+import { chaosMiddleware } from "../../../core/chaos";
 import { ApiError } from "../../../core/errors";
 import { deterministicId } from "../../../core/ids";
 import { requestOverrides } from "../../../core/override";
@@ -198,6 +199,7 @@ export function createModelInferenceRouter({ apiKeys }: ProviderDeps): Router {
     assertApiVersion(req.query["api-version"]);
     next();
   });
+  router.use(chaosMiddleware);
 
   router.get("/info", (_req, res) => {
     res.json(DEPLOYED_MODEL);

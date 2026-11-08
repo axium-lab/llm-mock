@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 import { createAuthMiddleware } from "../../core/auth";
+import { chaosMiddleware } from "../../core/chaos";
 import { interactionsRouter } from "../google-shared/routes/interactions";
 import type { Provider, ProviderDeps } from "../types";
 import { geminiEnterpriseAuthScheme } from "./auth";
@@ -20,6 +21,7 @@ export const geminiEnterpriseProvider: Provider = {
   createRouter({ apiKeys }: ProviderDeps): Router {
     const api = Router();
     api.use(createAuthMiddleware(apiKeys, geminiEnterpriseAuthScheme));
+    api.use(chaosMiddleware);
 
     // The same router answers both shapes. Regional callers — the ones using
     // OAuth — carry a project and a location; express-mode callers, holding
@@ -37,6 +39,7 @@ export const geminiEnterpriseProvider: Provider = {
       assertScope((req.params as { scope?: string }).scope);
       next();
     });
+    interactions.use(chaosMiddleware);
     interactions.use(interactionsRouter);
 
     const router = Router();

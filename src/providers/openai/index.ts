@@ -1,5 +1,6 @@
 import express, { Router } from "express";
 import { createAuthMiddleware } from "../../core/auth";
+import { chaosMiddleware } from "../../core/chaos";
 import type { Provider, ProviderDeps } from "../types";
 import { openaiAuthScheme } from "./auth";
 import { errorHandler, notFoundHandler } from "./errors";
@@ -17,6 +18,7 @@ export const openaiProvider: Provider = {
   createRouter({ apiKeys }: ProviderDeps): Router {
     const v1 = Router();
     v1.use(createAuthMiddleware(apiKeys, openaiAuthScheme));
+    v1.use(chaosMiddleware);
     v1.use("/chat/completions", chatCompletionsRouter);
     v1.use("/completions", completionsRouter);
     v1.use("/responses", responsesRouter);
