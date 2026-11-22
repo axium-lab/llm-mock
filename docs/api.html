@@ -266,6 +266,7 @@
           <tr><td><code>x-llm-mock-response-base64</code></td><td>Base64-encoded reply for content beyond ASCII (UTF-8). Wins when both headers are present.</td></tr>
           <tr><td><code>x-llm-mock-tool-calls</code></td><td>JSON array of tool calls the reply must contain. See <a href="api-openai.html#tools">Tool calls</a>.</td></tr>
           <tr><td><code>x-llm-mock-status</code></td><td>Forces an HTTP error status code (e.g. <code>500</code>, <code>503</code>, <code>529</code>, <code>429</code>) in the provider's native envelope. See <a href="#chaos">Provoking errors</a>.</td></tr>
+          <tr><td><code>x-llm-mock-delay</code></td><td>Holds the response for <code>0</code>&ndash;<code>10000</code> ms before answering, to test slow upstreams and SDK timeouts. See <a href="#chaos">Provoking errors</a>.</td></tr>
           <tr><td><code>x-llm-mock-content-filter</code></td><td>Azure only. Pins the content-filter verdict. See <a href="api-azure.html#azure-filter">Content filtering</a>.</td></tr>
           <tr><td><code>x-llm-mock-batch-status</code></td><td>Anthropic only. Pins a batch's <code>processing_status</code>. See <a href="api-anthropic.html#anthropic-batches">Batches</a>.</td></tr>
         </tbody>
@@ -301,11 +302,21 @@
         </tbody>
       </table>
       <p>A <code>429</code> also carries <code>retry-after: 1</code>, so a backoff that honours the header still completes in a test's lifetime. On a streaming call the error fires before the stream opens, so the SDK surfaces its normal error class rather than a broken SSE body. A value outside <code>400</code>&ndash;<code>599</code>, or more than one copy of the header, is a <code>400</code> with code <code>invalid_value</code> naming the header.</p>
+      <p>Slow upstreams and timeouts are provoked the same way: <code>x-llm-mock-delay</code> holds the response for an integer number of milliseconds between <code>0</code> and <code>10000</code>, capped so a single request cannot tie up a socket for long. Pair it with a shorter client timeout and the SDK raises its own timeout error; pair it with <code>x-llm-mock-status</code> and the failure lands after the wait. The pause runs before the handler &mdash; and before SSE headers leave on a streaming call &mdash; and clears its timer the moment the client closes the connection. A value outside <code>0</code>&ndash;<code>10000</code>, a non-integer, or more than one copy of the header is a <code>400</code> with code <code>invalid_value</code> naming the header.</p>
+<pre><code><span class="tok-key">try</span> {
+  <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>(
+    { model: <span class="tok-str">"gpt-4o"</span>, messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"ping"</span> }] },
+    { timeout: <span class="tok-str">100</span>, headers: { <span class="tok-str">"x-llm-mock-delay"</span>: <span class="tok-str">"2000"</span> } },
+  );
+} <span class="tok-key">catch</span> (err) {
+  <span class="tok-com">// err instanceof OpenAI.APIConnectionTimeoutError</span>
+}</code></pre>
       <div class="callout">
-        The header is read <strong>after</strong> the credential and after each door's own preflight checks. A bad key with
-        <code>x-llm-mock-status: 500</code> is still a <code>401</code>; a missing <code>anthropic-version</code> or
-        <code>api-version</code> is still a <code>400</code>. Those failures come first on the real service too, and a mock
-        that let the simulated outage mask them would hide a bug. Timeouts remain the one failure that cannot be provoked.
+        Both headers are read <strong>after</strong> the credential and after each door's own preflight checks, and both
+        are validated before any timer starts. A bad key with <code>x-llm-mock-status: 500</code> or
+        <code>x-llm-mock-delay: 5000</code> is still an immediate <code>401</code>; a missing <code>anthropic-version</code>
+        or <code>api-version</code> is still an immediate <code>400</code>. Those failures come first on the real service
+        too, and a mock that let a simulated outage or delay mask them would hide a bug.
       </div>
     </section>
 

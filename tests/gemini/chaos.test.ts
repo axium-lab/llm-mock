@@ -113,13 +113,40 @@ describe("gemini chaos fault injection", () => {
   });
 
   it("evaluates auth before chaos", async () => {
+    const start = performance.now();
     const res = await fetch(`${ctx.baseUrl}/v1beta/models`, {
-      headers: { "x-goog-api-key": INVALID_API_KEY, "x-llm-mock-status": "500" },
+      headers: { "x-goog-api-key": INVALID_API_KEY, "x-llm-mock-status": "500", "x-llm-mock-delay": "5000" },
     });
     expect(res.status).toBe(400);
+    expect(performance.now() - start).toBeLessThan(1000);
 
     const body = (await res.json()) as { error: { details?: { reason: string }[] } };
     expect(body.error.details?.[0]?.reason).toBe("API_KEY_INVALID");
+  });
+
+  it("provokes an SDK timeout via x-llm-mock-delay header", async () => {
+    const client = new GoogleGenAI({
+      apiKey: VALID_API_KEY,
+      httpOptions: { baseUrl: ctx.baseUrl, timeout: 50, headers: { "x-llm-mock-delay": "2000" } },
+    });
+    try {
+      await client.models.generateContent({ model: "gemini-3.6-flash", contents: "hi" });
+      throw new Error("expected the request to time out");
+    } catch (err) {
+      expect((err as Error).name).toBe("AbortError");
+    }
+  });
+
+  it("applies x-llm-mock-delay only once when an unmatched /openai compat path falls through", async () => {
+    const start = performance.now();
+    const res = await fetch(`${ctx.baseUrl}/v1beta/openai/does-not-exist`, {
+      headers: { authorization: `Bearer ${VALID_API_KEY}`, "x-llm-mock-delay": "250" },
+    });
+    const elapsed = performance.now() - start;
+
+    expect(res.status).toBe(404);
+    expect(elapsed).toBeGreaterThanOrEqual(200);
+    expect(elapsed).toBeLessThan(450);
   });
 });
 

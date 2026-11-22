@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import AnthropicFoundry from "@anthropic-ai/foundry-sdk";
 import createClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
-import { InternalServerError, RateLimitError } from "openai";
+import { APIConnectionTimeoutError, InternalServerError, RateLimitError } from "openai";
 import { API_VERSION, INVALID_API_KEY, startTestServer, stopTestServer, VALID_API_KEY, type TestContext } from "./setup";
 
 interface AzureOpenAIErrorBody {
@@ -66,10 +66,12 @@ describe("azure chaos fault injection", () => {
     });
 
     it("requires api-version before evaluating chaos on classic surface", async () => {
+      const start = performance.now();
       const res = await fetch(`${ctx.baseUrl}/models`, {
-        headers: { "api-key": VALID_API_KEY, "x-llm-mock-status": "500" },
+        headers: { "api-key": VALID_API_KEY, "x-llm-mock-status": "500", "x-llm-mock-delay": "5000" },
       });
       expect(res.status).toBe(400);
+      expect(performance.now() - start).toBeLessThan(1000);
 
       const body = (await res.json()) as AzureOpenAIErrorBody;
       expect(body.error.code).toBe("MissingApiVersionParameter");
@@ -80,6 +82,29 @@ describe("azure chaos fault injection", () => {
         headers: { "api-key": INVALID_API_KEY, "x-llm-mock-status": "500" },
       });
       expect(res.status).toBe(401);
+    });
+
+    it("provokes APIConnectionTimeoutError on classic and v1 surfaces via x-llm-mock-delay", async () => {
+      try {
+        await ctx.classic.models.list({
+          headers: { "x-llm-mock-delay": "2000" },
+          timeout: 50,
+          maxRetries: 0,
+        });
+        throw new Error("expected timeout");
+      } catch (err) {
+        expect(err).toBeInstanceOf(APIConnectionTimeoutError);
+      }
+
+      try {
+        await ctx.v1.chat.completions.create(
+          { model: "gpt-4o", messages: [{ role: "user", content: "hi" }] },
+          { headers: { "x-llm-mock-delay": "2000" }, timeout: 50 },
+        );
+        throw new Error("expected timeout");
+      } catch (err) {
+        expect(err).toBeInstanceOf(APIConnectionTimeoutError);
+      }
     });
   });
 
@@ -145,6 +170,22 @@ describe("azure chaos fault injection", () => {
       expect(body.type).toBe("error");
       expect(body.error.type).toBe("invalid_request_error");
     });
+
+    it("provokes APIConnectionTimeoutError through the AnthropicFoundry SDK client", async () => {
+      try {
+        await ctx.claude.messages.create(
+          {
+            model: "claude-opus-5",
+            max_tokens: 1024,
+            messages: [{ role: "user", content: "Slow request" }],
+          },
+          { headers: { "x-llm-mock-delay": "2000" }, timeout: 50 },
+        );
+        throw new Error("expected timeout");
+      } catch (err) {
+        expect(err).toBeInstanceOf(AnthropicFoundry.APIConnectionTimeoutError);
+      }
+    });
   });
 
   describe("azure model inference", () => {
@@ -198,6 +239,23 @@ describe("azure chaos fault injection", () => {
 
       const body = (await res.json()) as ModelInferenceErrorBody;
       expect(body.code).toBe("MissingApiVersionParameter");
+    });
+
+    it("provokes a timeout through the @azure-rest/ai-inference SDK client", async () => {
+      const client = createClient(`${ctx.origin}/azure/models`, new AzureKeyCredential(VALID_API_KEY), {
+        allowInsecureConnection: true,
+        retryOptions: { maxRetries: 0 },
+      });
+      try {
+        await client.path("/chat/completions").post({
+          body: { model: "Phi-4", messages: [{ role: "user", content: "Hello" }] },
+          headers: { "x-llm-mock-delay": "2000" },
+          timeout: 50,
+        });
+        throw new Error("expected timeout");
+      } catch (err) {
+        expect((err as Error).name).toBe("AbortError");
+      }
     });
   });
 });
