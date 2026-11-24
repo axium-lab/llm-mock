@@ -6,8 +6,8 @@
 <title>OpenAI API reference — llm-mock</title>
 <meta name="description" content="OpenAI endpoints on llm-mock: chat completions, Responses API, tool calls, models, embeddings, files, uploads, SSE streaming and error shapes." />
 <link rel="canonical" href="https://llm-mock.dev/api-openai.html" />
-<meta name="theme-color" content="#0b0e14" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+<meta name="theme-color" content="#0e091d" />
+<link rel="icon" href="assets/axium-isotipo.svg" type="image/svg+xml" />
 
 <!-- Open Graph / social -->
 <meta property="og:type" content="article" />
@@ -75,22 +75,26 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="wrap">
-  <nav>
-    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
-    <div class="nav-links">
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="llm-mock home">
+      <img src="assets/axium-isotipo.svg" alt="" width="27" height="30" />
+      <span class="brand">llm<span>-</span>mock</span>
+      <span class="by">by axium</span>
+    </a>
+    <nav class="main" aria-label="Main">
       <a href="index.html">Home</a>
       <a class="active" href="api.html">API docs</a>
-      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
-    </div>
-  </nav>
-</div>
+    </nav>
+    <a class="btn sm gh" href="https://github.com/axium-lab/llm-mock">GitHub <span class="arr">↗</span></a>
+  </div>
+</header>
 
-<header>
+<header class="page-hero">
   <div class="wrap">
-    <span class="eyebrow">OpenAI</span>
+    <p class="eyebrow">OpenAI</p>
     <h1>OpenAI API reference</h1>
-    <p class="sub">The <code>/openai</code> surface: chat completions, the Responses API, tool calls, models, embeddings, files, uploads, SSE streaming and the error envelope. Point the official <code>openai</code> client at <code>/openai/v1</code> and nothing else changes.</p>
+    <p class="lead">The <code>/openai</code> surface: chat completions, the Responses API, tool calls, models, embeddings, files, uploads, SSE streaming and the error envelope. Point the official <code>openai</code> client at <code>/openai/v1</code> and nothing else changes.</p>
   </div>
 </header>
 
@@ -131,7 +135,7 @@
     <section id="endpoints">
       <h2>OpenAI · Endpoints</h2>
       <p class="section-sub">Everything under the <code>/openai</code> prefix. The sections that follow — chat completions through errors — all describe this provider.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/chat/completions</code></td><td>Full <code>chat.completion</code> object, <code>n</code> choices, SSE streaming, <code>stream_options.include_usage</code></td></tr>
@@ -154,7 +158,7 @@
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/uploads/{id}/cancel</code></td><td>Returns the upload as <code>cancelled</code></td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Healthcheck (mock-only, outside any provider contract); returns <code>status</code> and the running <code>version</code></td></tr>
         </tbody>
-      </table>
+      </table></div>
       <div class="callout">
         Parameters the mock does not simulate (<code>temperature</code>, <code>top_p</code>, <code>response_format</code>, …)
         are <strong>accepted without error</strong>, because real SDK clients send them.
@@ -181,7 +185,7 @@
     <section id="responses">
       <h2>OpenAI · Responses API</h2>
       <p class="section-sub">The newer <code>/responses</code> surface is fully modelled, including the typed SSE event stream.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses</code></td><td>Returns a full <code>response</code> object; with <code>stream: true</code> emits typed events (<code>response.created</code>, <code>response.output_text.delta</code>, <code>response.completed</code>, …)</td></tr>
@@ -189,13 +193,13 @@
           <tr><td><span class="method delete">DELETE</span></td><td><code>/openai/v1/responses/{id}</code></td><td>Idempotent; returns the standard OpenAI deletion object</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/openai/v1/responses/{id}/cancel</code></td><td>Stateless — any id comes back as a <code>cancelled</code> response with <code>background: true</code> and an empty <code>output</code>, since only background responses can be cancelled on the real API</td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
 
     <section id="tools">
       <h2>OpenAI · Tool calls</h2>
       <p class="section-sub">Both surfaces return real tool calls, so an agent loop runs end to end without a model. Chat completions answer with <code>message.tool_calls</code> and <code>finish_reason: "tool_calls"</code>; the Responses API emits a <code>function_call</code> output item and echoes the <code>tools</code> / <code>tool_choice</code> it received.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Trigger</th><th>Behaviour</th></tr></thead>
         <tbody>
           <tr><td><code>tool_choice: "required"</code></td><td>Calls the first declared tool</td></tr>
@@ -204,7 +208,7 @@
           <tr><td><code>x-llm-mock-tool-calls</code></td><td>Pins the exact calls, overriding <code>tool_choice</code></td></tr>
           <tr><td>A tool result in the conversation</td><td>Stops forcing calls, so the loop terminates: <code>role: "tool"</code> message, or <code>function_call_output</code> item</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>Arguments are synthesized from the tool's JSON Schema — <code>default</code> first, then the first <code>enum</code> value, then a placeholder per type — covering the <code>required</code> properties, or all of them when the schema declares none.</p>
 <pre><code>curl https://api.llm-mock.dev/openai/v1/chat/completions \
   -H <span class="tok-str">"Authorization: Bearer sk-mock-key-01"</span> \
@@ -217,13 +221,13 @@
     <section id="models">
       <h2>OpenAI · Models</h2>
       <p class="section-sub">A simulated catalog so model-discovery code paths work end to end.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Method</th><th>Path</th><th>Behaviour</th></tr></thead>
         <tbody>
           <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models</code></td><td>Lists <code>gpt-4.1</code>, <code>gpt-4o</code>, <code>gpt-4o-mini</code>, <code>text-embedding-3-small</code>, <code>text-embedding-3-large</code>, …</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/openai/v1/models/{model}</code></td><td>Returns the model object, or <code>404</code> in OpenAI error format for unknown models</td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
 
     <section id="embeddings">
@@ -248,7 +252,7 @@
 });
 <span class="tok-key">const</span> same = <span class="tok-key">await</span> client.files.<span class="tok-fn">retrieve</span>(file.id);
 <span class="tok-com">// identical object — no state involved</span></code></pre>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Behaviour</th><th>What to expect</th></tr></thead>
         <tbody>
           <tr><td>Listing</td><td>A fixed simulated catalog (<code>file-mock-training-jsonl</code>, <code>file-mock-manual-pdf</code>, …), like the model catalog. Uploads never join it. Supports the <code>purpose</code> filter and <code>limit</code>/<code>order</code>/<code>after</code> pagination.</td></tr>
@@ -256,7 +260,7 @@
           <tr><td>Unknown ids</td><td>Any well-formed id resolves with plausible synthetic metadata. For a <code>404</code>, use a reserved id: anything starting with <code>file-missing</code>.</td></tr>
           <tr><td>Deletion</td><td>Idempotent; always reports <code>deleted: true</code>.</td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
 
     <section id="uploads">
@@ -312,7 +316,7 @@
     <section id="next">
       <h2>Other providers</h2>
       <p class="section-sub">Same server, same key set, one page each.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Prefix</th><th>Reference</th></tr></thead>
         <tbody>
           <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><a href="api-anthropic.html">Read →</a></td></tr>
@@ -320,22 +324,26 @@
           <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><a href="api-gemini-enterprise.html">Read →</a></td></tr>
           <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><a href="api-azure.html">Read →</a></td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   </main>
 </div>
 </div>
 
-<footer>
+<footer class="site">
   <div class="wrap">
-    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
-    <div class="footer-links">
-      <a href="index.html">Home</a>
-      <a href="api.html">API reference</a>
-      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
-      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
-      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
-    </div>
+    <a class="logo" href="https://axium-lab.com" aria-label="Axium"><img src="assets/axium-logo-horizontal-oscuro.svg" alt="axium lab" width="100" height="26" /></a>
+    <nav aria-label="Footer">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="api.html">API reference</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock">GitHub</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a></li>
+      </ul>
+    </nav>
+    <p class="foot-tagline">Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</p>
+    <div class="foot-legal"><small>© 2026 Axium Lab</small></div>
   </div>
 </footer>
 </body>

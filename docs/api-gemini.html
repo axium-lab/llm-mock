@@ -6,8 +6,8 @@
 <title>Gemini (AI Studio) API reference — llm-mock</title>
 <meta name="description" content="Gemini (AI Studio) endpoints on llm-mock: generateContent, Interactions API, tool calls, files, the OpenAI-compatibility layer and Google's error envelopes." />
 <link rel="canonical" href="https://llm-mock.dev/api-gemini.html" />
-<meta name="theme-color" content="#0b0e14" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+<meta name="theme-color" content="#0e091d" />
+<link rel="icon" href="assets/axium-isotipo.svg" type="image/svg+xml" />
 
 <!-- Open Graph / social -->
 <meta property="og:type" content="article" />
@@ -75,22 +75,26 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="wrap">
-  <nav>
-    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
-    <div class="nav-links">
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="llm-mock home">
+      <img src="assets/axium-isotipo.svg" alt="" width="27" height="30" />
+      <span class="brand">llm<span>-</span>mock</span>
+      <span class="by">by axium</span>
+    </a>
+    <nav class="main" aria-label="Main">
       <a href="index.html">Home</a>
       <a class="active" href="api.html">API docs</a>
-      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
-    </div>
-  </nav>
-</div>
+    </nav>
+    <a class="btn sm gh" href="https://github.com/axium-lab/llm-mock">GitHub <span class="arr">↗</span></a>
+  </div>
+</header>
 
-<header>
+<header class="page-hero">
   <div class="wrap">
-    <span class="eyebrow">Gemini</span>
+    <p class="eyebrow">Gemini</p>
     <h1>Gemini (AI Studio) API reference</h1>
-    <p class="sub">The <code>/gemini</code> surface: <code>generateContent</code>, the Interactions API, tool calls, embeddings, files and the OpenAI-compatibility layer &mdash; all served on both <code>v1beta</code> and <code>v1</code>.</p>
+    <p class="lead">The <code>/gemini</code> surface: <code>generateContent</code>, the Interactions API, tool calls, embeddings, files and the OpenAI-compatibility layer &mdash; all served on both <code>v1beta</code> and <code>v1</code>.</p>
   </div>
 </header>
 
@@ -127,7 +131,7 @@
     <section id="gemini">
       <h2>Gemini (AI Studio) · Endpoints</h2>
       <p class="section-sub">Everything under the <code>/gemini</code> prefix. Both <code>v1beta</code> and <code>v1</code> serve the same mock, so either <code>apiVersion</code> works. Custom methods are addressed the Google way, as <code>{resource}:{method}</code>.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/models/{model}:generateContent</code></td><td>Full response: <code>candidates</code>, <code>finishReason</code>, <code>usageMetadata</code> by modality, <code>modelVersion</code>, <code>responseId</code></td></tr>
@@ -149,7 +153,7 @@
           <tr><td><span class="method post">POST</span></td><td><code>/gemini/v1beta/openai/embeddings</code></td><td>Same layer, at Gemini's dimensions</td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/gemini/v1beta/openai/models</code></td><td>Gemini's catalog in OpenAI's list envelope</td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
 
     <section id="gemini-generate">
@@ -177,14 +181,14 @@ console.<span class="tok-fn">log</span>(response.text); <span class="tok-com">//
     <section id="gemini-tools">
       <h2>Gemini · Tool calls</h2>
       <p class="section-sub">Declare tools as <code>tools[].functionDeclarations[]</code>. Tool selection lives in <code>toolConfig.functionCallingConfig.mode</code> rather than in a <code>tool_choice</code> field.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Mode</th><th>Behaviour</th></tr></thead>
         <tbody>
           <tr><td><code>ANY</code></td><td>Forces a call. With <code>allowedFunctionNames</code>, the named tool is picked</td></tr>
           <tr><td><code>NONE</code></td><td>Never calls a tool</td></tr>
           <tr><td><code>AUTO</code> (default)</td><td>Leaves it to the model — and this mock has none, so it answers with prose</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>A call comes back as a <code>functionCall</code> part whose <code>args</code> is a <strong>decoded object</strong>, where OpenAI carries a JSON string. Streaming never splits a call across chunks. The loop terminates once a <code>functionResponse</code> part is in the conversation.</p>
     </section>
 
@@ -278,7 +282,7 @@ console.<span class="tok-fn">log</span>(interaction.output_text); <span class="t
     <section id="next">
       <h2>Other providers</h2>
       <p class="section-sub">Same server, same key set, one page each.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Prefix</th><th>Reference</th></tr></thead>
         <tbody>
           <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><a href="api-openai.html">Read →</a></td></tr>
@@ -286,22 +290,26 @@ console.<span class="tok-fn">log</span>(interaction.output_text); <span class="t
           <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><a href="api-gemini-enterprise.html">Read →</a></td></tr>
           <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><a href="api-azure.html">Read →</a></td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   </main>
 </div>
 </div>
 
-<footer>
+<footer class="site">
   <div class="wrap">
-    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
-    <div class="footer-links">
-      <a href="index.html">Home</a>
-      <a href="api.html">API reference</a>
-      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
-      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
-      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
-    </div>
+    <a class="logo" href="https://axium-lab.com" aria-label="Axium"><img src="assets/axium-logo-horizontal-oscuro.svg" alt="axium lab" width="100" height="26" /></a>
+    <nav aria-label="Footer">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="api.html">API reference</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock">GitHub</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a></li>
+      </ul>
+    </nav>
+    <p class="foot-tagline">Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</p>
+    <div class="foot-legal"><small>© 2026 Axium Lab</small></div>
   </div>
 </footer>
 </body>

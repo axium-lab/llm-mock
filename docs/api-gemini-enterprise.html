@@ -6,8 +6,8 @@
 <title>Gemini Enterprise API reference — llm-mock</title>
 <meta name="description" content="Gemini Enterprise (ex-Vertex AI) endpoints on llm-mock: publisher models, regional and express paths, two auth modes, embeddings via :predict and the Interactions API." />
 <link rel="canonical" href="https://llm-mock.dev/api-gemini-enterprise.html" />
-<meta name="theme-color" content="#0b0e14" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+<meta name="theme-color" content="#0e091d" />
+<link rel="icon" href="assets/axium-isotipo.svg" type="image/svg+xml" />
 
 <!-- Open Graph / social -->
 <meta property="og:type" content="article" />
@@ -75,22 +75,26 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="wrap">
-  <nav>
-    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
-    <div class="nav-links">
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="llm-mock home">
+      <img src="assets/axium-isotipo.svg" alt="" width="27" height="30" />
+      <span class="brand">llm<span>-</span>mock</span>
+      <span class="by">by axium</span>
+    </a>
+    <nav class="main" aria-label="Main">
       <a href="index.html">Home</a>
       <a class="active" href="api.html">API docs</a>
-      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
-    </div>
-  </nav>
-</div>
+    </nav>
+    <a class="btn sm gh" href="https://github.com/axium-lab/llm-mock">GitHub <span class="arr">↗</span></a>
+  </div>
+</header>
 
-<header>
+<header class="page-hero">
   <div class="wrap">
-    <span class="eyebrow">Gemini Enterprise</span>
+    <p class="eyebrow">Gemini Enterprise</p>
     <h1>Gemini Enterprise API reference</h1>
-    <p class="sub">The <code>/gemini-enterprise</code> surface &mdash; the platform formerly called Vertex AI. Two auth modes, two path shapes, embeddings through <code>:predict</code>, and the same Interactions API as AI Studio.</p>
+    <p class="lead">The <code>/gemini-enterprise</code> surface &mdash; the platform formerly called Vertex AI. Two auth modes, two path shapes, embeddings through <code>:predict</code>, and the same Interactions API as AI Studio.</p>
   </div>
 </header>
 
@@ -124,7 +128,7 @@
     <section id="ge">
       <h2>Gemini Enterprise · Endpoints</h2>
       <p class="section-sub">Google renamed Vertex AI to the Gemini Enterprise Agent Platform. It serves the same model family as AI Studio through a different contract, under the <code>/gemini-enterprise</code> prefix. Both <code>v1beta1</code> — the SDK's default here — and <code>v1</code> are served.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>…/publishers/google/models/{model}:generateContent</code></td><td>Same contract as AI Studio, plus a <code>createTime</code> on every response</td></tr>
@@ -135,7 +139,7 @@
           <tr><td><span class="method get">GET</span></td><td><code>/gemini-enterprise/v1beta1/publishers/google/models/{model}</code></td><td><code>versionId</code> rather than <code>version</code>, and no token limits</td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/gemini-enterprise/v1beta1/interactions</code></td><td>Interactions API, same contract as AI Studio's</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>Every model path comes in two shapes, and the same handler answers both: the regional one, which production code uses, and the express one.</p>
 <pre><code><span class="tok-com"># regional — OAuth, project and location in the path</span>
 /gemini-enterprise/v1beta1/projects/{project}/locations/{location}/publishers/google/models/{model}:generateContent
@@ -215,7 +219,7 @@
     <section id="next">
       <h2>Other providers</h2>
       <p class="section-sub">Same server, same key set, one page each.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Prefix</th><th>Reference</th></tr></thead>
         <tbody>
           <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><a href="api-openai.html">Read →</a></td></tr>
@@ -223,22 +227,26 @@
           <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><a href="api-gemini.html">Read →</a></td></tr>
           <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><a href="api-azure.html">Read →</a></td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   </main>
 </div>
 </div>
 
-<footer>
+<footer class="site">
   <div class="wrap">
-    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
-    <div class="footer-links">
-      <a href="index.html">Home</a>
-      <a href="api.html">API reference</a>
-      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
-      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
-      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
-    </div>
+    <a class="logo" href="https://axium-lab.com" aria-label="Axium"><img src="assets/axium-logo-horizontal-oscuro.svg" alt="axium lab" width="100" height="26" /></a>
+    <nav aria-label="Footer">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="api.html">API reference</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock">GitHub</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a></li>
+      </ul>
+    </nav>
+    <p class="foot-tagline">Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</p>
+    <div class="foot-legal"><small>© 2026 Axium Lab</small></div>
   </div>
 </footer>
 </body>

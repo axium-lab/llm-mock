@@ -6,8 +6,8 @@
 <title>Azure OpenAI API reference — llm-mock</title>
 <meta name="description" content="Azure endpoints on llm-mock: Azure OpenAI with deployment paths, api-version, Entra ID auth, the v1 surface and content filtering, plus Claude in Microsoft Foundry and the Azure AI Model Inference API." />
 <link rel="canonical" href="https://llm-mock.dev/api-azure.html" />
-<meta name="theme-color" content="#0b0e14" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+<meta name="theme-color" content="#0e091d" />
+<link rel="icon" href="assets/axium-isotipo.svg" type="image/svg+xml" />
 
 <!-- Open Graph / social -->
 <meta property="og:type" content="article" />
@@ -75,22 +75,26 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="wrap">
-  <nav>
-    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
-    <div class="nav-links">
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="llm-mock home">
+      <img src="assets/axium-isotipo.svg" alt="" width="27" height="30" />
+      <span class="brand">llm<span>-</span>mock</span>
+      <span class="by">by axium</span>
+    </a>
+    <nav class="main" aria-label="Main">
       <a href="index.html">Home</a>
       <a class="active" href="api.html">API docs</a>
-      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
-    </div>
-  </nav>
-</div>
+    </nav>
+    <a class="btn sm gh" href="https://github.com/axium-lab/llm-mock">GitHub <span class="arr">↗</span></a>
+  </div>
+</header>
 
-<header>
+<header class="page-hero">
   <div class="wrap">
-    <span class="eyebrow">Azure OpenAI</span>
+    <p class="eyebrow">Azure OpenAI</p>
     <h1>Azure OpenAI API reference</h1>
-    <p class="sub">The three doors of an Azure resource: <code>/azure/openai</code> with both the deployment-based contract and the newer <code>/openai/v1</code> one, <code>/azure/anthropic</code> for Claude in Microsoft Foundry, and <code>/azure/models</code> for the Model Inference API — plus the content filter that has no counterpart anywhere else.</p>
+    <p class="lead">The three doors of an Azure resource: <code>/azure/openai</code> with both the deployment-based contract and the newer <code>/openai/v1</code> one, <code>/azure/anthropic</code> for Claude in Microsoft Foundry, and <code>/azure/models</code> for the Model Inference API — plus the content filter that has no counterpart anywhere else.</p>
   </div>
 </header>
 
@@ -126,7 +130,7 @@
     <section id="azure">
       <h2>Azure OpenAI · Endpoints</h2>
       <p class="section-sub">Azure serves the same models as OpenAI through a different front door. Most of the differences are in the routing rather than the payloads — the exception being content filtering, which Azure adds to every response. Two surfaces are served under the <code>/azure/openai</code> prefix.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>…/deployments/{deployment}/chat/completions</code></td><td>Full <code>chat.completion</code> object, SSE streaming with <code>[DONE]</code>, tool calls</td></tr>
@@ -151,7 +155,7 @@
           <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/v1/files</code>, <code>…/{id}</code>, <code>…/{id}/content</code></td><td>The same Files API on the v1 surface, no <code>api-version</code></td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/openai/uploads?api-version=</code>, <code>…/{id}/parts</code>, <code>…/{id}/complete</code>, <code>…/{id}/cancel</code></td><td>The Uploads API, OpenAI's router verbatim; also at <code>/azure/openai/v1/uploads</code></td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>The classic surface addresses a <strong>deployment</strong> rather than a model and requires <code>api-version</code> on every call. The v1 surface drops both:</p>
 <pre><code><span class="tok-com"># classic</span>
 /azure/openai/deployments/{deployment}/chat/completions?api-version=2024-10-21
@@ -242,14 +246,14 @@
   }]
 }</code></pre>
       <p>To exercise the failure paths, pin the verdict with <code>x-llm-mock-content-filter</code>, as <code>&lt;target&gt;</code> or <code>&lt;target&gt;:&lt;category&gt;:&lt;severity&gt;</code>:</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Value</th><th>Result</th></tr></thead>
         <tbody>
-          <tr><td><code>prompt</code></td><td><span class="badge soon">400</span> with <code>code: "content_filter"</code>, and the verdict nested in <code>innererror</code></td></tr>
-          <tr><td><code>completion</code></td><td><span class="badge ok">200</span> with <code>content: null</code> and <code>finish_reason: "content_filter"</code></td></tr>
-          <tr><td><code>unavailable</code></td><td><span class="badge ok">200</span>, with an <code>error</code> object where the verdict would be — the documented "filter did not run" case</td></tr>
+          <tr><td><code>prompt</code></td><td><span class="tag">400</span> with <code>code: "content_filter"</code>, and the verdict nested in <code>innererror</code></td></tr>
+          <tr><td><code>completion</code></td><td><span class="tag ok">200</span> with <code>content: null</code> and <code>finish_reason: "content_filter"</code></td></tr>
+          <tr><td><code>unavailable</code></td><td><span class="tag ok">200</span>, with an <code>error</code> object where the verdict would be — the documented "filter did not run" case</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>Categories are <code>hate</code>, <code>self_harm</code>, <code>sexual</code>, <code>violence</code> and <code>jailbreak</code>; severities <code>safe</code>, <code>low</code>, <code>medium</code>, <code>high</code>. So <code>completion:violence:high</code> filters the reply and says which category did it.</p>
       <div class="callout">
         Two quirks are reproduced deliberately, because code written against OpenAI trips on both. A
@@ -264,14 +268,14 @@
     <section id="azure-anthropic">
       <h2>Azure · Claude in Microsoft Foundry</h2>
       <p class="section-sub">Anthropic's Messages API served from an Azure resource. On the real service the path is <code>https://{resource}.services.ai.azure.com/anthropic/v1/*</code>; here the resource becomes the prefix, so the door is <code>/azure/anthropic</code>. The service behind it is Anthropic's own, and so are the payloads, the named SSE events and the error envelope — what Azure changes is the front door.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/anthropic/v1/messages</code></td><td>The <a href="api-anthropic.html#anthropic-messages">Anthropic Messages</a> handler: content blocks, <code>tool_use</code>, <code>thinking</code>, named SSE events ending on <code>message_stop</code></td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/anthropic/v1/messages/count_tokens</code></td><td>Same count as <code>usage.input_tokens</code> on the message</td></tr>
-          <tr><td><span class="method get">GET</span></td><td><code>/azure/anthropic/v1/models</code></td><td><span class="badge soon">404</span> — Foundry has no Models API, no Message Batches and no Files, and the Foundry SDK removes them from its client</td></tr>
+          <tr><td><span class="method get">GET</span></td><td><code>/azure/anthropic/v1/models</code></td><td><span class="tag">404</span> — Foundry has no Models API, no Message Batches and no Files, and the Foundry SDK removes them from its client</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>The Foundry SDK builds its base URL from a resource name; a <code>baseURL</code> stands in for it here. Everything else about the client is the Anthropic SDK:</p>
 <pre><code><span class="tok-key">import</span> AnthropicFoundry <span class="tok-key">from</span> <span class="tok-str">"@anthropic-ai/foundry-sdk"</span>;
 
@@ -300,15 +304,15 @@
     <section id="azure-models">
       <h2>Azure · Model Inference API</h2>
       <p class="section-sub">The Azure AI Model Inference API, the route a Foundry resource exposes for models that are not OpenAI's — Llama, Mistral, DeepSeek, Phi — at <code>https://{resource}.services.ai.azure.com/models/*</code>, here <code>/azure/models</code>. OpenAI's chat completions and embeddings pared down to a common subset, with a flat error envelope and a header deciding the fate of anything outside that subset.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/models/chat/completions?api-version=</code></td><td>No <code>object</code>, no <code>system_fingerprint</code>; a message of <code>role</code>, <code>content</code> and <code>tool_calls</code>. SSE with <code>[DONE]</code></td></tr>
           <tr><td><span class="method post">POST</span></td><td><code>/azure/models/embeddings?api-version=</code></td><td><code>id</code>, <code>data</code>, <code>usage</code>, <code>model</code></td></tr>
           <tr><td><span class="method get">GET</span></td><td><code>/azure/models/info?api-version=</code></td><td>The deployed model, fixed: <code>Phi-4</code>, <code>chat_completion</code>, <code>Microsoft</code></td></tr>
-          <tr><td><span class="method post">POST</span></td><td><code>/azure/models/images/embeddings</code></td><td><span class="badge soon">404</span>, in the gateway's shape</td></tr>
+          <tr><td><span class="method post">POST</span></td><td><code>/azure/models/images/embeddings</code></td><td><span class="tag">404</span>, in the gateway's shape</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p><code>model</code> is optional, as on a single-model endpoint, and the response names what ran. <code>api-version</code> is required on every call, exactly as on the classic Azure OpenAI surface. The key travels in <code>api-key</code>, or as a bearer token.</p>
 <pre><code><span class="tok-key">import</span> createClient <span class="tok-key">from</span> <span class="tok-str">"@azure-rest/ai-inference"</span>;
 <span class="tok-key">import</span> { AzureKeyCredential } <span class="tok-key">from</span> <span class="tok-str">"@azure/core-auth"</span>;
@@ -343,7 +347,7 @@
     <section id="next">
       <h2>Other providers</h2>
       <p class="section-sub">Same server, same key set, one page each.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Prefix</th><th>Reference</th></tr></thead>
         <tbody>
           <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><a href="api-openai.html">Read →</a></td></tr>
@@ -351,22 +355,26 @@
           <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><a href="api-gemini.html">Read →</a></td></tr>
           <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><a href="api-gemini-enterprise.html">Read →</a></td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   </main>
 </div>
 </div>
 
-<footer>
+<footer class="site">
   <div class="wrap">
-    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
-    <div class="footer-links">
-      <a href="index.html">Home</a>
-      <a href="api.html">API reference</a>
-      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
-      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
-      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
-    </div>
+    <a class="logo" href="https://axium-lab.com" aria-label="Axium"><img src="assets/axium-logo-horizontal-oscuro.svg" alt="axium lab" width="100" height="26" /></a>
+    <nav aria-label="Footer">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="api.html">API reference</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock">GitHub</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a></li>
+      </ul>
+    </nav>
+    <p class="foot-tagline">Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</p>
+    <div class="foot-legal"><small>© 2026 Axium Lab</small></div>
   </div>
 </footer>
 </body>

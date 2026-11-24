@@ -6,8 +6,8 @@
 <title>API reference — llm-mock</title>
 <meta name="description" content="API reference for llm-mock: base URLs, authentication and response-control headers shared by every provider, with one page each for OpenAI, Anthropic, Gemini, Gemini Enterprise and Azure OpenAI." />
 <link rel="canonical" href="https://llm-mock.dev/api.html" />
-<meta name="theme-color" content="#0b0e14" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+<meta name="theme-color" content="#0e091d" />
+<link rel="icon" href="assets/axium-isotipo.svg" type="image/svg+xml" />
 
 <!-- Open Graph / social -->
 <meta property="og:type" content="article" />
@@ -69,22 +69,26 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="wrap">
-  <nav>
-    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
-    <div class="nav-links">
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="llm-mock home">
+      <img src="assets/axium-isotipo.svg" alt="" width="27" height="30" />
+      <span class="brand">llm<span>-</span>mock</span>
+      <span class="by">by axium</span>
+    </a>
+    <nav class="main" aria-label="Main">
       <a href="index.html">Home</a>
       <a class="active" href="api.html">API docs</a>
-      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
-    </div>
-  </nav>
-</div>
+    </nav>
+    <a class="btn sm gh" href="https://github.com/axium-lab/llm-mock">GitHub <span class="arr">↗</span></a>
+  </div>
+</header>
 
-<header>
+<header class="page-hero">
   <div class="wrap">
-    <span class="eyebrow">API reference</span>
+    <p class="eyebrow">API reference</p>
     <h1>API reference</h1>
-    <p class="sub">
+    <p class="lead">
       llm-mock speaks each provider's API contract — same endpoints, same response shapes,
       same error format, same SSE streaming — with deterministic, configurable replies and no real key.
       Five providers are implemented; this page covers what they share, and each has its own reference.
@@ -120,7 +124,7 @@
     <section id="providers-nav">
       <h2>Per-provider reference</h2>
       <p class="section-sub">Everything below this section is shared by every provider. Each provider's own endpoints, quirks and error shapes live on its own page.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Prefix</th><th>What's there</th></tr></thead>
         <tbody>
           <tr><td><a href="api-openai.html"><strong>OpenAI</strong></a></td><td><code>/openai/v1</code></td><td>Chat completions, Responses API, tool calls, files, uploads, streaming</td></tr>
@@ -131,13 +135,13 @@
           <tr><td><a href="api-azure.html#azure-anthropic"><strong>Claude in Microsoft Foundry</strong></a></td><td><code>/azure/anthropic</code></td><td>Anthropic's Messages API behind Azure's front door</td></tr>
           <tr><td><a href="api-azure.html#azure-models"><strong>Azure AI Model Inference</strong></a></td><td><code>/azure/models</code></td><td>Foundry's non-OpenAI models, <code>extra-parameters</code>, flat errors</td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
 
     <section id="base-url">
       <h2>Base URL</h2>
       <p class="section-sub">Each provider mounts under its own prefix. Point your SDK's base URL at one of these — on <code>api.llm-mock.dev</code> for the hosted instance, or <code>localhost:3000</code> for your own.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Base URL</th><th>SDK</th></tr></thead>
         <tbody>
           <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><code>openai</code></td></tr>
@@ -149,7 +153,7 @@
           <tr><td>Claude in Microsoft Foundry</td><td><code>/azure/anthropic</code></td><td><code>@anthropic-ai/foundry-sdk</code></td></tr>
           <tr><td>Azure AI Model Inference</td><td><code>/azure/models</code></td><td><code>@azure-rest/ai-inference</code></td></tr>
         </tbody>
-      </table>
+      </table></div>
       <div class="callout">
         Whether the version segment belongs in the base URL depends on the SDK, not on us. The OpenAI client
         appends only the request path, so its <code>baseURL</code> carries <code>/v1</code>;
@@ -183,65 +187,65 @@
     <section id="auth">
       <h2>Authentication</h2>
       <p class="section-sub">One key set serves every provider: <code>sk-mock-key-01</code> … <code>sk-mock-key-10</code> ship in the repo and on the hosted instance. What changes per provider is <strong>where the credential travels</strong> and <strong>what a rejection looks like</strong> — both mirror the real service.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Credential</th><th>Invalid</th><th>Missing</th></tr></thead>
         <tbody>
           <tr>
             <td>OpenAI</td>
             <td><code>Authorization: Bearer</code></td>
-            <td><span class="badge soon">401</span> <code>invalid_api_key</code></td>
-            <td><span class="badge soon">401</span></td>
+            <td><span class="tag">401</span> <code>invalid_api_key</code></td>
+            <td><span class="tag">401</span></td>
           </tr>
           <tr>
             <td>Anthropic</td>
             <td><code>x-api-key</code> (also Bearer, for OAuth)</td>
-            <td><span class="badge soon">401</span> <code>authentication_error</code></td>
-            <td><span class="badge soon">401</span></td>
+            <td><span class="tag">401</span> <code>authentication_error</code></td>
+            <td><span class="tag">401</span></td>
           </tr>
           <tr>
             <td>Gemini</td>
             <td><code>x-goog-api-key</code> (also <code>?key=</code> or Bearer)</td>
-            <td><span class="badge soon">400</span> <code>INVALID_ARGUMENT</code></td>
-            <td><span class="badge soon">403</span> <code>PERMISSION_DENIED</code></td>
+            <td><span class="tag">400</span> <code>INVALID_ARGUMENT</code></td>
+            <td><span class="tag">403</span> <code>PERMISSION_DENIED</code></td>
           </tr>
           <tr>
             <td>Gemini · <code>/interactions</code></td>
             <td><code>x-goog-api-key</code></td>
-            <td><span class="badge soon">400</span> <code>INVALID_ARGUMENT</code>, <strong>classic</strong> envelope</td>
-            <td><span class="badge soon">403</span> <code>PERMISSION_DENIED</code>, classic</td>
+            <td><span class="tag">400</span> <code>INVALID_ARGUMENT</code>, <strong>classic</strong> envelope</td>
+            <td><span class="tag">403</span> <code>PERMISSION_DENIED</code>, classic</td>
           </tr>
           <tr>
             <td>Gemini · <code>/openai</code> layer</td>
             <td><code>Authorization: Bearer</code></td>
-            <td><span class="badge soon">400</span> <code>Please pass a valid API key</code></td>
-            <td><span class="badge soon">404</span> <code>NOT_FOUND</code></td>
+            <td><span class="tag">400</span> <code>Please pass a valid API key</code></td>
+            <td><span class="tag">404</span> <code>NOT_FOUND</code></td>
           </tr>
           <tr>
             <td>Gemini Enterprise</td>
             <td>Bearer (regional) or <code>x-goog-api-key</code> (express)</td>
-            <td><span class="badge soon">401</span> / <span class="badge soon">400</span> by transport</td>
-            <td><span class="badge soon">401</span> <code>UNAUTHENTICATED</code></td>
+            <td><span class="tag">401</span> / <span class="tag">400</span> by transport</td>
+            <td><span class="tag">401</span> <code>UNAUTHENTICATED</code></td>
           </tr>
           <tr>
             <td>Azure OpenAI</td>
             <td><code>api-key</code> (also Bearer, for Entra ID)</td>
-            <td><span class="badge soon">401</span> wrapped envelope</td>
-            <td><span class="badge soon">401</span> flat, no <code>error</code> wrapper</td>
+            <td><span class="tag">401</span> wrapped envelope</td>
+            <td><span class="tag">401</span> flat, no <code>error</code> wrapper</td>
           </tr>
           <tr>
             <td>Claude in Microsoft Foundry</td>
             <td><code>api-key</code> or <code>x-api-key</code> (also Bearer)</td>
-            <td><span class="badge soon">401</span> Azure's wrapped envelope, not Anthropic's</td>
-            <td><span class="badge soon">401</span> flat, the gateway's</td>
+            <td><span class="tag">401</span> Azure's wrapped envelope, not Anthropic's</td>
+            <td><span class="tag">401</span> flat, the gateway's</td>
           </tr>
           <tr>
             <td>Azure AI Model Inference</td>
             <td><code>api-key</code> (also Bearer)</td>
-            <td><span class="badge soon">401</span> wrapped envelope</td>
-            <td><span class="badge soon">401</span> flat, the gateway's</td>
+            <td><span class="tag">401</span> wrapped envelope</td>
+            <td><span class="tag">401</span> flat, the gateway's</td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
       <p>Use <code>sk-mock-invalid</code> as the documented known-bad key. Run your own instance for a custom key set — point <code>LLM_MOCK_API_KEYS_FILE</code> at your own JSON array of keys.</p>
       <div class="callout">
         Google reports a bad API key as a <strong>400</strong>, not a 401, and attaches
@@ -259,7 +263,7 @@
     <section id="control">
       <h2>Controlling replies</h2>
       <p class="section-sub">By default every completion echoes the last user message. When a test needs a specific reply, the request itself carries it in a header — nothing to register beforehand, nothing to clean up.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Header</th><th>Purpose</th></tr></thead>
         <tbody>
           <tr><td><code>x-llm-mock-response</code></td><td>ASCII reply to return verbatim as the assistant message</td></tr>
@@ -269,7 +273,7 @@
           <tr><td><code>x-llm-mock-content-filter</code></td><td>Azure only. Pins the content-filter verdict. See <a href="api-azure.html#azure-filter">Content filtering</a>.</td></tr>
           <tr><td><code>x-llm-mock-batch-status</code></td><td>Anthropic only. Pins a batch's <code>processing_status</code>. See <a href="api-anthropic.html#anthropic-batches">Batches</a>.</td></tr>
         </tbody>
-      </table>
+      </table></div>
 <pre><code><span class="tok-key">const</span> completion = <span class="tok-key">await</span> client.chat.completions.<span class="tok-fn">create</span>(
   { model: <span class="tok-str">"gpt-4o"</span>, messages: [{ role: <span class="tok-str">"user"</span>, content: <span class="tok-str">"What's the weather like?"</span> }] },
   { headers: { <span class="tok-str">"x-llm-mock-response"</span>: <span class="tok-str">"It is sunny in Valencia."</span> } },
@@ -291,7 +295,7 @@
   <span class="tok-com">// err instanceof OpenAI.RateLimitError, err.code === "rate_limit_exceeded",</span>
   <span class="tok-com">// err.headers.get("retry-after") === "1"</span>
 }</code></pre>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>What a <code>429</code> / <code>5xx</code> looks like</th></tr></thead>
         <tbody>
           <tr><td>OpenAI</td><td><code>rate_limit_error</code> with code <code>rate_limit_exceeded</code> on <code>429</code>; <code>api_error</code> on <code>5xx</code></td></tr>
@@ -299,7 +303,7 @@
           <tr><td>Gemini, Gemini Enterprise</td><td><code>google.rpc.Status</code> with <code>RESOURCE_EXHAUSTED</code>, <code>INTERNAL</code> or <code>UNAVAILABLE</code>; the flat next-gen envelope on <code>/interactions</code></td></tr>
           <tr><td>Azure OpenAI (both surfaces), Model Inference</td><td>Azure's symbolic <code>code</code> carrying the status; the Model Inference API's flat envelope with <code>status</code> and <code>code</code></td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>A <code>429</code> also carries <code>retry-after: 1</code>, so a backoff that honours the header still completes in a test's lifetime. On a streaming call the error fires before the stream opens, so the SDK surfaces its normal error class rather than a broken SSE body. A value outside <code>400</code>&ndash;<code>599</code>, or more than one copy of the header, is a <code>400</code> with code <code>invalid_value</code> naming the header.</p>
       <div class="callout">
         The header is read <strong>after</strong> the credential and after each door's own preflight checks. A bad key with
@@ -312,34 +316,38 @@
     <section id="providers">
       <h2>Provider support</h2>
       <p class="section-sub">Multi-provider by design: each provider mounts under its own URL prefix and implements its own API contract. Here's where each one stands today.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Prefix</th><th>Status</th></tr></thead>
         <tbody>
-          <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
-          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
-          <tr><td>Gemini Enterprise (ex-Vertex AI)</td><td><code>/gemini-enterprise</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
-          <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
-          <tr><td>Claude in Microsoft Foundry</td><td><code>/azure/anthropic</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
-          <tr><td>Azure AI Model Inference</td><td><code>/azure/models</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
-          <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="badge ok">✅ Supported</span></td></tr>
+          <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><span class="tag ok">Supported</span></td></tr>
+          <tr><td>Gemini (AI Studio)</td><td><code>/gemini</code></td><td><span class="tag ok">Supported</span></td></tr>
+          <tr><td>Gemini Enterprise (ex-Vertex AI)</td><td><code>/gemini-enterprise</code></td><td><span class="tag ok">Supported</span></td></tr>
+          <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><span class="tag ok">Supported</span></td></tr>
+          <tr><td>Claude in Microsoft Foundry</td><td><code>/azure/anthropic</code></td><td><span class="tag ok">Supported</span></td></tr>
+          <tr><td>Azure AI Model Inference</td><td><code>/azure/models</code></td><td><span class="tag ok">Supported</span></td></tr>
+          <tr><td>Anthropic</td><td><code>/anthropic</code></td><td><span class="tag ok">Supported</span></td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>Want a provider prioritized? <a href="https://github.com/axium-lab/llm-mock/issues">Open an issue</a> — or a PR.</p>
     </section>
   </main>
 </div>
 </div>
 
-<footer>
+<footer class="site">
   <div class="wrap">
-    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
-    <div class="footer-links">
-      <a href="index.html">Home</a>
-      <a href="api.html">API reference</a>
-      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
-      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
-      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
-    </div>
+    <a class="logo" href="https://axium-lab.com" aria-label="Axium"><img src="assets/axium-logo-horizontal-oscuro.svg" alt="axium lab" width="100" height="26" /></a>
+    <nav aria-label="Footer">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="api.html">API reference</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock">GitHub</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a></li>
+      </ul>
+    </nav>
+    <p class="foot-tagline">Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</p>
+    <div class="foot-legal"><small>© 2026 Axium Lab</small></div>
   </div>
 </footer>
 </body>

@@ -6,8 +6,8 @@
 <title>Anthropic API reference — llm-mock</title>
 <meta name="description" content="Anthropic endpoints on llm-mock: the Messages API with content blocks, tool use, thinking, named-event SSE streaming, token counting, message batches, files and the error envelope." />
 <link rel="canonical" href="https://llm-mock.dev/api-anthropic.html" />
-<meta name="theme-color" content="#0b0e14" />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%235b7cfa'/><text x='16' y='23' font-family='monospace' font-size='16' font-weight='700' fill='%23ffffff' text-anchor='middle'>{}</text></svg>" />
+<meta name="theme-color" content="#0e091d" />
+<link rel="icon" href="assets/axium-isotipo.svg" type="image/svg+xml" />
 
 <!-- Open Graph / social -->
 <meta property="og:type" content="article" />
@@ -75,22 +75,26 @@
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-<div class="wrap">
-  <nav>
-    <div class="brand"><a href="index.html">llm<span>-</span>mock</a></div>
-    <div class="nav-links">
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="index.html" aria-label="llm-mock home">
+      <img src="assets/axium-isotipo.svg" alt="" width="27" height="30" />
+      <span class="brand">llm<span>-</span>mock</span>
+      <span class="by">by axium</span>
+    </a>
+    <nav class="main" aria-label="Main">
       <a href="index.html">Home</a>
       <a class="active" href="api.html">API docs</a>
-      <a class="gh" href="https://github.com/axium-lab/llm-mock">GitHub ↗</a>
-    </div>
-  </nav>
-</div>
+    </nav>
+    <a class="btn sm gh" href="https://github.com/axium-lab/llm-mock">GitHub <span class="arr">↗</span></a>
+  </div>
+</header>
 
-<header>
+<header class="page-hero">
   <div class="wrap">
-    <span class="eyebrow">Anthropic</span>
+    <p class="eyebrow">Anthropic</p>
     <h1>Anthropic API reference</h1>
-    <p class="sub">The <code>/anthropic</code> surface: one <code>POST /v1/messages</code> carrying content blocks, tool use and thinking, plus token counting, batches, files and models. The one provider here that shares nothing structural with OpenAI.</p>
+    <p class="lead">The <code>/anthropic</code> surface: one <code>POST /v1/messages</code> carrying content blocks, tool use and thinking, plus token counting, batches, files and models. The one provider here that shares nothing structural with OpenAI.</p>
   </div>
 </header>
 
@@ -127,7 +131,7 @@
     <section id="anthropic">
       <h2>Anthropic &middot; Endpoints</h2>
       <p class="section-sub">Everything under the <code>/anthropic</code> prefix. This is the one provider here that shares nothing structural with OpenAI: everything generative goes through a single <code>POST /v1/messages</code>, replies are lists of typed content blocks, and the system prompt is a top-level field rather than a message.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Method</th><th>Path</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td><span class="method post">POST</span></td><td><code>/anthropic/v1/messages</code></td><td>Content blocks, <code>system</code>, tool use, thinking, <code>stop_reason</code>, <code>usage</code>, SSE with <code>stream: true</code></td></tr>
@@ -145,7 +149,7 @@
           <tr><td><span class="method get">GET</span></td><td><code>/anthropic/v1/files/{id}/content</code></td><td>Only for files the API produced itself</td></tr>
           <tr><td><span class="method delete">DELETE</span></td><td><code>/anthropic/v1/files/{id}</code></td><td>Returns <code>file_deleted</code></td></tr>
         </tbody>
-      </table>
+      </table></div>
 <pre><code><span class="tok-key">import</span> Anthropic <span class="tok-key">from</span> <span class="tok-str">"@anthropic-ai/sdk"</span>;
 
 <span class="tok-key">const</span> client = <span class="tok-key">new</span> <span class="tok-fn">Anthropic</span>({
@@ -176,7 +180,7 @@
 });
 
 message.content; <span class="tok-com">// [{ type: "text", text: "Echo: Hello!", citations: null }]</span></code></pre>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Shape</th><th>What differs</th></tr></thead>
         <tbody>
           <tr><td><code>max_tokens</code></td><td>Required. Omitting it is a <code>400</code>, where every other provider defaults it.</td></tr>
@@ -184,7 +188,7 @@ message.content; <span class="tok-com">// [{ type: "text", text: "Echo: Hello!",
           <tr><td><code>stop_reason</code></td><td>Where OpenAI has <code>finish_reason</code>. One of <code>end_turn</code>, <code>max_tokens</code>, <code>stop_sequence</code>, <code>tool_use</code>, <code>refusal</code>.</td></tr>
           <tr><td><code>thinking</code></td><td>Blocks are emitted whenever thinking is on, but <code>display</code> decides whether they carry text.</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>The default <code>display: "omitted"</code> leaves <code>thinking</code> an empty string; <code>"summarized"</code> fills in a summary. That empty-but-present block is what a streaming UI sees as a long pause, so it is worth being able to test.</p>
       <p>Consecutive same-role messages are accepted &mdash; the real API combines them into one turn &mdash; but the conversation must open with <code>user</code>. The <code>x-llm-mock-response</code> and <code>x-llm-mock-tool-calls</code> headers work exactly as on the other providers.</p>
       <h3>Token counting</h3>
@@ -207,7 +211,7 @@ message.content; <span class="tok-com">// [{ type: "text", text: "Echo: Hello!",
 });
 
 message.content; <span class="tok-com">// [{ type: "tool_use", id: "toolu_…", name: "get_weather", input: { city: "…" } }]</span></code></pre>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th><code>tool_choice</code></th><th>Effect</th></tr></thead>
         <tbody>
           <tr><td><code>{ type: "any" }</code></td><td>Forces a call</td></tr>
@@ -215,7 +219,7 @@ message.content; <span class="tok-com">// [{ type: "tool_use", id: "toolu_…", 
           <tr><td><code>{ type: "none" }</code></td><td>Forbids them</td></tr>
           <tr><td><code>{ type: "auto" }</code></td><td>The default &mdash; left to a model this mock does not have, so no call is made</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>The result comes back as a <code>tool_result</code> block inside a <strong>user</strong> message, and its presence terminates the loop: the next reply is prose, not another call. Arguments are synthesized from your JSON Schema, or pinned exactly with <code>x-llm-mock-tool-calls</code>.</p>
     </section>
 
@@ -236,14 +240,14 @@ data: {"type":"message_stop"}</code></pre>
         <em>"stream ended without producing a Message"</em>.
       </div>
       <p>That makes three SSE conventions across the five providers here:</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Frame</th><th>Terminator</th></tr></thead>
         <tbody>
           <tr><td>OpenAI, Azure</td><td><code>data:</code> only</td><td><code>data: [DONE]</code></td></tr>
           <tr><td>Gemini, Gemini Enterprise</td><td><code>data:</code> only</td><td>End of stream (a <code>[DONE]</code> is rejected)</td></tr>
           <tr><td>Anthropic</td><td><code>event:</code> <strong>and</strong> <code>data:</code></td><td><code>event: message_stop</code></td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>A tool call streams its arguments as <code>input_json_delta</code> pieces of a JSON string, and a thinking block streams <code>thinking_delta</code> pieces followed by its <code>signature</code> under a separate <code>signature_delta</code>.</p>
     </section>
 
@@ -268,12 +272,12 @@ data: {"type":"message_stop"}</code></pre>
         100,000 of them; if you need that shape, you are testing the API, not your code.
       </div>
       <p><strong>Batches complete instantly.</strong> With no clock to advance and no state to advance it in, a new batch is already <code>ended</code> and its results are already there. When you need to exercise the polling branch &mdash; the one that reads <code>processing_status</code> and waits &mdash; pin the status with a header:</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Header</th><th>Values</th></tr></thead>
         <tbody>
           <tr><td><code>x-llm-mock-batch-status</code></td><td><code>in_progress</code>, <code>canceling</code>, <code>ended</code> (the default)</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>A batch that has not ended has a null <code>results_url</code> and its results endpoint answers <code>400</code>, the same as the real one. Listing always returns an empty page: a stateless mock keeps no list of batches.</p>
     </section>
 
@@ -303,14 +307,14 @@ data: {"type":"message_stop"}</code></pre>
     <section id="anthropic-errors">
       <h2>Anthropic &middot; Errors &amp; headers</h2>
       <p class="section-sub">Three things differ from every other provider on this server, and all three are the API's own doing.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>What</th><th>Detail</th></tr></thead>
         <tbody>
           <tr><td>Credential</td><td><code>x-api-key</code>, not a bearer token. <code>Authorization: Bearer</code> is accepted too, as OAuth callers use it.</td></tr>
           <tr><td><code>anthropic-version</code></td><td>Required on every request. Any value is accepted; a missing header is a <code>400</code>.</td></tr>
           <tr><td>Error envelope</td><td>Wraps twice and echoes the request id. The only one here that uses HTTP <code>529</code>.</td></tr>
         </tbody>
-      </table>
+      </table></div>
 <pre><code>{
   <span class="tok-key">"type"</span>: <span class="tok-str">"error"</span>,
   <span class="tok-key">"error"</span>: { <span class="tok-key">"type"</span>: <span class="tok-str">"authentication_error"</span>, <span class="tok-key">"message"</span>: <span class="tok-str">"invalid x-api-key"</span> },
@@ -328,7 +332,7 @@ data: {"type":"message_stop"}</code></pre>
     <section id="next">
       <h2>Other providers</h2>
       <p class="section-sub">Same server, same key set, one page each.</p>
-      <table>
+      <div class="tbl-wrap"><table>
         <thead><tr><th>Provider</th><th>Prefix</th><th>Reference</th></tr></thead>
         <tbody>
           <tr><td>OpenAI</td><td><code>/openai/v1</code></td><td><a href="api-openai.html">Read →</a></td></tr>
@@ -336,22 +340,26 @@ data: {"type":"message_stop"}</code></pre>
           <tr><td>Gemini Enterprise</td><td><code>/gemini-enterprise</code></td><td><a href="api-gemini-enterprise.html">Read →</a></td></tr>
           <tr><td>Azure OpenAI</td><td><code>/azure/openai</code></td><td><a href="api-azure.html">Read →</a></td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   </main>
 </div>
 </div>
 
-<footer>
+<footer class="site">
   <div class="wrap">
-    <div>Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</div>
-    <div class="footer-links">
-      <a href="index.html">Home</a>
-      <a href="api.html">API reference</a>
-      <a href="https://github.com/axium-lab/llm-mock">GitHub</a>
-      <a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a>
-      <a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a>
-    </div>
+    <a class="logo" href="https://axium-lab.com" aria-label="Axium"><img src="assets/axium-logo-horizontal-oscuro.svg" alt="axium lab" width="100" height="26" /></a>
+    <nav aria-label="Footer">
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="api.html">API reference</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock">GitHub</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/pkgs/container/llm-mock">Docker</a></li>
+        <li><a href="https://github.com/axium-lab/llm-mock/blob/main/LICENSE">MIT License</a></li>
+      </ul>
+    </nav>
+    <p class="foot-tagline">Built by <a class="footer-brand" href="https://axium-lab.com">Axium</a> — the Zero Trust AI gateway.</p>
+    <div class="foot-legal"><small>© 2026 Axium Lab</small></div>
   </div>
 </footer>
 </body>
