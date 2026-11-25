@@ -153,7 +153,7 @@ Microsoft now routes Foundry Models through `/openai/v1` and has retired the `az
 
 **Claude on Bedrock** — ❌ not served: `POST /model/{id}/invoke` (SigV4), `POST /model/{id}/invoke-with-response-stream` (binary event-stream).
 
-**Every door** — ✅ `429`, `500`/`503`/`529` can be provoked via `x-llm-mock-status`; ❌ timeouts cannot be provoked; ⚠️ any `model` is accepted on a generation call.
+**Every door** — ✅ `429`, `500`/`503`/`529` can be provoked via `x-llm-mock-status`, and timeouts via `x-llm-mock-delay`; ⚠️ any `model` is accepted on a generation call.
 
 Where the version segment lives depends on the SDK, not on us — the OpenAI and Anthropic clients append only the request path, so their `baseURL` carries the version, while `@google/genai` appends the version itself:
 
@@ -216,12 +216,13 @@ const completion = await client.chat.completions.create(
 | `x-llm-mock-response-base64` | Base64 reply, for content beyond ASCII. Wins when both are present. |
 | `x-llm-mock-tool-calls` | JSON array of tool calls the reply must contain, overriding `tool_choice` |
 | `x-llm-mock-status` | Forces an HTTP error status code (e.g. `500`, `503`, `529`, `429`) in the provider's native envelope |
+| `x-llm-mock-delay` | Holds the response for `0`–`10000` ms, so SDK timeouts and slow upstreams can be tested |
 | `x-llm-mock-content-filter` | Azure only — pins the content-filter verdict |
 | `x-llm-mock-batch-status` | Anthropic only — pins a batch's `processing_status` |
 
 Because the canned response travels **with the request**, the server keeps no state: the same request returns the same bytes, whichever instance or replica serves it. [More on response control →](https://llm-mock.dev/api.html#control)
 
-Failures travel the same way. `x-llm-mock-status: 429` makes any door throttle you in its own envelope — OpenAI's `rate_limit_error`, Anthropic's `rate_limit_error`, Google's `RESOURCE_EXHAUSTED` — with a `retry-after` header, and `500`, `503` or `529` do the same for an outage, so the SDK raises the class your retry logic is written against. The header is read after the credential and each door's own preflight checks, so a bad key is still a `401`. [More on provoking errors →](https://llm-mock.dev/api.html#chaos)
+Failures travel the same way. `x-llm-mock-status: 429` makes any door throttle you in its own envelope — OpenAI's `rate_limit_error`, Anthropic's `rate_limit_error`, Google's `RESOURCE_EXHAUSTED` — with a `retry-after` header, and `500`, `503` or `529` do the same for an outage, so the SDK raises the class your retry logic is written against. `x-llm-mock-delay` holds the answer for up to `10000` ms and drops the timer the moment the client aborts, so SDK timeouts are testable too. Both headers are read after the credential and each door's own preflight checks, so a bad key is still a `401`. [More on provoking errors →](https://llm-mock.dev/api.html#chaos)
 
 ## Authentication
 

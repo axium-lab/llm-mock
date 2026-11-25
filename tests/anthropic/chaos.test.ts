@@ -68,12 +68,14 @@ describe("anthropic chaos fault injection", () => {
   });
 
   it("checks version header before evaluating chaos", async () => {
+    const start = performance.now();
     const res = await fetch(`${ctx.baseURL}/v1/messages`, {
       method: "POST",
       headers: {
         "x-api-key": VALID_API_KEY,
         "content-type": "application/json",
         "x-llm-mock-status": "500",
+        "x-llm-mock-delay": "5000",
       },
       body: JSON.stringify({
         model: "claude-3-5-sonnet-20241022",
@@ -82,8 +84,42 @@ describe("anthropic chaos fault injection", () => {
       }),
     });
     expect(res.status).toBe(400);
+    expect(performance.now() - start).toBeLessThan(1000);
     const body = (await res.json()) as { error: { message: string } };
     expect(body.error.message).toContain("anthropic-version header is required");
+  });
+
+  it("provokes APIConnectionTimeoutError via x-llm-mock-delay header", async () => {
+    try {
+      await ctx.client.messages.create(
+        {
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 100,
+          messages: [{ role: "user", content: "Slow request" }],
+        },
+        { timeout: 50, headers: { "x-llm-mock-delay": "2000" } },
+      );
+      throw new Error("expected the request to time out");
+    } catch (err) {
+      expect(err).toBeInstanceOf(Anthropic.APIConnectionTimeoutError);
+    }
+  });
+
+  it("provokes APIConnectionTimeoutError on streaming calls before stream opens", async () => {
+    try {
+      const stream = ctx.client.messages.stream(
+        {
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 100,
+          messages: [{ role: "user", content: "Slow stream" }],
+        },
+        { timeout: 50, headers: { "x-llm-mock-delay": "2000" } },
+      );
+      await stream.done();
+      throw new Error("expected streaming to time out");
+    } catch (err) {
+      expect(err).toBeInstanceOf(Anthropic.APIConnectionTimeoutError);
+    }
   });
 
   it("provokes 500 api_error via x-llm-mock-status header", async () => {
